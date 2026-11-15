@@ -868,9 +868,9 @@ td.time { color: var(--muted); white-space: nowrap; }
 .mod-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: 1.2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; }
 .mod-form label input, .mod-form label select { text-transform: none; letter-spacing: 0; }
 /* A field and its button on one line (a server's display name in its Settings pop-up) */
-.inline-form { display: flex; gap: 14px; align-items: stretch; margin: 0 0 8px; }
-.inline-form button { flex: none; padding: 0 18px; }
-.inline-form input[type="text"] { flex: 1; min-width: 0; }
+.inline-form, .row form.inline-form { display: flex; gap: 14px; align-items: center; margin: 0 0 8px; }   /* .row form is display: contents */
+.inline-form input[type="text"] { flex: 1 1 auto; width: auto; min-width: 0; }
+.inline-form button { flex: none; align-self: stretch; }   /* As tall as its field */
 .rail-group { font-size: 11px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; margin: 12px 12px 4px; }
 .rail-group:first-child { margin-top: 2px; }
 .loading { color: var(--muted); font-size: 14px; padding: 10px 2px; }
