@@ -7,8 +7,7 @@
 <div class="page-title">
     <div class="eyebrow">Panel</div>
     <h1>Appearance</h1>
-    <p>How the panel looks in this browser. Changes show straight away and are saved here only: other admins and your other
-        devices keep their own.@if (Model.Owner) { <text> What everyone gets is on <a href="/site">Site settings</a>.</text> }</p>
+    <p>How the panel looks in this browser.@if (Model.Owner) { <text> For everyone: <a href="/site">Site settings</a>.</text> }</p>
 </div>
 @if (Model.Message != null)
 {
@@ -44,7 +43,7 @@
     </div>
 
     <div class="row look-row">
-        <label class="label" for="look-warn">Notifications <small>The bell's count, the staff heads-up, open reports and appeals, staff notes, pauses and warmup</small></label>
+        <label class="label" for="look-warn">Notifications <small>Alerts, open reports, pauses and warmup</small></label>
         <input type="color" id="look-warn" aria-label="Warnings colour">
     </div>
 
@@ -84,7 +83,7 @@
 
     <div class="group-title">Background</div>
     <div class="row look-row">
-        <label class="label" for="look-dim">Darken the background <small>0% shows the scene as it is. The scene itself is picked with the round button at bottom right</small></label>
+        <label class="label" for="look-dim">Darken the background <small>0% shows it as it is</small></label>
         <input type="range" id="look-dim" min="0" max="1" step="0.05">
         <output for="look-dim" id="look-dim-out"></output>
     </div>

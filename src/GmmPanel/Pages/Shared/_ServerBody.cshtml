@@ -110,8 +110,7 @@
 
     @if (s == null)
     {
-        <p class="note">Turn the panel on in GameModeManager's config on that server (<code>Panel.Enabled</code>) and put its token in
-            <code>panel-secrets.json</code>. The server connects within a minute of a map change or restart.</p>
+        <p class="note">Turn on <code>Panel.Enabled</code> in its GameModeManager config and add its token to <code>panel-secrets.json</code>.</p>
     }
     else
     {
@@ -216,7 +215,7 @@
                                     data-confirm="GameModeManager picks another mode and changes to it." data-confirm-title="Change to a random mode?" data-confirm-yes="Change">Random</button>
                         </form>
                     </div>
-                    <p class="note">GG1MapChooser's vote across random modes needs an admin in game: it's on the in-game Modes page.</p>
+                    <p class="note">A random mode vote needs an admin in game (Modes page).</p>
                 </section>
                 }
 
@@ -300,7 +299,7 @@
                     <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Rounds</h2></div>
                     <div class="row">
                         <span class="label">@(s.Rounds.MatchZyLive ? "Pause (through MatchZy)" : "Pause the match")
-                            <small>@(s.Rounds.Pause == "Pending" ? "Waiting for the next freeze time" : "Takes effect in freeze time")</small></span>
+                            <small>@(s.Rounds.Pause == "Pending" ? "Waiting for freeze time" : "Starts in freeze time")</small></span>
                         <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
                             @switch (s.Rounds.Pause)
                             {
@@ -311,7 +310,7 @@
                         </form>
                     </div>
                     <div class="row">
-                        <span class="label">Timeout <small>@(s.Rounds.TimeoutsByMatchZy ? "During a live MatchZy match, players call timeouts with .tac" : s.Rounds.CanTimeout ? "The team's timeout starts in freeze time" : "Not while paused, in warmup, or with a timeout waiting")</small></span>
+                        <span class="label">Timeout <small>@(s.Rounds.TimeoutsByMatchZy ? "Players call them with .tac during a MatchZy match" : s.Rounds.CanTimeout ? "Starts in freeze time" : "Not while paused, in warmup or with one waiting")</small></span>
                         @if (!s.Rounds.TimeoutsByMatchZy)
                         {
                             @foreach (string team in new[] { "ct", "t" })
@@ -366,7 +365,7 @@
                                     aria-label="@(s.Rounds.Frozen ? "Unfreeze" : "Freeze") players" aria-pressed="@(s.Rounds.Frozen ? "true" : "false")"></button>
                         </form>
                     </div>
-                    <p class="note">End round and Restart match are offered after a setting change that needs them, as in game.</p>
+                    <p class="note">End round and Restart match show after a setting that needs them.</p>
                 </section>
                 }
 
@@ -621,7 +620,7 @@
                         {
                             <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg><span>@(s.Console.Reason ?? "The console isn't available on this server.")</span></div>
                         }
-                        <p class="note">Runs on the server as if typed in its console, through its own RCON on 127.0.0.1. Owner only; every line goes in the audit log. Commands that show or change the server's passwords aren't sent.</p>
+                        <p class="note">Runs as if typed in the server's console. Owner only, and logged. Password commands aren't sent.</p>
                         <div class="console">
                             <div class="con-log" id="con-log-@view.Name" hx-preserve="true" aria-live="polite"></div>
                             <form class="con-form" hx-post="/servers/@Uri.EscapeDataString(view.Name)?handler=Console" hx-target="#con-log-@view.Name" hx-swap="beforeend" hx-disabled-elt="find input">

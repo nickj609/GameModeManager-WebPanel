@@ -30,11 +30,11 @@
     }
     else if (s.Data == null)
     {
-        <p class="note">@Label(server)'s GameModeManager is older than the panel: update it to read the plugins' data.</p>
+        <p class="note">@Label(server)'s GameModeManager is too old for this panel: update it.</p>
     }
     else
     {
-        <p class="note">Plugins' lists come from each plugin's own database, through @Label(server)'s GameModeManager; changes go through the plugins' own commands. Appeals, reports, the chat log and player history are kept by the panel. Everything you change is in the audit log.</p>
+        <p class="note">The lists come from each plugin's own database, and changes use its own commands. Every change is in the audit log.</p>
         <div class="manage">
             <nav class="rail" aria-label="Sections">
                 @foreach (var group in Model.Shown.GroupBy(tab => tab.Group))

@@ -34,8 +34,6 @@
   "Visitor": "Bezoeker",
   "Player": "Speler",
   "Moderator": "Moderator",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Speel direct mee op een server vanaf hier. Log in met Steam om je profiel te zien, of wat je adminrechten toestaan.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Elke server verbindt zelf met het paneel. Een server zonder verbinding toont wat hij het laatst meldde.",
   "{0} playing now": "{0} spelen nu",
   "{0} different players this week": "{0} verschillende spelers deze week",
   "Peak hours {0}": "Spitsuren {0}",
@@ -173,7 +171,6 @@
   "Rules": "Regels",
   "Server rules": "Serverregels",
   "The panel notes each map change from now on.": "Het paneel noteert vanaf nu elke mapwissel.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "Ze gelden op al onze servers. De staf kan optreden bij overtredingen; zie je iemand ze breken? Meld het.",
   "{0} playing now on {1} servers.": "{0} spelen nu op {1} servers.",
   "Leaderboards": "Ranglijsten",
   "Most played": "Meest gespeeld",
@@ -229,7 +226,6 @@
   "the player": "de speler",
   "Do it": "Uitvoeren",
   "Do it?": "Uitvoeren?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "Bannen, muten en gaggen vereisen CS2-SimpleAdmin op de bovenaan gekozen server, en de adminvlag voor elk.",
   "Comments": "Opmerkingen",
   "only staff see these, unless shown": "alleen de staf ziet ze, tenzij getoond",
   "No comments yet.": "Nog geen opmerkingen.",
@@ -380,5 +376,9 @@
   "No replies yet. Staff answer here.": "Nog geen reacties. Het team antwoordt hier.",
   "No replies.": "Geen reacties.",
   "Not yet": "Nog niet",
-  "Report details": "Details van melding"
+  "Report details": "Details van melding",
+  "Join a server from here, or sign in with Steam.": "Doe hier mee met een server, of log in met Steam.",
+  "An offline server shows what it last reported.": "Een offline server toont wat hij het laatst meldde.",
+  "These apply on every server. See someone breaking them? Report it.": "Ze gelden op elke server. Zie je iemand ze breken? Meld het.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Bannen, muten en gaggen vereisen CS2-SimpleAdmin en de bijbehorende adminvlag."
 }

@@ -34,8 +34,6 @@
   "Visitor": "Гость",
   "Player": "Игрок",
   "Moderator": "Модератор",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Заходите на сервер прямо отсюда. Войдите через Steam, чтобы увидеть свой профиль или то, что разрешают ваши права админа.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Каждый сервер сам подключается к панели. Отключённый сервер показывает последнее, что сообщил.",
   "{0} playing now": "Сейчас играют: {0}",
   "{0} different players this week": "Разных игроков за неделю: {0}",
   "Peak hours {0}": "Часы пик {0}",
@@ -173,7 +171,6 @@
   "Rules": "Правила",
   "Server rules": "Правила сервера",
   "The panel notes each map change from now on.": "Панель теперь отмечает каждую смену карты.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "Они действуют на всех наших серверах. Команда может принять меры при нарушении; видите нарушителя? Пожалуйтесь.",
   "{0} playing now on {1} servers.": "{0} играют сейчас на {1} серверах.",
   "Leaderboards": "Таблицы лидеров",
   "Most played": "Больше всего играли",
@@ -229,7 +226,6 @@
   "the player": "игроку",
   "Do it": "Выполнить",
   "Do it?": "Выполнить?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "Для бана, мута и гэга нужен CS2-SimpleAdmin на выбранном сверху сервере и флаг админа для каждого.",
   "Comments": "Комментарии",
   "only staff see these, unless shown": "видит только команда, если не показать",
   "No comments yet.": "Комментариев пока нет.",
@@ -380,5 +376,9 @@
   "No replies yet. Staff answer here.": "Ответов пока нет. Команда ответит здесь.",
   "No replies.": "Ответов нет.",
   "Not yet": "Пока нет",
-  "Report details": "Подробности жалобы"
+  "Report details": "Подробности жалобы",
+  "Join a server from here, or sign in with Steam.": "Заходи на сервер отсюда или войди через Steam.",
+  "An offline server shows what it last reported.": "Офлайн-сервер показывает последнее известное состояние.",
+  "These apply on every server. See someone breaking them? Report it.": "Они действуют на всех серверах. Видишь нарушение? Пожалуйся.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Для бана, мута и гэга нужен CS2-SimpleAdmin и соответствующий флаг админа."
 }

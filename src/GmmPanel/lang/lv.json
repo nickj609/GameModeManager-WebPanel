@@ -34,8 +34,6 @@
   "Visitor": "Apmeklētājs",
   "Player": "Spēlētājs",
   "Moderator": "Moderators",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Pievienojies serverim tieši no šejienes. Piesakies ar Steam, lai redzētu savu profilu vai to, ko atļauj tavas admina tiesības.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Katrs serveris pats pieslēdzas panelim. Nepieslēgts serveris rāda pēdējo ziņoto stāvokli.",
   "{0} playing now": "{0} spēlē tagad",
   "{0} different players this week": "{0} dažādi spēlētāji šonedēļ",
   "Peak hours {0}": "Noslogotākais laiks {0}",
@@ -173,7 +171,6 @@
   "Rules": "Noteikumi",
   "Server rules": "Servera noteikumi",
   "The panel notes each map change from now on.": "Panelis no šī brīža pieraksta katru kartes maiņu.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "Tie attiecas uz visiem mūsu serveriem. Komanda var rīkoties pārkāpumu gadījumā; redzi pārkāpumu? Ziņo par to.",
   "{0} playing now on {1} servers.": "{0} spēlē tagad {1} serveros.",
   "Leaderboards": "Līderu saraksti",
   "Most played": "Visvairāk spēlējuši",
@@ -229,7 +226,6 @@
   "the player": "spēlētājs",
   "Do it": "Izpildīt",
   "Do it?": "Izpildīt?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "Bloķēšanai, apklusināšanai un gag vajag CS2-SimpleAdmin augšā izvēlētajā serverī un katra admina karogu.",
   "Comments": "Komentāri",
   "only staff see these, unless shown": "redz tikai komanda, ja vien nav parādīts",
   "No comments yet.": "Vēl nav komentāru.",
@@ -380,5 +376,9 @@
   "No replies yet. Staff answer here.": "Vēl nav atbilžu. Komanda atbild šeit.",
   "No replies.": "Nav atbilžu.",
   "Not yet": "Vēl nē",
-  "Report details": "Ziņojuma informācija"
+  "Report details": "Ziņojuma informācija",
+  "Join a server from here, or sign in with Steam.": "Pievienojies serverim šeit vai pieslēdzies ar Steam.",
+  "An offline server shows what it last reported.": "Bezsaistes serveris rāda pēdējo ziņoto stāvokli.",
+  "These apply on every server. See someone breaking them? Report it.": "Tie attiecas uz visiem serveriem. Redzi pārkāpumu? Ziņo.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Bloķēšanai, apklusināšanai un tērzēšanas liegumam vajag CS2-SimpleAdmin un atbilstošo admina tiesību."
 }

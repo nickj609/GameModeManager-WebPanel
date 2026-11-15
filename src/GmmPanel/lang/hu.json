@@ -34,8 +34,6 @@
   "Visitor": "Látogató",
   "Player": "Játékos",
   "Moderator": "Moderátor",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Csatlakozz egy szerverhez innen. Jelentkezz be Steammel, hogy lásd a profilodat, vagy amit az admin jogaid engednek.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Minden szerver magától csatlakozik a panelhez. A nem csatlakozó szerver az utolsó jelentését mutatja.",
   "{0} playing now": "{0} játszik most",
   "{0} different players this week": "{0} különböző játékos ezen a héten",
   "Peak hours {0}": "Csúcsidő {0}",
@@ -173,7 +171,6 @@
   "Rules": "Szabályok",
   "Server rules": "Szerver szabályai",
   "The panel notes each map change from now on.": "A panel mostantól feljegyez minden pályaváltást.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "Minden szerverünkön érvényesek. A stáb bármilyen szabálysértésnél közbeléphet; látsz valakit megszegni őket? Jelentsd.",
   "{0} playing now on {1} servers.": "{0} játszik most {1} szerveren.",
   "Leaderboards": "Ranglisták",
   "Most played": "Legtöbbet játszott",
@@ -229,7 +226,6 @@
   "the player": "a játékos",
   "Do it": "Mehet",
   "Do it?": "Mehet?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "A kitiltáshoz, némításhoz és gaghoz CS2-SimpleAdmin kell a fent választott szerveren, és a hozzá tartozó admin flag.",
   "Comments": "Megjegyzések",
   "only staff see these, unless shown": "csak a stáb látja, hacsak nem mutatod",
   "No comments yet.": "Még nincs megjegyzés.",
@@ -380,5 +376,9 @@
   "No replies yet. Staff answer here.": "Még nincs válasz. A stáb itt válaszol.",
   "No replies.": "Nincs válasz.",
   "Not yet": "Még nem",
-  "Report details": "Jelentés részletei"
+  "Report details": "Jelentés részletei",
+  "Join a server from here, or sign in with Steam.": "Csatlakozz egy szerverhez innen, vagy jelentkezz be Steammel.",
+  "An offline server shows what it last reported.": "Az offline szerver a legutóbbi állapotát mutatja.",
+  "These apply on every server. See someone breaking them? Report it.": "Minden szerveren érvényesek. Valaki megszegi őket? Jelentsd.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "A kitiltáshoz, némításhoz és chattiltáshoz CS2-SimpleAdmin és a megfelelő admin jog kell."
 }

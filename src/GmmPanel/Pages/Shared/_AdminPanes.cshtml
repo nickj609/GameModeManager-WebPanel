@@ -20,7 +20,7 @@
     }
     else
     {
-        <p class="note">Changes here last until the server restarts, or until a cfg sets them again. The panel doesn't write cfg files.</p>
+        <p class="note">Lasts until the server restarts or a cfg changes it.</p>
         <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
             <div class="row stack">
                 <span class="label">Hostname <small>The name in the server browser</small></span>
@@ -40,7 +40,7 @@
             </form>
         }
         <div class="row">
-            <span class="label">Connect address <small>@(view.ConnectAddress == null ? "Unknown: set Panel.PublicAddress in GameModeManager.json" : s.Server.Address == null ? "Worked out from where the server connects from; set Panel.PublicAddress if it's wrong" : "What players type after connect in the console")</small></span>
+            <span class="label">Connect address <small>@(view.ConnectAddress == null ? "Set Panel.PublicAddress in GameModeManager.json" : s.Server.Address == null ? "Guessed; set Panel.PublicAddress if it's wrong" : "What players type after connect")</small></span>
             @if (view.ConnectAddress != null)
             {
                 <code class="addr">@view.ConnectAddress</code>
@@ -69,7 +69,7 @@
     }
     else
     {
-        <p class="note">@(owner ? "Load, unload and reload run css_plugins on the server, until it restarts. Plugins that use Harmony (the PMM bridges) need a full server restart instead." : "Loading, unloading and reloading plugins needs @css/root.")</p>
+        <p class="note">@(owner ? "Lasts until the server restarts. Harmony plugins (the PMM bridges) need a full restart." : "Needs @css/root.")</p>
         <div class="scroll">
         @foreach (PluginInfo plugin in s.Plugins.OrderBy(p => p.State switch { "loaded" => 0, "loading" => 1, "unloaded" => 2, "notloaded" => 3, _ => 4 })
             .ThenBy(p => p.Module.Length > 0 ? p.Module : p.Name, StringComparer.OrdinalIgnoreCase))
@@ -79,7 +79,7 @@
             <div class="row plugin-row">
                 <span class="label">@(plugin.Module.Length > 0 ? plugin.Module : plugin.Name)
                     @if (plugin.Version.Length > 0) { <span class="ver">@plugin.Version</span> }
-                    <small>@(plugin.Author.Length > 0 ? $"by {plugin.Author}" : "")@(plugin.Author.Length > 0 && plugin.Description.Length > 0 ? " · " : "")@plugin.Description@(plugin.State == "disabled" ? $" · in plugins/disabled: doesn't load when the server starts" : plugin.Module.Length > 0 && plugin.Module != plugin.Name ? $" · plugins/{plugin.Name}" : "")</small>
+                    <small>@(plugin.Author.Length > 0 ? $"by {plugin.Author}" : "")@(plugin.Author.Length > 0 && plugin.Description.Length > 0 ? " · " : "")@plugin.Description@(plugin.State == "disabled" ? $" · disabled" : plugin.Module.Length > 0 && plugin.Module != plugin.Name ? $" · plugins/{plugin.Name}" : "")</small>
                     @if (integration != null)
                     {
                         <small class="gmm-uses @(loaded ? "" : "idle")"><svg class="ic" aria-hidden="true"><use href="#i-@(loaded ? "ok" : "no")"/></svg>@(loaded ? "GameModeManager uses it" + (integration.Detail.Length > 0 ? $": {integration.Detail}" : "") : "GameModeManager works with it once it's loaded")</small>

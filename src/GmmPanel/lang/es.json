@@ -34,8 +34,6 @@
   "Visitor": "Visitante",
   "Player": "Jugador",
   "Moderator": "Moderador",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Entra a un servidor desde aquí. Inicia sesión con Steam para ver tu perfil o lo que permiten tus permisos de admin.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Cada servidor se conecta al panel por su cuenta. Un servidor desconectado muestra lo último que informó.",
   "{0} playing now": "{0} jugando ahora",
   "{0} different players this week": "{0} jugadores distintos esta semana",
   "Peak hours {0}": "Hora punta {0}",
@@ -173,7 +171,6 @@
   "Rules": "Reglas",
   "Server rules": "Reglas del servidor",
   "The panel notes each map change from now on.": "El panel anota cada cambio de mapa a partir de ahora.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "Se aplican en todos nuestros servidores. El staff puede actuar ante cualquier infracción; ¿ves a alguien incumplirlas? Denúncialo.",
   "{0} playing now on {1} servers.": "{0} jugando ahora en {1} servidores.",
   "Leaderboards": "Clasificaciones",
   "Most played": "Más jugado",
@@ -229,7 +226,6 @@
   "the player": "el jugador",
   "Do it": "Hacerlo",
   "Do it?": "¿Hacerlo?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "Banear, mutear y gag necesitan CS2-SimpleAdmin en el servidor elegido arriba y el flag de admin de cada uno.",
   "Comments": "Comentarios",
   "only staff see these, unless shown": "solo los ve el staff, salvo si se muestran",
   "No comments yet.": "Aún no hay comentarios.",
@@ -380,5 +376,9 @@
   "No replies yet. Staff answer here.": "Aún no hay respuestas. El staff responde aquí.",
   "No replies.": "Sin respuestas.",
   "Not yet": "Aún no",
-  "Report details": "Detalles del reporte"
+  "Report details": "Detalles del reporte",
+  "Join a server from here, or sign in with Steam.": "Únete a un servidor desde aquí o inicia sesión con Steam.",
+  "An offline server shows what it last reported.": "Un servidor desconectado muestra lo último que informó.",
+  "These apply on every server. See someone breaking them? Report it.": "Se aplican en todos los servidores. ¿Ves a alguien incumplirlas? Repórtalo.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Banear, silenciar y amordazar requieren CS2-SimpleAdmin y el permiso de admin correspondiente."
 }

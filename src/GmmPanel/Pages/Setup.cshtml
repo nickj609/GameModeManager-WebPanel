@@ -22,8 +22,7 @@
 @switch (Model.Step)
 {
     case "code":
-        <p class="note">The panel printed a setup code in its log when it started: in its console window, or <code>docker logs gmmpanel</code>.
-            Whoever has it makes the first panel admin, so it never leaves the machine the panel runs on.</p>
+        <p class="note">The panel printed a setup code when it started: in its console, or <code>docker logs gmmpanel</code>.</p>
         <form method="post" asp-page-handler="Code" class="setup-form">
             <label>Setup code<input type="text" name="code" required autocomplete="off" spellcheck="false" maxlength="20" placeholder="XXXXX-XXXXX" autofocus></label>
             <label>Your name<input type="text" name="name" required maxlength="40" placeholder="Shown in the panel and its audit log"></label>
@@ -32,8 +31,7 @@
         break;
 
     case "signin":
-        <p class="note">Sign in with the Steam account that will be the panel admin. A panel admin can do everything, even while every
-            server is offline, and adds the other panel admins. Everyone else's rights come from each server's own admin flags.</p>
+        <p class="note">Sign in with the Steam account that will run the panel. Everyone else gets what their admin flags allow.</p>
         <form method="post" asp-page-handler="Steam">
             <button class="primary big" type="submit">Sign in through Steam</button>
         </form>
@@ -48,7 +46,7 @@
         break;
 
     case "server":
-        <p class="note">Each game server gets its own token. GameModeManager connects out to the panel with it, so the game host opens no port.</p>
+        <p class="note">Each server gets its own token and connects out to the panel, so no ports need opening.</p>
         <form method="post" asp-page-handler="Server" class="setup-form">
             <label>Server name <small>Shown on its tab and card, like Deathmatch #2</small><input type="text" name="name" required maxlength="@GmmPanel.Data.ServerNames.MaxLabel" placeholder="Production" value="@Model.Server"></label>
             <label>Agent address<input type="text" name="agentUrl" required value="@Model.AgentUrl" spellcheck="false">
@@ -66,16 +64,14 @@
         <p class="note">Replace its <code>Panel</code> block (in <code>addons/counterstrikesharp/configs/plugins/GameModeManager/</code>).</p>
         <div class="snippet"><pre id="snip-panel">@panelBlock</pre><button type="button" class="small" data-copy="snip-panel">Copy</button></div>
         <div class="group-title">2. New file panel-secrets.json, next to it</div>
-        <p class="note">Keep it out of git. If Cloudflare Access is in front of the agent address, also add <code>"AccessClientId"</code>
-            and <code>"AccessClientSecret"</code> from Cloudflare: Zero Trust, Access, Service auth, Service tokens (shown once when
-            you create the token).</p>
+        <p class="note">Keep it out of git. Behind Cloudflare Access? Also add <code>"AccessClientId"</code> and <code>"AccessClientSecret"</code>.</p>
         <div class="snippet"><pre id="snip-secrets">@secrets</pre><button type="button" class="small" data-copy="snip-secrets">Copy</button></div>
         <div class="group-title">3. Restart the server or change the map</div>
         <a class="button primary" href="/setup?server=@Uri.EscapeDataString(Model.Server ?? "")">I've done it</a>
         break;
 
     case "wait":
-        <p class="note">GameModeManager connects within a minute of a map change or restart. Its console says <code>[Panel] Connecting to the panel as @Model.Server</code>.</p>
+        <p class="note">It connects within a minute of a map change or restart.</p>
         <div class="setup-wait" hx-get="/setup?handler=Wait&amp;server=@Uri.EscapeDataString(Model.Server ?? "")" hx-trigger="load, every 3s" hx-swap="innerHTML">
             <span class="ind warn">Waiting for the server to connect</span>
         </div>
@@ -84,8 +80,7 @@
 
     case "look":
         var look = Model.Look;
-        <p class="note">Optional: your community's name, logo, colour and a background. Everything here, and more (footer, panel and
-            header colours, a dot pattern, header links, map pictures), is on the <a href="/site">Site settings</a> page later.</p>
+        <p class="note">Your community's name, logo, colour and background. You can change all of it later in <a href="/site">Site settings</a>.</p>
         <form method="post" action="/site?handler=Site" enctype="multipart/form-data" class="setup-form">
             @Html.AntiForgeryToken()
             <label>Community name<input type="text" name="name" maxlength="40" value="@look.Name" placeholder="Example.gg"></label>

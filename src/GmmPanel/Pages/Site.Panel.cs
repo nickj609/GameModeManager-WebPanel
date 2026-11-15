@@ -76,7 +76,7 @@ public partial class SiteModel
             if (problem != null)
                 return Done(problem, failed: true);
             _audit.Write(Admin.Audit, $"backup restored ({restored} files)", null, true, "");
-            return Done($"Restored {restored} files. Settings, servers and admins apply now; restart the panel for reports, notes, tasks and the Discord settings. What was there before is in data\before-restore-*.zip.");
+            return Done($"Restored {restored} files. Restart the panel to finish. The old data is in data\before-restore-*.zip.");
         }
         finally
         {
@@ -188,7 +188,7 @@ public partial class SiteModel
         bool existed = Data.Servers.Any(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase));
         // Adding a name that's taken would replace that server's token and cut it off: each server needs its own name
         if (add && existed)
-            return Done($"There's already a server called {server}. Give this one its own name, like {server}-2 or {server}-EU.", failed: true);
+            return Done($"{server} is taken. Try {server}-2 or {server}-EU.", failed: true);
         NewToken = _store.NewServerToken(server);
         NewTokenServer = server;
         if (add && label.Length > 0 && label != server)
@@ -240,8 +240,8 @@ public partial class SiteModel
         _store.Save(data);
         _audit.Write(Admin.Audit, $"agent address {(url.Length > 0 ? url : "the panel's own")}", null, true, "");
         return Done(url.Length > 0
-            ? "Agent address saved. Open each server's GameModeManager settings below and paste the new Url into its GameModeManager.json; its token stays the same."
-            : "The agent address is the panel's own again.");
+            ? "Saved. Paste each server's new Settings into its GameModeManager.json."
+            : "Saved. Servers connect to the panel's own address.");
     }
 
     public string AgentUrl => GmmSettings.AgentUrl(Data, Request);
