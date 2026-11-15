@@ -868,7 +868,8 @@ td.time { color: var(--muted); white-space: nowrap; }
 .mod-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: 1.2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; }
 .mod-form label input, .mod-form label select { text-transform: none; letter-spacing: 0; }
 /* A field and its button on one line (a server's display name in its Settings pop-up) */
-.inline-form { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; }
+.inline-form { display: flex; gap: 14px; align-items: stretch; margin: 0 0 8px; }
+.inline-form button { flex: none; padding: 0 18px; }
 .inline-form input[type="text"] { flex: 1; min-width: 0; }
 .rail-group { font-size: 11px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; margin: 12px 12px 4px; }
 .rail-group:first-child { margin-top: 2px; }
