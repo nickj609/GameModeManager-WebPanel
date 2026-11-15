@@ -247,25 +247,39 @@
     var dialog = document.getElementById("dlg");
 
     // choices: [{ label, kind: "go" | "danger" | "cancel", run }]. Escape or a click outside is the last (cancel) choice.
+    // One answer and Cancel: both as buttons at the bottom right, like any pop-up. Several answers (a setting's follow-up
+    // question): a list of them, as in game, and Cancel at the bottom right.
     function ask(title, text, choices) {
         if (!dialog || !dialog.showModal) return;
         document.getElementById("dlg-title").textContent = title;
         document.getElementById("dlg-text").textContent = text || "";
         var list = document.getElementById("dlg-choices");
+        var actions = document.getElementById("dlg-actions");
         list.textContent = "";
-        choices.forEach(function (choice) {
+        actions.textContent = "";
+        var answers = choices.filter(function (c) { return c.kind !== "cancel"; });
+        var cancels = choices.filter(function (c) { return c.kind === "cancel"; });
+        function make(choice, className) {
             var button = document.createElement("button");
             button.type = "button";
-            button.className = "dlg-choice " + (choice.kind || "go");
+            button.className = className;
             button.textContent = choice.label;
             button.addEventListener("click", function () {
                 dialog.close();
                 if (choice.run) choice.run();
             });
-            list.appendChild(button);
-        });
+            return button;
+        }
+        var single = answers.length === 1;
+        cancels.forEach(function (c) { actions.appendChild(make(c, "small dlg-cancel")); });
+        if (single)
+            actions.appendChild(make(answers[0], "small " + (answers[0].kind === "danger" ? "danger-solid" : "primary")));
+        else
+            answers.forEach(function (c) { list.appendChild(make(c, "dlg-choice " + (c.kind || "go"))); });
+        list.hidden = single;
+        actions.hidden = actions.children.length === 0;
         dialog.showModal();
-        var first = list.querySelector("button");
+        var first = (single ? actions.lastElementChild : list.querySelector("button"));
         if (first) first.focus();
     }
 

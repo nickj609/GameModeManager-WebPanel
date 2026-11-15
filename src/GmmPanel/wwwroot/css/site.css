@@ -587,6 +587,12 @@ td.time { color: var(--muted); white-space: nowrap; }
 .dlg-text { margin: 0; padding: 16px 20px 6px; color: var(--warm); font-size: 15px; }
 .dlg-text:empty { display: none; }
 .dlg-choices { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px 14px; }
+.dlg-choices[hidden], .dlg-actions[hidden] { display: none; }
+.dlg-actions { justify-content: flex-end; }
+.dlg-actions .dlg-cancel { margin-left: 0; }
+/* A confirm's destructive answer: solid red, the only red in the pop-up */
+button.danger-solid { background: var(--bad); color: #fff; box-shadow: none; }
+button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff); }
 .dlg-choice {
 	position: relative;
 	justify-content: flex-start;
@@ -1464,8 +1470,7 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 .ticket-reply-form textarea { width: 100%; min-height: 0; resize: vertical; }
 .ticket-reply-form small { color: var(--muted); }
 .details-list dd small { margin-left: 6px; }
-.details-links .dlg-close { margin-left: auto; background: var(--bad); color: #fff; box-shadow: none; }
-.details-links .dlg-close:hover { background: color-mix(in srgb, var(--bad) 85%, #fff); }
+.details-links .dlg-close { margin-left: auto; }   /* Close and Cancel: the normal button colour, at the right */
 /* The status on the orange head: the head's own colour, dot included, so every status reads */
 .dlg-head .ind, .dlg-head .ind.off { color: inherit; font-size: 13px; letter-spacing: 1.2px; }
 .dlg-head .ind::before { background: currentColor; box-shadow: none; }
@@ -1741,8 +1746,7 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 .range-row { display: flex; align-items: center; gap: 10px; }
 .range-row input[type="range"] { flex: 1; min-width: 0; }
 .range-row output { min-width: 40px; text-align: right; color: var(--title); font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
-.details-links #details-close { margin-left: auto; background: var(--bad); color: #fff; box-shadow: none; }
-.details-links #details-close:hover { background: color-mix(in srgb, var(--bad) 85%, #fff); }
+
 .details-list { display: grid; grid-template-columns: auto minmax(0, 1fr); margin: 0; padding: 8px 20px 4px; }
 .details-list dt, .details-list dd { padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
 .details-list dt:nth-last-of-type(1), .details-list dd:last-child { border-bottom: 0; }
