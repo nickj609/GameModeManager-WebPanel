@@ -1807,3 +1807,5 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 .switcher-menu { top: calc(100% + (var(--top-height) - 36px) / 2 + 6px); }
 .site-top .search-results { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); }
 .nav-menu-list { top: calc(100% + 7px); }
+/* The bell's list keeps its notification colour, but opens and floats like the other header menus */
+.bell-list { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); border: 1px solid rgb(var(--ink) / 0.12); box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); }
