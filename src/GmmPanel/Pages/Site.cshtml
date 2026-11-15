@@ -186,13 +186,8 @@
 </div>
 
 </section>
-<section class="pane" data-pane="links"><div class="pane-head"><span class="crumb">Look</span><h2>Community links</h2></div>
-<p class="note">Icons in the footer and phone menu, and optionally in a header menu. Links to other sites open in a new tab.</p>
-<form method="post" asp-page-handler="LinksMenu" class="inline-form">
-    <input type="text" name="name" maxlength="20" value="@Model.Data.LinksMenu" placeholder="Community" aria-label="Header menu name">
-    <button type="submit" class="small primary">Save</button>
-</form>
-<p class="note">The header menu's name.</p>
+<section class="pane" data-pane="links"><div class="pane-head"><span class="crumb">Look</span><h2>Social links</h2></div>
+<p class="note">Icons in the footer and at the top of the phone menu. They open in a new tab.</p>
 @for (int i = 0; i < Model.Links.Count; i++)
 {
     var link = Model.Links[i];
@@ -210,7 +205,6 @@
                     @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small">Use the accent</button> }
                 </form>
                 <p class="note">@(link.Color.Length > 0 ? "Its own colour." : "Uses the accent.")</p>
-                <label class="check"><input type="checkbox" name="inHeader" value="true" form="link-form-@i" checked="@link.InHeader"> Show in the header menu</label>
             </div>
             <div class="details-links">
                 <form method="post" asp-page-handler="RemoveLink">
@@ -225,12 +219,56 @@
 }
 <form method="post" asp-page-handler="AddLink" class="mod-form">
     <label>Label<input type="text" name="label" maxlength="24" required placeholder="Discord"></label>
-    <label>Address<input type="text" name="url" maxlength="300" required placeholder="https://discord.gg/... or /rules" spellcheck="false"></label>
+    <label>Address<input type="url" name="url" maxlength="300" required placeholder="https://discord.gg/..."></label>
     <label>Icon<select name="icon">@foreach (string icon in LinkEntry.Icons) { <option value="@icon">@(char.ToUpperInvariant(icon[0]) + icon[1..])</option> }</select></label>
     <button type="submit" class="primary">Add link</button>
 </form>
 
 @* The status widget and the JSON, for the community's website or a Discord bot *@
+</section>
+<section class="pane" data-pane="menu"><div class="pane-head"><span class="crumb">Look</span><h2>Menu links</h2></div>
+<p class="note">Text links in the header, like Skins or VIP. One or two show beside the pages; three or more go in one menu.</p>
+@for (int m = 0; m < Model.Data.MenuLinks.Count; m++)
+{
+    var item = Model.Data.MenuLinks[m];
+    <div class="row">
+        <span class="label">@item.Label <small>@item.Url@(item.NewTab ? " · new tab" : "")</small></span>
+        <button type="button" class="small" data-dlg="menu-dlg-@m">Edit</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="menu-dlg-@m" aria-labelledby="menu-dlg-@m-title">
+            <div class="dlg-head details-head"><span id="menu-dlg-@m-title">@item.Label</span></div>
+            <form method="post" asp-page-handler="MenuLink" class="ticket-section site-grid menu-link-form" id="menu-form-@m">
+                <input type="hidden" name="index" value="@m">
+                <label>Label<input type="text" name="label" maxlength="20" required value="@item.Label"></label>
+                <label>Address<input type="text" name="url" maxlength="300" required value="@item.Url" spellcheck="false"></label>
+                <label class="check wide"><input type="checkbox" name="newTab" value="true" checked="@item.NewTab"> Open in a new tab</label>
+            </form>
+            <div class="details-links">
+                <form method="post" asp-page-handler="RemoveMenuLink">
+                    <input type="hidden" name="index" value="@m">
+                    <button type="submit" class="small danger" data-confirm="@item.Label is removed from the header." data-confirm-title="Remove @item.Label?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                </form>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="menu-form-@m">Save</button>
+            </div>
+        </dialog>
+    </div>
+}
+@if (Model.Data.MenuLinks.Count < MenuLink.Max)
+{
+    <form method="post" asp-page-handler="MenuLink" class="mod-form">
+        <input type="hidden" name="index" value="-1">
+        <label>Label<input type="text" name="label" maxlength="20" required placeholder="Skins"></label>
+        <label>Address<input type="text" name="url" maxlength="300" required placeholder="https://skins.example.gg" spellcheck="false"></label>
+        <label class="check"><input type="checkbox" name="newTab" value="true" checked> Open in a new tab</label>
+        <button type="submit" class="primary">Add link</button>
+    </form>
+}
+<div class="group-title">Menu name</div>
+<form method="post" asp-page-handler="MenuName" class="inline-form">
+    <input type="text" name="name" maxlength="20" value="@Model.Data.MenuName" placeholder="Community" aria-label="Menu name">
+    <button type="submit" class="small primary">Save</button>
+</form>
+<p class="note">Used when there are three or more links, on narrow screens, and in the phone menu.</p>
 </section>
 <section class="pane" data-pane="rules"><div class="pane-head"><span class="crumb">Features</span><h2>Rules</h2></div>
 <p class="note">One rule per line; <code>## </code> starts a section. Markdown works: <code>**bold**</code>, <code>*italic*</code>, <code>[text](https://link)</code>. Leave it empty to hide the <a href="/rules">Rules</a> page.</p>

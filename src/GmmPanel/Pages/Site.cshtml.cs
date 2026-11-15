@@ -17,7 +17,7 @@ public partial class SiteModel : PanelPage
     public sealed record Section(string Id, string Label, string Icon, string Group);
     public static readonly Section[] Sections =
     {
-        new("look", "Site look", "settings", "Look"), new("links", "Community links", "link", "Look"),
+        new("look", "Site look", "settings", "Look"), new("links", "Social links", "link", "Look"), new("menu", "Menu links", "list", "Look"),
         new("backgrounds", "Backgrounds", "image", "Pictures"), new("maps", "Map pictures", "crosshair", "Pictures"),
         new("integrations", "Features", "plugins", "Features"), new("rules", "Rules", "list", "Features"), new("widget", "Status widget", "server", "Features"),
         new("admins", "Panel admins", "shield", "People"), new("permissions", "Permissions", "list", "People"),
@@ -266,20 +266,17 @@ public partial class SiteModel : PanelPage
         url = (url ?? "").Trim();
         if (CommandCatalog.TextProblem(label, 24, "The label", allowEmpty: false) is string bad)
             return Fail(bad);
-        // Another site (https://...) or one of the panel's own pages (/rules)
-        bool local = url.StartsWith('/') && !url.StartsWith("//") && !url.Contains('\\');
-        Uri? uri = null;
-        if (url.Length > 300 || url.Contains('"') || (!local && (!Uri.TryCreate(url, UriKind.Absolute, out uri) || uri.Scheme != "https")))
-            return Fail("The address starts with https://, like https://discord.gg/yourcode, or / for a panel page, like /rules.");
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != "https" || url.Length > 300 || url.Contains('"'))
+            return Fail("The address starts with https://, like https://discord.gg/yourcode.");
         PanelData data = _store.LoadForEdit();
         if (data.Links.Count >= 8)
             return Fail("Up to 8 links: remove one first.");
-        data.Links.Add(new LinkEntry { Label = label, Url = local ? url : uri!.ToString(), Icon = LinkEntry.Icons.Contains(icon ?? "") ? icon! : "link" });
+        data.Links.Add(new LinkEntry { Label = label, Url = uri.ToString(), Icon = LinkEntry.Icons.Contains(icon ?? "") ? icon! : "link" });
         return Saved(data, $"{label} is in the footer.", $"link add {label}", "links");
     }
 
     // A link icon's colour in the footer: one of the owner's own, or back to the site's accent
-    public IActionResult OnPostLinkColor(int index, string? color, string? accent, bool inHeader)
+    public IActionResult OnPostLinkColor(int index, string? color, string? accent)
     {
         if (!Owner)
             return LocalRedirect("/denied");
@@ -290,12 +287,49 @@ public partial class SiteModel : PanelPage
             return Fail("Pick a colour.");
         LinkEntry link = data.Links[index];
         link.Color = accent != null ? "" : color!.ToLowerInvariant();
-        link.InHeader = inHeader;
         return Saved(data, $"{link.Label} is saved.", $"link edit {link.Label}", "links");
     }
 
-    // The header menu's name, for the links shown there
-    public IActionResult OnPostLinksMenu(string? name)
+    // Menu links: text links in the header to other web panels (skins, VIP, a store) or the panel's own pages.
+    // index -1 adds one.
+    public IActionResult OnPostMenuLink(int index, string? label, string? url, bool newTab)
+    {
+        if (!Owner)
+            return LocalRedirect("/denied");
+        label = (label ?? "").Trim();
+        url = (url ?? "").Trim();
+        if (CommandCatalog.TextProblem(label, 20, "The label", allowEmpty: false) is string bad)
+            return Fail(bad);
+        if (MenuUrl(url) is not string clean)
+            return Fail("The address starts with https://, or / for a panel page, like /rules.");
+        PanelData data = _store.LoadForEdit();
+        bool adding = index < 0;
+        if (adding && data.MenuLinks.Count >= MenuLink.Max)
+            return Fail($"Up to {MenuLink.Max} menu links: remove one first.");
+        if (!adding && index >= data.MenuLinks.Count)
+            return Fail("That link isn't there any more.");
+        MenuLink link = adding ? new MenuLink() : data.MenuLinks[index];
+        link.Label = label;
+        link.Url = clean;
+        link.NewTab = newTab;
+        if (adding)
+            data.MenuLinks.Add(link);
+        return Saved(data, adding ? $"{label} is in the menu." : $"{label} is saved.", $"menu link {(adding ? "add" : "edit")} {label}", "menu");
+    }
+
+    public IActionResult OnPostRemoveMenuLink(int index)
+    {
+        if (!Owner)
+            return LocalRedirect("/denied");
+        PanelData data = _store.LoadForEdit();
+        if (index < 0 || index >= data.MenuLinks.Count)
+            return Fail("That link isn't there any more.");
+        string label = data.MenuLinks[index].Label;
+        data.MenuLinks.RemoveAt(index);
+        return Saved(data, $"{label} is removed.", $"menu link remove {label}", "menu");
+    }
+
+    public IActionResult OnPostMenuName(string? name)
     {
         if (!Owner)
             return LocalRedirect("/denied");
@@ -303,8 +337,18 @@ public partial class SiteModel : PanelPage
         if (name.Length > 0 && CommandCatalog.TextProblem(name, 20, "The menu name", allowEmpty: false) is string bad)
             return Fail(bad);
         PanelData data = _store.LoadForEdit();
-        data.LinksMenu = name;
-        return Saved(data, "Menu name saved.", $"links menu {name}", "links");
+        data.MenuName = name;
+        return Saved(data, "Menu name saved.", $"menu name {name}", "menu");
+    }
+
+    // https://... or a panel path (/rules); null for anything else
+    private static string? MenuUrl(string url)
+    {
+        if (url.Length is 0 or > 300 || url.Contains('"') || url.Contains('\\'))
+            return null;
+        if (url.StartsWith('/') && !url.StartsWith("//"))
+            return url;
+        return Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) && uri.Scheme == "https" ? uri.ToString() : null;
     }
 
     public IActionResult OnPostRemoveLink(int index)

@@ -380,6 +380,5 @@
   "Join a server from here, or sign in with Steam.": "Buradan bir sunucuya katıl ya da Steam ile giriş yap.",
   "An offline server shows what it last reported.": "Çevrimdışı sunucu son bildirdiği durumu gösterir.",
   "These apply on every server. See someone breaking them? Report it.": "Her sunucuda geçerlidir. Kuralları çiğneyen birini mi gördün? Şikâyet et.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, susturma ve sohbet engeli için CS2-SimpleAdmin ve ilgili yönetici yetkisi gerekir.",
-  "Opens in a new tab": "Yeni sekmede açılır"
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, susturma ve sohbet engeli için CS2-SimpleAdmin ve ilgili yönetici yetkisi gerekir."
 }

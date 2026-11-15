@@ -13,7 +13,8 @@ public sealed class PanelData
     public string AgentUrl { get; set; } = "";           // Where game servers connect (wss://.../agent), for GameModeManager.json; "" = the panel's own address
     public Dictionary<string, string> Permissions { get; set; } = new();   // Panel area -> admin flag, where it differs from the default (Auth/PanelPermissions.cs)
     public List<LinkEntry> Links { get; set; } = new();
-    public string LinksMenu { get; set; } = "";          // The header menu's name for links shown there; "" = "Community"   // Icons in the header: the community's Discord, website, store ...
+    public List<MenuLink> MenuLinks { get; set; } = new();   // Text links in the header: other web panels (skins, VIP, store) or pages
+    public string MenuName { get; set; } = "";           // The header menu holding them when there are 3 or more; "" = "Community"   // Icons in the header: the community's Discord, website, store ...
     public SiteLook Site { get; set; } = new();          // How the panel looks for everyone (Site settings, panel admins)
     public Retention Retention { get; set; } = new();    // How long the panel keeps its own records (Panel page)
     public Dictionary<string, string> BackgroundNames { get; set; } = new();   // Site settings: a background file's display name in the picker
@@ -103,12 +104,17 @@ public sealed class LinkEntry
     public string Url { get; set; } = "";
     public string Icon { get; set; } = "link";
     public string Color { get; set; } = "";      // #rrggbb for its icon in the footer, or "" for the site's accent
-    public bool InHeader { get; set; }             // Also in the header's menu (Site settings, its Edit pop-up)
-
-    // Another site's page opens in a new tab; one of the panel's own (a path like /rules) in the same tab
-    public bool IsExternal => !Url.StartsWith('/');
 
     public static readonly string[] Icons = { "discord", "globe", "steam", "youtube", "twitch", "store", "heart", "chat", "link" };
+}
+
+// A link in the header's menu (Site settings, Menu links): another site (https://...) or one of the panel's pages (/rules)
+public sealed class MenuLink
+{
+    public const int Max = 6;
+    public string Label { get; set; } = "";
+    public string Url { get; set; } = "";
+    public bool NewTab { get; set; } = true;
 }
 
 public sealed class ServerEntry

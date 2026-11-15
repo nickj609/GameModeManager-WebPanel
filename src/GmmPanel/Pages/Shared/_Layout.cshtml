@@ -71,6 +71,8 @@
     string? avatar = me == null ? null : await Steam.AvatarAsync(me.SteamId);
     string? discord = me == null ? null : Prefs.Discord(me.SteamId);
     var links = Store.Current.Links;
+    var menuLinks = Store.Current.MenuLinks;
+    string menuName = Store.Current.MenuName.Length > 0 ? Store.Current.MenuName : T("Community");
 }
 <!doctype html>
 @{ string siteTheme = SiteLook.ThemeOf(Store.Current.Site.Theme); }
@@ -151,19 +153,24 @@
             {
                 <a href="@link.Href" class="@(link.On ? "on" : "")">@T(link.Label)</a>
             }
+            @if (menuLinks.Count is > 0 and <= 2)
+            {
+                @foreach (var item in menuLinks)
+                {
+                    <a class="nav-extra" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)">@item.Label</a>
+                }
+            }
         </nav>
-        @* The owner's links marked "Show in the header menu" (Site settings, Community links), in one menu after the pages *@
-        @{ var headerLinks = links.Select((l, i) => (Link: l, Index: i)).Where(x => x.Link.InHeader).ToList(); }
-        @if (headerLinks.Count > 0)
+        @* The owner's menu links (Site settings, Menu links): one or two beside the pages on wide screens; three or more, or a
+           narrower window, in one menu named by the owner *@
+        @if (menuLinks.Count > 0)
         {
-            <details class="nav-menu bar-wide" id="nav-menu">
-                <summary>@(Store.Current.LinksMenu.Length > 0 ? Store.Current.LinksMenu : T("Community"))<svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg></summary>
+            <details class="nav-menu bar-wide @(menuLinks.Count <= 2 ? "fold-only" : "")" id="nav-menu">
+                <summary>@menuName<svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg></summary>
                 <div class="nav-menu-list" role="menu">
-                    @foreach (var (link, i) in headerLinks)
+                    @foreach (var item in menuLinks)
                     {
-                        <a role="menuitem" class="nav-menu-item" href="@link.Url" target="@(link.IsExternal ? "_blank" : null)" rel="@(link.IsExternal ? "noopener noreferrer" : null)">
-                            <svg class="ic link-@i" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@link.Label</span>@if (link.IsExternal) { <span class="nav-out" aria-label="@T("Opens in a new tab")">↗</span> }
-                        </a>
+                        <a role="menuitem" class="nav-menu-item" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)">@item.Label</a>
                     }
                 </div>
             </details>
@@ -240,7 +247,7 @@
             @* The community's links (Panel page), as buttons *@
             @if (links.Count > 0)
             {
-                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="@(link.IsExternal ? "_blank" : null)" rel="@(link.IsExternal ? "noopener noreferrer" : null)" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
+                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
             }
             @if (staff && selected != null)
             {
@@ -258,6 +265,15 @@
                 @foreach (var link in community)
                 {
                     <a class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
+                }
+            }
+            @if (menuLinks.Count > 0)
+            {
+                @* Under the same heading when the menu keeps the panel's own "Community" name *@
+                @if (!(community.Count > 0 && menuName == T("Community"))) { <div class="drawer-group">@menuName</div> }
+                @foreach (var item in menuLinks)
+                {
+                    <a class="drawer-link" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)">@item.Label</a>
                 }
             }
             <div class="drawer-group">@T(me == null ? "Panel" : "You")</div>
@@ -316,7 +332,7 @@
                 @for (int i = 0; i < links.Count; i++)
                 {
                     var link = links[i];
-                    <a class="foot-icon link-@i" href="@link.Url" target="@(link.IsExternal ? "_blank" : null)" rel="@(link.IsExternal ? "noopener noreferrer" : null)" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span class="sr">@T(link.Label)</span></a>
+                    <a class="foot-icon link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span class="sr">@T(link.Label)</span></a>
                 }
             </nav>
         }

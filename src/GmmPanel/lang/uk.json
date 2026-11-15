@@ -380,6 +380,5 @@
   "Join a server from here, or sign in with Steam.": "Заходь на сервер звідси або увійди через Steam.",
   "An offline server shows what it last reported.": "Офлайн-сервер показує останній відомий стан.",
   "These apply on every server. See someone breaking them? Report it.": "Вони діють на всіх серверах. Бачиш порушення? Поскаржся.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Для бану, муту й гегу потрібен CS2-SimpleAdmin і відповідний прапорець адміна.",
-  "Opens in a new tab": "Відкриється в новій вкладці"
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Для бану, муту й гегу потрібен CS2-SimpleAdmin і відповідний прапорець адміна."
 }
