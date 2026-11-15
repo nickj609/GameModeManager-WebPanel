@@ -64,7 +64,7 @@
       { "name": "Workshop addon", "found": true, "detail": "listed in mm_extra_addons" }
     ],
     "server": { "hostname": "Example Community | Casual", "address": "203.0.113.10:27015", "port": 27015, "teamCt": "", "teamT": "" },
-    "roster": [ { "steamId": "76561198000000003", "name": "Dev Player", "team": "CT", "score": 12, "kills": 6, "deaths": 3, "ping": 41, "country": "US" } ],
+    "roster": [ { "steamId": "76561198000000003", "name": "Dev Player", "team": "CT", "score": 12, "kills": 6, "assists": 2, "deaths": 3, "ping": 41, "country": "US" } ],
     "plugins": [
       { "name": "GameModeManager", "module": "GameModeManager", "version": "2.4.0", "author": "Striker-Nick", "description": "Game modes, maps and settings", "state": "loaded", "protected": true },
       { "name": "MenuManagerCore", "module": "MenuManagerCore", "version": "1.3.01", "author": "NickFox, RRimmer", "description": "Panorama menus", "state": "loaded", "protected": false },

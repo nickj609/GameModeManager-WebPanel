@@ -169,7 +169,21 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 	inset: 0;
 	z-index: 0;
 	overflow: hidden;
-	background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 60%, var(--bg-low) 100%);
+	/* No picture: a room lit in the accent colour, a glow from the top right corner (and a faint one top left) that shows past the panel, darker sides and bottom, so the dust has light
+	   to catch. Light mode is the same room, brighter */
+	--bg-glow: color-mix(in srgb, var(--accent) 50%, transparent);
+	--bg-base: color-mix(in srgb, var(--accent) 14%, #17140f);
+	--bg-corner: rgb(0 0 0 / 0.8);
+	background:
+		radial-gradient(ellipse 50% 45% at 92% 6%, var(--bg-glow) 0%, transparent 75%),
+		radial-gradient(ellipse 85% 80% at 50% 35%, transparent 15%, var(--bg-corner) 85%),
+		radial-gradient(ellipse 40% 40% at 6% 4%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 75%),
+		var(--bg-base);
+}
+:root[data-theme="light"] .bg {
+	--bg-glow: color-mix(in srgb, var(--accent) 60%, transparent);
+	--bg-base: color-mix(in srgb, var(--accent) 20%, #4f4740);
+	--bg-corner: rgb(0 0 0 / 0.62);
 }
 .bg-still {
 	position: absolute;
@@ -671,7 +685,7 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 #toasts { position: fixed; top: calc(var(--top-height) + 12px); right: 16px; display: flex; flex-direction: column-reverse; gap: 8px; z-index: 70; max-width: calc(100vw - 32px); }
 .toast {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	gap: 10px;
 	width: 360px;
 	max-width: 100%;
@@ -693,7 +707,10 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 @media (prefers-reduced-motion: reduce) {
 	@keyframes toast-in { from { opacity: 0; } }
 }
-.toast img { width: 16px; height: 16px; margin-top: 2px; flex: none; }
+/* The tick and cross keep their shape (the pictures, as masks) and take the theme's green and red */
+.toast-ic { width: 16px; height: 16px; flex: none; -webkit-mask: var(--toast-ic) center / contain no-repeat; mask: var(--toast-ic) center / contain no-repeat; }
+.toast.ok .toast-ic { --toast-ic: url("/img/notify_ok.png"); background: var(--ok); }
+.toast.err .toast-ic { --toast-ic: url("/img/notify_err.png"); background: var(--bad); }
 /* A coloured stripe needs small corners, or it bends round them: 4px, like the notes and tiles */
 .toast.ok { border-left: 3px solid var(--ok); }
 .toast.err { border-left: 3px solid var(--bad); }
@@ -721,8 +738,11 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 
 @media (max-width: 640px) {
 	:root { --top-height: 54px; --foot-height: 44px; }
-	.shell { padding: var(--top-height) 0 calc(var(--foot-height) + 60px); }
+	/* The panel fills the width and runs down to the footer: no strip of background under it, and no background
+	   button (it's the automatic background, the map being played; the picker is for wider screens) */
+	.shell { padding: var(--top-height) 0 var(--foot-height); }
 	.frame { border-radius: 0; min-height: calc(100vh - var(--top-height) - var(--foot-height)); }
+	.bg-picker { display: none; }
 	.frame.narrow { margin-top: 0; }
 	.site-top, .site-foot { padding: 0 12px; gap: 8px; }
 
@@ -1268,9 +1288,10 @@ img.logo-img { max-height: 40px; max-width: 220px; object-fit: contain; display:
 .map-thumb figcaption { padding: 5px 8px; font-size: 12px; color: var(--soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-thumb form { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity 0.15s; }
 .map-thumb:hover form, .map-thumb:focus-within form { opacity: 1; }
-.thumb-delete { width: 28px; height: 28px; padding: 0; justify-content: center; border-radius: 6px; background: #000000b0; }
-.thumb-delete:hover { background: var(--bad); }
-.thumb-delete .ic { width: 14px; height: 14px; margin: 0; }
+/* A bare × over the picture (no box), red on hover */
+.thumb-delete { width: 24px; height: 24px; min-height: 0; padding: 0; justify-content: center; font-size: 22px; line-height: 1; font-weight: 500;
+	color: #fff; background: none !important; box-shadow: none !important; text-shadow: 0 1px 3px rgb(0 0 0 / 0.8), 0 0 8px rgb(0 0 0 / 0.5); }
+.thumb-delete:hover { color: #ff5a4f; }
 .chip { padding: 2px 8px; margin: 2px 4px 2px 0; font-size: 12px; border-radius: 10px; background: var(--row-on); color: var(--soft); text-transform: none; letter-spacing: 0; font-weight: 500; min-height: 0; }
 .chip:hover { background: var(--accent); color: #fff; }
 .map-thumb[hidden] { display: none; }
@@ -1331,7 +1352,15 @@ a.c-card:hover { background: var(--row-on); }
 .spot-thumb.card-art { flex: 0 0 auto; width: 132px; height: 132px; aspect-ratio: 1; border-radius: calc(var(--radius) - 2px); overflow: hidden;
 	display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgb(0 0 0 / calc(0.533 * var(--shadow))); }
 .spot-thumb.card-art::after { display: none; }
-.spot-thumb .thumb-cross { width: 28%; height: 28%; opacity: 0.9; filter: drop-shadow(0 2px 6px rgb(0 0 0 / calc(0.6 * var(--shadow)))); }
+/* No picture: the backdrop's colours (as dim as it looks beside the panel) as one smooth diagonal, lit from the top right */
+.spot-thumb.empty { background: linear-gradient(225deg, color-mix(in srgb, var(--accent) 50%, #17140f) 0%,
+	color-mix(in srgb, var(--accent) 20%, #17140f) 50%, color-mix(in srgb, var(--accent) 6%, #060504) 100%); }
+/* Light mode's backdrop is a brighter room: the tile follows it */
+:root[data-theme="light"] .spot-thumb.empty { background: linear-gradient(225deg, color-mix(in srgb, var(--accent) 58%, #4f4740) 0%,
+	color-mix(in srgb, var(--accent) 22%, #4f4740) 50%, color-mix(in srgb, var(--accent) 8%, #1c1814) 100%); }
+/* The backdrop's dust, drawn by panel.js on a canvas in the tile (still when motion is off) */
+.thumb-dust { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.spot-thumb .thumb-cross { position: relative; z-index: 1; width: 28%; height: 28%; color: #fff; filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.35)); }
 .spot-banner .spot-title h2, .spot-banner .spot-map { text-shadow: none; }
 @media (max-width: 860px) { .spot-thumb.card-art { width: 84px; height: 84px; } .spot-banner .spot-actions { width: 100%; } .spot-banner .spot-actions > .button { flex: 1; justify-content: center; } }
 
@@ -1531,7 +1560,7 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 	background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--text); font-size: 14px; }
 .attention .ic { width: 18px; height: 18px; flex: 0 0 auto; color: var(--warn); }
 .attention-items { display: flex; flex-wrap: wrap; gap: 4px 18px; }
-.attention-items a { color: var(--title); font-weight: 600; text-decoration: none; word-spacing: 0.14em; border-bottom: 1px dashed color-mix(in srgb, var(--warn) 60%, transparent); }
+.attention-items a { color: var(--title); font-weight: 600; text-decoration: none; word-spacing: 0.14em; }
 .attention-items a:hover { color: var(--warn-text); }
 
 .me-strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; margin: -2px 0 14px; border-radius: 4px; background: var(--row); color: inherit; text-decoration: none; border-left: 3px solid var(--accent); }
@@ -1644,6 +1673,7 @@ a.live-name { color: inherit; text-decoration: none; } a.live-name:hover { color
 :root[data-theme="light"] button.danger { box-shadow: 0 1px 2px rgb(0 0 0 / 0.16), inset 0 0 0 1px rgb(0 0 0 / 0.08); }
 :root[data-theme="light"] .switch:not(.on)::after { box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); }
 :root[data-theme="light"] .banner { color: var(--text); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+:root[data-theme="light"] .banner.ok { background: color-mix(in srgb, var(--ok) 14%, transparent); }
 :root[data-theme="light"] .drawer::backdrop { background: rgb(30 30 34 / 0.35); }
 :root[data-theme="light"] .dlg::backdrop { background: rgb(30 30 34 / 0.28); }
 :root[data-theme="light"] .team-ct { color: #2f6fae; }

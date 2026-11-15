@@ -62,6 +62,7 @@ public sealed class RosterEntry
     public int Score { get; set; }                    // The scoreboard (older agents send none: 0)
     public int Kills { get; set; }
     public int Deaths { get; set; }
+    public int? Assists { get; set; }                 // Null from agents that don't send them yet
     public int Ping { get; set; }
     public string? Country { get; set; }              // ISO 3166-1 alpha-2 from the player's IP, looked up by the agent (never the IP itself); null when unknown or off
 }

@@ -8,8 +8,13 @@
     bool fold = steamKey.Length > 0 && Model.Columns.Any(c => c.Key == "name");
     var columns = Model.Columns.Where(c => !(fold && c.Key == steamKey)).ToList();
     if (fold)
-        foreach (string id in Model.Rows.Select(r => r.GetValueOrDefault(steamKey)).OfType<string>().Distinct().Where(id => CommandCatalog.IsSteamId(id) && Steam.KnownAvatar(id) == null).Take(10))
-            _ = Steam.AvatarAsync(id);   // In the background; the next load shows them
+    {
+        // The pictures not known yet, waited on for up to 1.5 s (as on Bans), so the list shows them the first time;
+        // the slow ones show on the next load
+        var missing = Model.Rows.Select(r => r.GetValueOrDefault(steamKey)).OfType<string>().Distinct().Where(id => CommandCatalog.IsSteamId(id) && Steam.KnownAvatar(id) == null).Take(25).Select(id => Steam.AvatarAsync(id)).ToList();
+        if (missing.Count > 0)
+            await Task.WhenAny(Task.WhenAll(missing), Task.Delay(1500));
+    }
     ViewData["SteamLink"] = true;   // _Player links to Steam here: player history is for staff
     // Bans page: a Details button per row opens the whole record in a pop-up (panel.js fills #details-dlg from data-details)
     bool details = ViewData["Details"] as bool? == true;

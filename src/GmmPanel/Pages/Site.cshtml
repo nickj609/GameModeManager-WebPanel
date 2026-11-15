@@ -11,14 +11,33 @@
     <h1>Site settings</h1>
     <p>What everyone sees, and how the panel runs. Your own look is on <a href="/appearance">Appearance</a>.</p>
 </div>
-@if (Model.Message != null)
+@if (Model.Message != null && Model.NewToken == null)
 {
     <div class="banner @(Model.Failed ? "" : "ok")"><svg class="ic" aria-hidden="true"><use href="#i-@(Model.Failed ? "warning" : "ok")"/></svg><span>@Model.Message</span></div>
 }
 @if (Model.NewToken != null)
 {
-    <div class="snippet"><pre id="new-token">@Model.NewToken</pre><button type="button" class="small" data-copy="new-token">Copy</button></div>
-    <p class="note">The token for @Model.NewTokenServer, shown once. Put it in <code>panel-secrets.json</code> as <code>"Token"</code>.</p>
+    @* A new server, or a new token: the steps to connect it, in a pop-up that opens with the page. The token is shown once:
+       the panel keeps only its hash, so a lost one is replaced with New token in the server's Settings. *@
+    string tokenServer = Model.NewTokenServer ?? "";
+    string secrets = "{\n  \"Token\": \"" + Model.NewToken + "\"\n}";
+    <dialog class="dlg details-dlg ticket-dlg" id="token-dlg" data-dlg-open aria-labelledby="token-dlg-title">
+        <div class="dlg-head details-head"><span id="token-dlg-title">Connect @GmmPanel.Data.ServerNames.Label(tokenServer)</span><small class="mono">@tokenServer</small></div>
+        <div class="ticket-section">
+            @if (Model.Message != null) { <p class="note">@Model.Message</p> }
+            <div class="group-title">1. GameModeManager.json</div>
+            <p class="note">Replace its <code>Panel</code> block.</p>
+            <div class="snippet"><pre id="token-panel">@GmmSettings.PanelBlock(Model.AgentUrl, tokenServer)</pre><button type="button" class="small" data-copy="token-panel">Copy</button></div>
+            <div class="group-title">2. panel-secrets.json, next to it</div>
+            <p class="note">Shown once. Lost it? Use New token in its Settings.</p>
+            <div class="snippet"><pre id="token-secrets">@secrets</pre><button type="button" class="small" data-copy="token-secrets">Copy</button></div>
+            <div class="group-title">3. Change the map or restart</div>
+            <p class="note">It shows as online here within a minute.</p>
+        </div>
+        <div class="details-links">
+            <button type="button" class="small primary dlg-close" data-dlg-close>Done</button>
+        </div>
+    </dialog>
 }
 
 @* One section at a time, picked in the rail (panel.js remembers it; a #section link opens it) *@
@@ -182,7 +201,7 @@
             <figcaption>@System.IO.Path.GetFileNameWithoutExtension(file)</figcaption>
             <form method="post" asp-page-handler="DeleteFile">
                 <input type="hidden" name="kind" value="map"><input type="hidden" name="name" value="@file">
-                <button type="submit" class="thumb-delete" title="Delete @file" data-confirm="The picture for @System.IO.Path.GetFileNameWithoutExtension(file) is deleted." data-confirm-title="Delete it?" data-confirm-yes="Delete" data-confirm-danger="true"><svg class="ic" aria-hidden="true"><use href="#i-no"/></svg></button>
+                <button type="submit" class="thumb-delete" title="Delete @file" data-confirm="The picture for @System.IO.Path.GetFileNameWithoutExtension(file) is deleted." data-confirm-title="Delete it?" data-confirm-yes="Delete" data-confirm-danger="true" aria-label="Delete @file">×</button>
             </form>
         </figure>
     }
@@ -323,7 +342,7 @@
             <label class="check feature-check"><input type="checkbox" name="feature-@id" value="true" checked="@Features.On(Model.Store, id)"><span><b>@label</b><small>@what</small></span></label>
         }
     </div>
-    <div class="buttons"><button type="submit" class="primary">Save features</button></div>
+    <div class="buttons"><button type="submit" class="primary">Save</button></div>
 </form>
 
 </section>

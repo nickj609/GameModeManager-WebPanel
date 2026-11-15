@@ -13,3 +13,4 @@ audit.jsonl
 # The owner's own deploy scripts (their live panel), kept on their PC only
 /tools/update-live.ps1
 /tools/install-autostart.ps1
+/tools/update-pi.local.json

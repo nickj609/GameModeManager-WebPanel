@@ -266,13 +266,13 @@ public static class Features
 {
     public static readonly (string Id, string Label, string What)[] All =
     {
-        ("profiles", "Public profiles", "Each player's page (/u/...), linked from names everywhere; players can still hide theirs"),
-        ("reports", "Player reports", "Signed-in players report others; staff answer them under Moderate"),
-        ("appeals", "Ban appeals", "Banned players appeal on My profile; staff answer them under Moderate"),
-        ("rules", "Rules page", "The rules from the Rules section, linked in the footer and on the report form"),
-        ("playtime", "Play-time leaderboards", "Most played, This week and Newest on Stats (from the panel's player history)"),
-        ("countries", "Player countries", "A world map and the top countries on each server's page and on Stats (each player's country from GameModeManager; never their IP)"),
-        ("widget", "Status widget", "The embeddable server card and /status.json for websites and bots")
+        ("profiles", "Public profiles", "A page for each player; they can hide theirs"),
+        ("reports", "Player reports", "Players report others; staff answer in Moderate"),
+        ("appeals", "Ban appeals", "Banned players appeal; staff answer in Moderate"),
+        ("rules", "Rules page", "Linked in the footer and on reports"),
+        ("playtime", "Play-time leaderboards", "Most played, This week and Newest on Stats"),
+        ("countries", "Player countries", "A world map on server pages and Stats; never IPs"),
+        ("widget", "Status widget", "A server card and /status.json for websites")
     };
 
     public static bool On(PanelData data, string id) => !data.Integrations.TryGetValue("feature:" + id, out bool on) || on;

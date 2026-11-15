@@ -25,9 +25,18 @@
     } catch (e) { }
     var key = "gmm.look";
 
-    function read() {
+    // Older versions saved every value, the untouched ones at the built-in starting look: those are read as unset, so the
+    // site's look (Site settings) applies to them again
+    var builtIn = { accent: "#d4801a", warn: "#ef5350", glass: 0.88, blur: 16, bars: 0.94, dim: 0.05, pattern: "", pstrength: 6 };
+    function stored() {
         var look = {};
         try { look = JSON.parse(window.localStorage.getItem(key) || "{}") || {}; } catch (e) { look = {}; }
+        Object.keys(builtIn).forEach(function (name) { if (look[name] === builtIn[name]) delete look[name]; });
+        return look;
+    }
+
+    function read() {
+        var look = stored();
         var result = {};
         Object.keys(defaults).forEach(function (name) { result[name] = look[name] === undefined ? defaults[name] : look[name]; });
         return result;
@@ -95,8 +104,17 @@
         root.setProperty("--pattern-a", String(look.pstrength / 100));
     }
 
+    // Only what the viewer changed from the site's look is kept, so the rest follows Site settings when an admin changes it
     function save(look) {
-        try { window.localStorage.setItem(key, JSON.stringify(look)); } catch (e) { }
+        var own = {};
+        Object.keys(defaults).forEach(function (name) {
+            var mine = look[name], site = defaults[name];
+            if (typeof mine === "string" && typeof site === "string" ? mine.toLowerCase() !== site.toLowerCase() : mine !== site) own[name] = mine;
+        });
+        try {
+            if (Object.keys(own).length) window.localStorage.setItem(key, JSON.stringify(own));
+            else window.localStorage.removeItem(key);
+        } catch (e) { }
         html.setAttribute("data-theme", theme());
         apply(look);
     }

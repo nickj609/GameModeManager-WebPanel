@@ -115,7 +115,7 @@ public class ProfileModel : PanelPage
         {
             Done("Appeal sent. Staff answer it here.");
             _audit.Write(Admin.Audit, "appeal sent", null, true, "");
-            _discord.Ticket("New ban appeal", $"**{Admin.Name}** ({Admin.SteamId}): {text}");
+            _discord.Ticket("New ban appeal", Admin.Name, Admin.SteamId, text);
             TempData["Sent"] = Message;
             return RedirectToPage(null, null, null, "tickets");
         }
@@ -139,7 +139,7 @@ public class ProfileModel : PanelPage
         else
         {
             _audit.Write(Admin.Audit, $"{ticket.Kind} reply", null, true, ticket.Id);
-            _discord.Ticket(ticket.Kind == "appeal" ? "Reply on a ban appeal" : "Reply on a report", $"**{Admin.Name}** ({Admin.SteamId}): {text}");
+            _discord.Ticket(ticket.Kind == "appeal" ? "Reply on a ban appeal" : "Reply on a report", Admin.Name, Admin.SteamId, text);
             TempData["Sent"] = "Reply sent.";
             return RedirectToPage(null, null, null, "tickets");
         }

@@ -80,7 +80,7 @@ public class ReportModel : PanelPage
             return Page();
         }
         _audit.Write(Admin.Audit, $"report sent about {target}", server, true, "");
-        _discord.Ticket("New player report", $"**{Admin.Name}** reported **{(name.Length > 0 ? name : target)}** ({target}) on {server}: {text}");
+        _discord.Ticket("New player report", Admin.Name, Admin.SteamId, text, server, name.Length > 0 ? name : target, target);
         TempData["Sent"] = "Report sent. Thanks: staff will look at it.";
         return Redirect("/profile#tickets");
     }
