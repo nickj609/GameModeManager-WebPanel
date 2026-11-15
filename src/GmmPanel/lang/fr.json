@@ -380,5 +380,6 @@
   "Join a server from here, or sign in with Steam.": "Rejoins un serveur d'ici, ou connecte-toi avec Steam.",
   "An offline server shows what it last reported.": "Un serveur hors ligne montre son dernier état.",
   "These apply on every server. See someone breaking them? Report it.": "Elles s'appliquent sur tous les serveurs. Quelqu'un les enfreint ? Signale-le.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Bannir, rendre muet et bâillonner nécessitent CS2-SimpleAdmin et le droit admin correspondant."
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Bannir, rendre muet et bâillonner nécessitent CS2-SimpleAdmin et le droit admin correspondant.",
+  "Move": "Déplacer"
 }

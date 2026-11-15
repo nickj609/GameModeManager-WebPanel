@@ -351,9 +351,12 @@
             <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
             <input type="search" name="q" id="palette-input" placeholder="@T("Search pages, servers, players")" autocomplete="off" spellcheck="false" maxlength="64" aria-label="@T("Search pages, servers and players")"
                    hx-get="/search" hx-trigger="input changed delay:250ms, focus" hx-target="#search-results" hx-swap="innerHTML">
-            <kbd>Esc</kbd>
         </div>
         <div class="palette-results" id="search-results" role="listbox"></div>
+        <div class="palette-keys" aria-hidden="true">
+            <span><kbd>↑</kbd><kbd>↓</kbd> @T("Move")</span><span><kbd>Enter</kbd> @T("Open")</span><span><kbd>Esc</kbd> @T("Close")</span>
+            <span class="palette-open"><kbd>Ctrl</kbd><kbd>K</kbd> @T("Search")</span>
+        </div>
     </dialog>
 
     @* The choice dialog, styled like GameModeManager's in-game questions ("Changes need a match restart") *@

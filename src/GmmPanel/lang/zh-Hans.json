@@ -380,5 +380,6 @@
   "Join a server from here, or sign in with Steam.": "从这里加入服务器，或用 Steam 登录。",
   "An offline server shows what it last reported.": "离线服务器显示其最后报告的状态。",
   "These apply on every server. See someone breaking them? Report it.": "适用于所有服务器。看到有人违反？请举报。",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "封禁、禁麦和禁言需要 CS2-SimpleAdmin 及相应的管理员权限。"
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "封禁、禁麦和禁言需要 CS2-SimpleAdmin 及相应的管理员权限。",
+  "Move": "移动"
 }

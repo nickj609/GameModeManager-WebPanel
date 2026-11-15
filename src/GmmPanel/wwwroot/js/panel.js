@@ -818,10 +818,25 @@
         box.addEventListener("keydown", function (event) {
             // A search box's first Escape only clears its text: here it closes the pop-up straight away
             if (event.key === "Escape") { event.preventDefault(); dialog.close(); return; }
-            if (event.key === "Enter") {
-                var first = document.querySelector("#search-results .search-hit");
-                if (first) { event.preventDefault(); location.href = first.getAttribute("href"); }
+            // Up and Down pick a result (the first is picked as results arrive); Enter opens the picked one
+            var hits = [].slice.call(document.querySelectorAll("#search-results .search-hit"));
+            var at = hits.findIndex(function (h) { return h.classList.contains("on"); });
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                if (!hits.length) return;
+                event.preventDefault();
+                at = event.key === "ArrowDown" ? Math.min(hits.length - 1, at + 1) : Math.max(0, at - 1);
+                hits.forEach(function (h, i) { h.classList.toggle("on", i === at); });
+                hits[at].scrollIntoView({ block: "nearest" });
             }
+            if (event.key === "Enter") {
+                var pick = hits[at >= 0 ? at : 0];
+                if (pick) { event.preventDefault(); location.href = pick.getAttribute("href"); }
+            }
+        });
+        document.addEventListener("htmx:afterSwap", function (event) {
+            if (event.target.id !== "search-results") return;
+            var first = event.target.querySelector(".search-hit");
+            if (first) first.classList.add("on");
         });
     })();
 

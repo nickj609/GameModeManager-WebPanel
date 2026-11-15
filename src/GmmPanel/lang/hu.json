@@ -380,5 +380,6 @@
   "Join a server from here, or sign in with Steam.": "Csatlakozz egy szerverhez innen, vagy jelentkezz be Steammel.",
   "An offline server shows what it last reported.": "Az offline szerver a legutóbbi állapotát mutatja.",
   "These apply on every server. See someone breaking them? Report it.": "Minden szerveren érvényesek. Valaki megszegi őket? Jelentsd.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "A kitiltáshoz, némításhoz és chattiltáshoz CS2-SimpleAdmin és a megfelelő admin jog kell."
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "A kitiltáshoz, némításhoz és chattiltáshoz CS2-SimpleAdmin és a megfelelő admin jog kell.",
+  "Move": "Mozgatás"
 }
