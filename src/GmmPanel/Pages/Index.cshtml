@@ -1,0 +1,122 @@
+@page "/"
+@model IndexModel
+@inject SiteTheme Theme
+@{
+    ViewData["Title"] = "Servers";
+    bool you = Model.Viewer != null && (Model.Me != null || Model.MyOpen.Count > 0);
+    bool attention = Model.OpenAppeals > 0 || Model.OpenReports > 0 || Model.Offline > 0;
+}
+@* Top to bottom: what staff need to do (only when there's something), the player's own strip, the community's numbers,
+   the servers, then signs of life and one card for whoever's looking. *@
+<div class="page-title">
+    <div class="eyebrow">@Theme.Brand</div>
+    <h1>@T("Servers")</h1>
+    <p>@T(Model.Viewer == null ? "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow." : "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.")</p>
+</div>
+
+@* Staff: a heads-up only when something waits, each part a link to where it's answered *@
+@if (attention)
+{
+    <div class="attention" role="status">
+        <svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg>
+        <span class="attention-items">
+            @if (Model.OpenReports > 0) { <a href="/moderate#reports">@N(Model.OpenReports, "{0} open report", "{0} open reports")</a> }
+            @if (Model.OpenAppeals > 0) { <a href="/moderate#appeals">@N(Model.OpenAppeals, "{0} open appeal", "{0} open appeals")</a> }
+            @if (Model.Offline > 0) { <span>@F("Offline: {0}", string.Join(", ", Model.OfflineNames))</span> }
+        </span>
+    </div>
+}
+
+@* The player's own strip: who they are on the servers at a glance *@
+@if (you)
+{
+    <a class="me-strip" href="/profile">
+        @if (Model.MyAvatar != null) { <img class="avatar" src="@Model.MyAvatar" alt="" width="40" height="40" referrerpolicy="no-referrer"> }
+        else { <span class="avatar letter">@(Model.Viewer!.Name.Length > 0 ? char.ToUpperInvariant(Model.Viewer.Name[0]) : '?')</span> }
+        <span class="me-name">@Model.Viewer!.Name</span>
+        <span class="me-facts">
+            @if (Model.Me != null)
+            {
+                <span><small>@T("Played")</small><b>@Format.Hours(Model.MyPlayed)</b></span>
+                <span><small>@T(Model.MyServer != null ? "Playing" : "Last on")</small><b>@(Model.MyServer ?? Format.Ago(Model.Me.LastSeen))</b></span>
+            }
+            @foreach (var t in Model.MyOpen) { <span class="waiting"><small>@T(t.Kind == "appeal" ? "Your appeal" : "Your report")</small><b>@T("Waiting")</b></span> }
+        </span>
+    </a>
+}
+
+@* How busy the community is: one line for everyone *@
+<div class="stats-line"><svg class="ic" aria-hidden="true"><use href="#i-players"/></svg>
+    <span>@F("{0} playing now", Model.Online)</span>
+    @if (Model.Week > 0) { <span>@F("{0} different players this week", Model.Week)</span> }
+    @if (Model.BusyHours != null) { <span>@F("Peak hours {0}", Model.BusyHours)</span> }
+</div>
+
+@* The server tabs (one per server, by name; a mode filter once there are several modes), then the picked server *@
+@{ var modes = Model.Servers.Select(v => v.Status?.Mode.Label).Where(m => !string.IsNullOrEmpty(m)).Distinct().Order().ToList(); }
+@if (modes.Count > 1)
+{
+    <form class="card-filter" data-card-filter aria-label="@T("Find a server")">
+        <select name="mode" aria-label="@T("Mode")"><option value="">@T("Every mode")</option>@foreach (var m in modes) { <option value="@m">@m</option> }</select>
+        <label class="check"><input type="checkbox" name="players"> @T("With players")</label>
+    </form>
+}
+<div class="carousel" data-carousel>
+    <button type="button" class="car-btn prev" data-car="-1" aria-label="@T("Earlier servers")"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4.5 7.5 12l7.5 7.5"/></svg></button>
+    <div id="servers" hx-get="/?handler=List" hx-trigger="every 10s" hx-swap="innerHTML">
+        <partial name="_ServerStrip" model="Model" />
+    </div>
+    <button type="button" class="car-btn next" data-car="1" aria-label="@T("More servers")"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 16.5 12 9 19.5"/></svg></button>
+</div>
+<div id="spot">
+    <partial name="_Spotlight" model="Model" />
+</div>
+
+@* Signs of life across every server, and one card for whoever's looking *@
+<div class="community">
+    @if (Model.NewFaces.Count > 0)
+    {
+        <section class="c-card">
+            <div class="k">@T("New this week")</div>
+            <div class="v">@N(Model.NewFaces.Count, "{0} new player", "{0} new players")</div>
+            <div class="faces">@foreach (var p in Model.NewFaces.Latest) { var pic = Model.AvatarOf(p.SteamId); if (pic != null) { <a href="/u/@p.SteamId"><img class="avatar small" src="@pic" alt="@p.Name" title="@p.Name" referrerpolicy="no-referrer"></a> } else { <a href="/u/@p.SteamId" class="avatar small letter" title="@p.Name">@(p.Name.Length > 0 ? char.ToUpperInvariant(p.Name[0]) : '?')</a> } }</div>
+        </section>
+    }
+    @if (Model.Regulars.Count == 0 && Model.NewFaces.Count > 0)
+    {
+        @* Kept in place (with a line) once the servers have players, so the row doesn't jump about *@
+        <section class="c-card">
+            <div class="k">@T("Regulars this week")</div>
+            <div class="c-sub">@T("Nobody has played long enough this week yet.")</div>
+        </section>
+    }
+    @if (Model.Regulars.Count > 0)
+    {
+        <section class="c-card">
+            <div class="k">@T("Regulars this week")</div>
+            @foreach (var (p, seconds) in Model.Regulars)
+            {
+                var regPic = Model.AvatarOf(p.SteamId);
+                <div class="reg-row">@if (regPic != null) { <img class="avatar small" src="@regPic" alt="" width="28" height="28" referrerpolicy="no-referrer"> } else { <span class="avatar small letter">@(p.Name.Length > 0 ? char.ToUpperInvariant(p.Name[0]) : '?')</span> }<a class="live-name" href="/u/@p.SteamId">@p.Name</a><span class="live-time">@Format.Hours(seconds)</span></div>
+            }
+        </section>
+    }
+    @if (Model.Viewer == null)
+    {
+        <a class="c-card cta" href="/signin">
+            <svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>
+            <div class="k">@T("Your stats")</div>
+            <div class="v">@T("Sign in with Steam")</div>
+            <div class="c-sub">@T("See your play time and report players.")</div>
+        </a>
+    }
+    else if (Model.Discord != null)
+    {
+        <a class="c-card cta discord" href="@Model.Discord" target="_blank" rel="noopener noreferrer">
+            <svg class="ic" aria-hidden="true"><use href="#i-discord"/></svg>
+            <div class="k">@T("Community")</div>
+            <div class="v">@T("Join our Discord")</div>
+            <div class="c-sub">@T("Chat, events, and help from staff.")</div>
+        </a>
+    }
+</div>

@@ -1,0 +1,18 @@
+@page "/error"
+@{
+    ViewData["Title"] = "Error";
+    ViewData["Narrow"] = true;
+    string? code = Request.Query["code"];
+    string text = code switch
+    {
+        "404" => "There's nothing at that address.",
+        "429" => "Too many requests. Wait a minute and try again.",
+        "400" => "The panel couldn't read that request. Reload the page and try again.",
+        _ => "Something went wrong in the panel. It's been logged."
+    };
+}
+<h2 class="menu-heading">@(code ?? "Error")</h2>
+<div class="center-box">
+    <p>@text</p>
+    <a class="button" href="/">Back to servers</a>
+</div>

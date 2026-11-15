@@ -1,0 +1,33 @@
+# systemd unit for the linux-arm64 file, if the Pi runs it without Docker.
+#   sudo useradd --system --home /opt/gmmpanel --shell /usr/sbin/nologin gmmpanel
+#   sudo install -d -o gmmpanel -g gmmpanel -m 700 /opt/gmmpanel /opt/gmmpanel/data
+#   sudo install -o root -g root -m 755 gmmpanel /opt/gmmpanel/gmmpanel
+#   sudo cp gmmpanel.service /etc/systemd/system/ && sudo systemctl enable --now gmmpanel
+#   sudo -u gmmpanel /opt/gmmpanel/gmmpanel admin add <SteamID64> owner <name>
+# cloudflared runs as its own service (cloudflared service install <token>) and points at http://127.0.0.1:5080.
+
+[Unit]
+Description=GameModeManager web panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=gmmpanel
+Group=gmmpanel
+WorkingDirectory=/opt/gmmpanel
+ExecStart=/opt/gmmpanel/gmmpanel
+Environment=Panel__DataDirectory=/opt/gmmpanel/data
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/gmmpanel/data
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

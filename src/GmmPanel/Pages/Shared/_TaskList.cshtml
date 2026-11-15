@@ -1,0 +1,42 @@
+@model TasksModel
+@* The schedule: what, where, when it runs next, and what happened last time. Pause, resume or delete your own (panel
+   admins: any). *@
+<div class="group-title">Scheduled <small>panel time</small></div>
+@if (Model.List.Count == 0)
+{
+    <div class="empty">Nothing scheduled. Pick "Every day" or "Every few minutes" above, for a nightly mode change or an announcement.</div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="data">
+            <thead><tr><th>Task</th><th>Servers</th><th>When</th><th>Next</th><th>Last time</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var job in Model.List)
+            {
+                var kind = GmmPanel.Data.TaskKinds.Find(job.Kind);
+                <tr>
+                    <td>@(kind == null ? job.Kind : GmmPanel.Data.TaskKinds.Describe(kind, job.Fields))<br><small class="muted">by @job.ByName@(job.OnlyWithPlayers ? " · only with players" : "")</small></td>
+                    <td>@Model.ServersText(job)</td>
+                    <td>@GmmPanel.Data.Jobs.Schedule(job)</td>
+                    <td class="time">@(job.Paused ? "Paused" : job.Next?.ToLocalTime().ToString("d MMM HH:mm") ?? (job.LastRun != null ? "Done" : "Missed"))</td>
+                    <td class="task-last">@(job.LastRun == null && job.LastResult.Length == 0 ? "Not yet" : $"{job.LastRun?.ToLocalTime():d MMM HH:mm} {job.LastResult}")</td>
+                    <td class="acts">
+                        @if (Model.CanChange(job))
+                        {
+                            <form class="row-act" hx-post="/tasks?handler=Job" hx-target="#jobs" hx-swap="innerHTML">
+                                <input type="hidden" name="id" value="@job.Id">
+                                @if (job.Next != null || job.Paused)
+                                {
+                                    <button type="submit" class="small" name="act" value="@(job.Paused ? "resume" : "pause")">@(job.Paused ? "Resume" : "Pause")</button>
+                                }
+                                <button type="submit" class="small danger" name="act" value="delete" data-confirm="It won't run again." data-confirm-title="Delete this task?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

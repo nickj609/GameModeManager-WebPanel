@@ -1,0 +1,20 @@
+@model ServerModel
+@* One console exchange: the line as typed, then the server's reply (or why it wasn't sent). Razor escapes both. *@
+<div class="con-entry">
+    <div class="con-cmd"><span class="con-prompt">&gt;</span> @Model.ConsoleLine</div>
+    @if (Model.ConsoleResult is { } result)
+    {
+        if (!result.Ok)
+        {
+            <pre class="con-out con-err">@result.Message</pre>
+        }
+        else if (string.IsNullOrEmpty(result.Output))
+        {
+            <pre class="con-out con-dim">(no output)</pre>
+        }
+        else
+        {
+            <pre class="con-out">@result.Output</pre>
+        }
+    }
+</div>

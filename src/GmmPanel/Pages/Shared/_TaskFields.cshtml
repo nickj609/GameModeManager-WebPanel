@@ -1,0 +1,39 @@
+@model TasksModel
+@* The chosen task's fields, with every choice the ticked servers offer between them (a server without it says so) *@
+@{
+    var kind = GmmPanel.Data.TaskKinds.Find(Model.Kind)!;
+}
+@switch (kind.Id)
+{
+    case "mode":
+    case "nextmode":
+        <label>Mode<select name="mode">@foreach (var m in Model.Modes) { <option value="@m.Name">@m.Label</option> }</select></label>
+        break;
+    case "map":
+        <label>Map<select name="map">@foreach (var m in Model.Maps) { <option value="@m.Name">@m.Label</option> }</select></label>
+        break;
+    case "setting":
+        <label>Setting<select name="setting">@foreach (var s in Model.Settings) { <option value="@s.Name">@s.Label</option> }</select></label>
+        <label>Turn it<select name="on"><option value="true">On</option><option value="false">Off</option></select></label>
+        break;
+    case "value":
+        @if (Model.Values.Count == 0) { <p class="note">None of these servers has a setting with values.</p> }
+        else { <label class="wide">Setting and value<select name="pick">@foreach (var (value, label) in Model.Values) { <option value="@value">@label</option> }</select></label> }
+        break;
+    case "action":
+        <label>Action<select name="action">@foreach (var a in Model.Actions) { <option value="@a.Name">@a.Label</option> }</select></label>
+        break;
+    case "rotation":
+        <label>Rotation setting<select name="rotation">@foreach (var (value, label) in Model.Rotation) { <option value="@value">@label</option> }</select></label>
+        <label class="check"><input type="checkbox" name="save" value="true"> Also save in GameModeManager.json <small>so it lasts after a restart; needs @@css/config</small></label>
+        break;
+    case "say":
+        <label class="wide">Message <small>as the server, in every player's chat; up to 160 characters</small><input type="text" name="text" maxlength="160" placeholder="Join our Discord: discord.gg/..."></label>
+        break;
+    case "console":
+        <label class="wide">Command <small>needs @@css/rcon on each server; never passwords</small><input type="text" name="line" maxlength="512" spellcheck="false" class="mono" placeholder="mp_restartgame 1"></label>
+        break;
+    default:
+        <p class="note">Nothing to choose: it restarts the match on each ticked server.</p>
+        break;
+}

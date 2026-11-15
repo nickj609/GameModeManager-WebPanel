@@ -1,0 +1,52 @@
+# The panel and cloudflared side by side, for the Raspberry Pi (or any Docker host). Nothing is published on the host:
+# cloudflared dials out to Cloudflare and reaches the panel on the private network below.
+#
+#   1. Copy this file and .env.example (as .env) to a folder on the Pi, and put the tunnel token in .env.
+#   2. docker compose up -d
+#   3. docker compose run --rm panel admin add <SteamID64> owner <name>
+#   4. docker compose run --rm panel token new Production
+#
+# Updates (a new panel release or a .NET patch): docker compose pull && docker compose up -d
+
+name: gmm-panel
+
+services:
+  panel:
+    image: ghcr.io/nickj609/gmm-webpanel:0
+    restart: unless-stopped
+    environment:
+      # Only cloudflared, on this network, may say who the visitor is
+      Panel__TrustedProxies__0: 172.31.250.0/24
+      AllowedHosts: ${PANEL_HOSTNAME};${AGENT_HOSTNAME}
+    volumes:
+      - panel-data:/data
+    networks:
+      - panel
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # Cloudflare ships fixes often; "latest" plus the weekly pull keeps it current
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    networks:
+      - panel
+    depends_on:
+      - panel
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  panel-data:
+
+networks:
+  panel:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24

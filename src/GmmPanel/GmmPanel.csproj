@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>gmmpanel</AssemblyName>
+    <RootNamespace>GmmPanel</RootNamespace>
+    <Version>0.1.0</Version>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- A single file needs the static files next to it, so wwwroot is embedded instead -->
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exact version: Dependabot proposes updates. 11.x needs .NET 11. -->
+    <PackageReference Include="AspNet.Security.OpenId.Steam" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.0" />
+    <!-- The Steam sign-in uses AngleSharp to read Steam's discovery page. Its own pick (1.3.0) has GHSA-pgww-w46g-26qg,
+         fixed in 1.5.0. The panel never sanitises HTML with it, but this keeps the build free of known CVEs. -->
+    <PackageReference Include="AngleSharp" Version="1.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\**\*" />
+    <!-- The languages (lang/<code>.json), read by Data/Lang.cs -->
+    <EmbeddedResource Include="lang\*.json" LogicalName="lang.%(Filename).json" />
+    <Content Update="wwwroot\**\*" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+</Project>

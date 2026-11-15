@@ -1,0 +1,5 @@
+@model CommandResult
+<div class="toast @(Model.Ok ? "ok" : "err")" role="status">
+    <img src="/img/@(Model.Ok ? "notify_ok" : "notify_err").png" alt="">
+    <span>@(string.IsNullOrWhiteSpace(Model.Message) ? (Model.Ok ? "Done." : "Refused.") : Model.Message)</span>
+</div>

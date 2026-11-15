@@ -1,0 +1,133 @@
+@model ModerateModel
+@inject GmmPanel.Auth.SteamProfile Steam
+@{
+    CommandResult? result = Model.Result;
+    DataPage? data = result?.Data;
+    DataList? list = Model.List;
+
+    string q = Uri.EscapeDataString(Model.Server ?? "");
+    string steamKey = data?.Columns.FirstOrDefault(c => c.Kind == "steamid")?.Key ?? "";
+    var rowActions = list?.Actions.Where(a => a.Row && Model.CanDo(a)).ToList() ?? new();
+    // A list with names and SteamIDs shows the player as their Steam picture and name (the SteamID on hover), not a SteamID column
+    bool fold = steamKey.Length > 0 && data!.Columns.Any(c => c.Key == "name");
+    var columns = data?.Columns.Where(c => !(fold && c.Key == steamKey)).ToList() ?? new();
+    if (fold)
+        foreach (string id in data!.Rows.Select(r => r.GetValueOrDefault(steamKey)).OfType<string>().Distinct().Where(id => CommandCatalog.IsSteamId(id) && Steam.KnownAvatar(id) == null).Take(10))
+            _ = Steam.AvatarAsync(id);   // In the background; the next refresh shows them
+    // Appeals and reports: each row opens its own page (the full text, comments and the answer)
+    bool tickets = Model.Source?.Id == PanelLists.Id && list?.Id is "appeals" or "reports";
+    int pages = data == null ? 1 : Math.Max(1, (data.Total + data.PageSize - 1) / data.PageSize);
+
+    string PageUrl(int page) => $"/moderate?handler=List&server={q}&source={Uri.EscapeDataString(Model.Source?.Id ?? "")}&list={Uri.EscapeDataString(list?.Id ?? "")}" +
+        $"&page={page}&search={Uri.EscapeDataString(Model.Search)}&filter={Uri.EscapeDataString(Model.Filter)}";
+
+    static string StatusClass(string? value) => (value ?? "").ToUpperInvariant() switch
+    {
+        "ACTIVE" => "bad",
+        "OPEN" => "warn",
+        "UNBANNED" or "UNMUTED" or "REMOVED" or "ACCEPTED" or "ONLINE" => "ok",
+        "EXPIRED" => "off",
+        _ => "off"
+    };
+}
+@if (result == null || !result.Ok || data == null)
+{
+    <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg><span>@(result?.Message ?? "Couldn't read the list.")</span></div>
+}
+else if (data.Rows.Count == 0)
+{
+    <div class="empty">@(Model.Search.Length > 0 ? $"Nothing matches \"{Model.Search}\"." : "Nothing here.")</div>
+}
+else
+{
+    <div class="table-wrap scroll">
+        <table class="data">
+            <thead><tr>
+                @foreach (DataColumn column in columns)
+                {
+                    <th>@column.Label</th>
+                }
+                @if (rowActions.Count > 0 || tickets) { <th></th> }
+            </tr></thead>
+            <tbody>
+            @foreach (var row in data.Rows)
+            {
+                <tr>
+                    @foreach (DataColumn column in columns)
+                    {
+                        string? value = row.GetValueOrDefault(column.Key);
+                        if (tickets && column.Key == "text") { <td class="ticket-cell"><a href="/tickets/@row.GetValueOrDefault("id")">@value</a></td> continue; }
+                        if (fold && column.Key == "name") { ViewData["Country"] = row.GetValueOrDefault("country"); <td><partial name="_Player" model="@((value, row.GetValueOrDefault(steamKey)))" /></td> ViewData.Remove("Country"); continue; }
+                        switch (column.Kind)
+                        {
+                            case "steamid":
+                                <td class="steamid">@if (value != null && CommandCatalog.IsSteamId(value)) {<a href="/players/@value" title="Player history">@value</a>} else {@value}</td>
+                                break;
+                            case "status":
+                                <td><span class="ind @StatusClass(value)">@(value == null ? "" : value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant())</span></td>
+                                break;
+                            case "time":
+                                <td class="time">@value</td>
+                                break;
+                            case "number":
+                                <td class="number">@value</td>
+                                break;
+                            default:
+                                <td>@value</td>
+                                break;
+                        }
+                    }
+                    @if (tickets)
+                    {
+                        <td class="acts"><a class="button small" href="/tickets/@row.GetValueOrDefault("id")">Open@(row.GetValueOrDefault("comments") is { Length: > 0 } n && n != "0" ? $" · {n}" : "")</a></td>
+                    }
+                    else if (rowActions.Count > 0)
+                    {
+                        string? steamId = row.GetValueOrDefault(steamKey);
+                        <td class="acts">
+                          @* Wide: the buttons in a row. Narrow (panel.js): folded into an Actions menu, so none are cut off *@
+                          <details class="acts-menu @(rowActions.Count > 1 ? "" : "single")" open>
+                            <summary class="button small">Actions<svg class="ic" aria-hidden="true"><use href="#i-caret"/></svg></summary>
+                            <div class="acts-list">
+                            @foreach (DataAction action in rowActions.Where(a => a.When.All(w => string.Equals(row.GetValueOrDefault(w.Key), w.Value, StringComparison.OrdinalIgnoreCase))))
+                            {
+                                // The row's own values for the action's fields: its SteamID, a group's name, an appeal's id
+                                var values = action.Fields.ToDictionary(f => f, f => f == "steamid" ? steamId : row.GetValueOrDefault(f));
+                                // A length the row doesn't have (Ban on a report) is picked beside the button
+                                bool pickLength = values.ContainsKey("minutes") && string.IsNullOrEmpty(values["minutes"]);
+                                if (pickLength) { values.Remove("minutes"); }
+                                if (values.Values.Any(string.IsNullOrEmpty) || (values.ContainsKey("steamid") && !CommandCatalog.IsSteamId(steamId!))) { continue; }
+                                string who = row.GetValueOrDefault("name") is { Length: > 0 } rowName ? rowName : row.GetValueOrDefault("group") ?? steamId ?? "";
+                                bool danger = action.Id is "ban" or "kick";
+                                <form class="row-act" hx-post="/moderate?handler=Moderate&amp;server=@q" hx-target="#toasts" hx-swap="beforeend">
+                                    <input type="hidden" name="source" value="@Model.Source?.Id">
+                                    <input type="hidden" name="list" value="@list?.Id">
+                                    <input type="hidden" name="action" value="@action.Id">
+                                    @foreach (var (field, fieldValue) in values) { <input type="hidden" name="@field" value="@fieldValue"> }
+                                    @if (pickLength)
+                                    {
+                                        // The question asks how long: its buttons are the lengths (panel.js)
+                                        <button type="submit" class="small danger" data-confirm="@action.Label @who@(steamId != null ? $" ({steamId})" : ""). How long?" data-confirm-title="@action.Label for how long?" data-confirm-danger="true"
+                                                data-confirm-choose="minutes" data-choices="60=1 hour|1440=1 day|10080=1 week|43200=30 days|0=Permanent">@action.Label</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="small @(danger ? "danger" : "")" data-confirm="@action.Label: @who@(steamId != null ? $" ({steamId})" : "")." data-confirm-title="@action.Label?" data-confirm-yes="@action.Label" data-confirm-danger="@(danger ? "true" : "false")">@action.Label</button>
+                                    }
+                                </form>
+                            }
+                            </div>
+                          </details>
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="pager">
+        <span>@data.Total.ToString("N0") in all · page @data.Page of @pages</span>
+        <button type="button" class="small" @(data.Page > 1 ? "" : "disabled") hx-get="@PageUrl(data.Page - 1)" hx-target="closest [data-list]" hx-swap="innerHTML">Previous</button>
+        <button type="button" class="small" @(data.Page < pages ? "" : "disabled") hx-get="@PageUrl(data.Page + 1)" hx-target="closest [data-list]" hx-swap="innerHTML">Next</button>
+    </div>
+}

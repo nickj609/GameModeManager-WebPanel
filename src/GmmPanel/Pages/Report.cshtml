@@ -1,0 +1,33 @@
+@page "/report"
+@model ReportModel
+@{
+    ViewData["Title"] = "Report a player";
+    ViewData["Narrow"] = true;
+}
+<div class="page-title">
+    <div class="eyebrow">@T("Report a player")</div>
+    <h1>@T("Report a player")</h1>
+    <p>@T("Cheating, abuse, griefing: tell the staff what happened. You'll see their answer on My profile.") <a href="/profile#tickets">@T("My profile")</a></p>
+</div>
+@if (Model.Problem != null)
+{
+    <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg><span>@T(Model.Problem)</span></div>
+}
+@if (Model.HasRules) { <p class="note"><a href="/rules">@T("Read the server rules")</a></p> }
+<form method="post" class="ticket-form">
+    <label>@T("Server")<select name="server" required>
+        @foreach (var (server, _) in Model.Reportable) { <option value="@server" selected="@(string.Equals(server, Model.Server, StringComparison.OrdinalIgnoreCase))">@server</option> }
+    </select></label>
+    <label>@T("Player")<select name="player">
+        <option value="">@T("Not listed")</option>
+        @foreach (var (server, players) in Model.Reportable.Where(r => r.Players.Count > 0))
+        {
+            <optgroup label="@F("On {0} now", server)">
+                @foreach (var (steamId, name) in players) { <option value="@steamId">@name</option> }
+            </optgroup>
+        }
+    </select></label>
+    <label>SteamID64 <small>@T("For a player not listed. It's in their Steam profile's address.")</small><input type="text" name="steamId" value="@(GmmPanel.Commands.CommandCatalog.IsSteamId(Model.Target ?? "") ? Model.Target : "")" inputmode="numeric" pattern="7656119[0-9]{10}" maxlength="17" placeholder="7656119..."></label>
+    <label>@T("What happened?")<textarea name="text" rows="4" maxlength="@Tickets.MaxText" minlength="10" required></textarea></label>
+    <button type="submit" class="primary">@T("Send report")</button>
+</form>

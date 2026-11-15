@@ -1,0 +1,79 @@
+@model DataPage
+@inject GmmPanel.Auth.SteamProfile Steam
+@inject GmmPanel.Data.History History
+@* A read-only table of a plugin's rows (public pages, My profile). With names and SteamIDs, the player shows as their Steam
+   picture and name, linked to their Steam profile (the SteamID on hover), as on Moderate. *@
+@{
+    string steamKey = Model.Columns.FirstOrDefault(c => c.Kind == "steamid")?.Key ?? "";
+    bool fold = steamKey.Length > 0 && Model.Columns.Any(c => c.Key == "name");
+    var columns = Model.Columns.Where(c => !(fold && c.Key == steamKey)).ToList();
+    if (fold)
+        foreach (string id in Model.Rows.Select(r => r.GetValueOrDefault(steamKey)).OfType<string>().Distinct().Where(id => CommandCatalog.IsSteamId(id) && Steam.KnownAvatar(id) == null).Take(10))
+            _ = Steam.AvatarAsync(id);   // In the background; the next load shows them
+    ViewData["SteamLink"] = true;   // _Player links to Steam here: player history is for staff
+    // Bans page: a Details button per row opens the whole record in a pop-up (panel.js fills #details-dlg from data-details)
+    bool details = ViewData["Details"] as bool? == true;
+    bool board = ViewData["Board"] as bool? == true;   // Leaderboards: fixed, even columns
+    // The pop-up's title names the player as the table does (_Player): the row's name, else the name our servers saw, else Steam's
+    string Title(string? name, string? id) => !string.IsNullOrWhiteSpace(name) ? name
+        : id == null || !CommandCatalog.IsSteamId(id) ? id ?? ""
+        : History.Player(id)?.Name is { Length: > 0 } seen ? seen
+        : Steam.KnownName(id) ?? id;
+    string Status(string? value) => string.IsNullOrEmpty(value) ? "" : T(value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant());
+    string Record(Dictionary<string, string?> row) => System.Text.Json.JsonSerializer.Serialize(new
+    {
+        title = Title(row.GetValueOrDefault("name"), steamKey.Length > 0 ? row.GetValueOrDefault(steamKey) : null),
+        steamid = steamKey.Length > 0 ? row.GetValueOrDefault(steamKey) : null,
+        // The name and SteamID are in the pop-up's head; a status comes with its colour (the dot, as in the table)
+        rows = Model.Columns.Where(c => c.Key != "name" && c.Key != steamKey)
+            .Select(c => new[] { T(c.Label), c.Kind == "status" ? Status(row.GetValueOrDefault(c.Key)) : row.GetValueOrDefault(c.Key) ?? "", c.Kind == "status" ? StatusClass(row.GetValueOrDefault(c.Key)) : "" })
+    });
+    static string StatusClass(string? value) => (value ?? "").ToUpperInvariant() switch
+    {
+        "ACTIVE" => "bad",
+        "UNBANNED" or "UNMUTED" or "REMOVED" => "ok",
+        _ => "off"
+    };
+}
+<div class="table-wrap scroll">
+    <table class="data@(board ? " board" : "")">
+        <thead><tr>
+            @foreach (DataColumn column in columns)
+            {
+                <th class="@(column.Key == "place" ? "place-col" : "")">@T(column.Label)</th>
+            }
+            @if (details) { <th><span class="sr">@T("Details")</span></th> }
+        </tr></thead>
+        <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            <tr>
+                @foreach (DataColumn column in columns)
+                {
+                    string? value = row.GetValueOrDefault(column.Key);
+                    if (fold && column.Key == "name") { ViewData["Country"] = row.GetValueOrDefault("country"); <td><partial name="_Player" model="@((value, row.GetValueOrDefault(steamKey)))" /></td> ViewData.Remove("Country"); continue; }
+                    switch (column.Kind)
+                    {
+                        case "steamid":
+                            <td class="steamid">@if (value != null && CommandCatalog.IsSteamId(value)) {<a href="https://steamcommunity.com/profiles/@value" target="_blank" rel="noopener noreferrer">@value</a>} else {@value}</td>
+                            break;
+                        case "status":
+                            <td><span class="ind @StatusClass(value)">@(string.IsNullOrEmpty(value) ? "" : T(value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant()))</span></td>
+                            break;
+                        case "time":
+                            <td class="time">@value</td>
+                            break;
+                        case "number":
+                            <td class="number @(column.Key == "place" ? "place-col" : "")">@value</td>
+                            break;
+                        default:
+                            <td>@value</td>
+                            break;
+                    }
+                }
+                @if (details) { <td class="acts"><button type="button" class="small" data-details="@Record(row)">@T("Details")</button></td> }
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

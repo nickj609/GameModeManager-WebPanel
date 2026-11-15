@@ -1,0 +1,48 @@
+@page "/widget/{name}"
+@model WidgetModel
+@inject GmmPanel.Data.SiteTheme Theme
+@{
+    Layout = null;
+    var view = Model.View;
+    var s = view?.Status;
+    int players = view?.Online == true ? s?.Players ?? 0 : 0;
+    string? address = view?.Online == true ? view.ConnectAddress : null;
+}
+<!doctype html>
+@* A server's status card for another site (an iframe): the map in a square, players, map, Connect. Refreshes every minute.
+   No forms, no sign-in; only what the public dashboard shows. *@
+<html lang="@Lang.Current">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="60">
+    <meta name="robots" content="noindex">
+    <title>@(view?.Name ?? "Server") · @Theme.Name</title>
+    <link rel="stylesheet" href="/css/site.css">
+    <link rel="stylesheet" href="/theme.css?v=@Theme.Version">
+</head>
+<body class="widget-body">
+@if (view == null)
+{
+    <div class="widget"><span class="muted">@T("No servers yet. Panel admins add one on the setup page.")</span></div>
+}
+else
+{
+    string? art = s == null ? null : Model.ArtFor(s.Map.Name);
+    <div class="widget">
+        <partial name="_MapSquare" model="@((art, s?.Map.Label ?? ""))" />
+        <div class="widget-text">
+            <span class="ind @(view.Online ? "ok" : "bad")">@(view.Online ? T("Online") : T("Offline"))</span>
+            <b class="widget-name">@view.Name</b>
+            <span class="widget-sub">@(s == null ? T("No status yet") : $"{s.Mode.Label} · {s.Map.Label}")</span>
+            <span class="widget-sub"><b>@players</b> / @(s?.MaxPlayers ?? 0)</span>
+        </div>
+        <div class="widget-actions">
+            @if (address != null) { <a class="button primary small" href="steam://connect/@address" target="_top">@T("Connect")</a> }
+            <a class="button small" href="/server/@Uri.EscapeDataString(view.Name)" target="_blank" rel="noopener">@T("Details")</a>
+        </div>
+    </div>
+}
+<script src="/js/widget.js"></script>
+</body>
+</html>

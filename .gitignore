@@ -1,0 +1,15 @@
+bin/
+obj/
+/.vs
+*.user
+/publish/
+# The panel's data: admin list, token hashes, sign-in keys, audit log. Never in git.
+# Rooted on purpose: Git on Windows ignores case, so a bare "data/" also hid the source folder src/GmmPanel/Data/.
+/data/
+panel.json
+audit.jsonl
+.env
+
+# The owner's own deploy scripts (their live panel), kept on their PC only
+/tools/update-live.ps1
+/tools/install-autostart.ps1

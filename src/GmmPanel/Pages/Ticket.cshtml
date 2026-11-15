@@ -1,0 +1,105 @@
+@page "/tickets/{id}"
+@model TicketModel
+@{
+    var t = Model.Ticket;
+    string kind = Model.Report ? T("Report") : T("Appeal");
+    string target = t.TargetName.Length > 0 ? t.TargetName : t.TargetSteamId;
+    ViewData["Title"] = $"{kind}: {target}";
+    string self = $"/tickets/{t.Id}";
+    string statusClass = t.Status switch { "OPEN" => "warn", "ACCEPTED" => "ok", _ => "off" };
+    string statusText = T(t.Status switch { "OPEN" => "Open", "ACCEPTED" => "Accepted", "REJECTED" => "Rejected", _ => "Closed" });
+    string writer = Model.Report ? T("the reporter") : T("the player");
+}
+@* One appeal or report: what was said, the answer, and staff's comments *@
+<div class="eyebrow crumbs"><a href="/moderate#@(Model.Report ? "reports" : "appeals")">@T("Moderate")</a> &rsaquo; @(Model.Report ? T("Reports") : T("Appeals"))</div>
+<div class="profile-head">
+    @if (Model.TargetAvatar != null) { <img class="avatar huge" src="@Model.TargetAvatar" alt="" width="96" height="96" referrerpolicy="no-referrer"> }
+    else { <span class="avatar huge letter">@((target.Length > 0 ? target : "?")[..1].ToUpperInvariant())</span> }
+    <div class="profile-who">
+        <div class="eyebrow">@(Model.Report ? T("Player report") : T("Ban appeal"))</div>
+        <h1>@target</h1>
+        <div class="profile-tags">
+            <span class="ind @statusClass">@statusText</span>
+            <span class="mono muted" title="SteamID64">@t.TargetSteamId</span>
+        </div>
+        <div class="profile-buttons">
+            <a class="button small" href="/players/@t.TargetSteamId"><svg class="ic" aria-hidden="true"><use href="#i-players"/></svg>@T("Player")</a>
+            <a class="button small" href="https://steamcommunity.com/profiles/@t.TargetSteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>Steam</a>
+        </div>
+    </div>
+</div>
+
+<div class="facts player-facts">
+    <span>@T("Sent") <b>@Format.Time(t.Created)</b></span>
+    @if (Model.Report)
+    {
+        <span>@T("From") <a href="/players/@t.SteamId"><b>@(t.Name.Length > 0 ? t.Name : t.SteamId)</b></a></span>
+        @if (t.Server.Length > 0) { <span>@T("On") <b>@t.Server</b></span> }
+    }
+    @if (t.HandledAt != null) { <span>@(t.Status == "OPEN" ? "" : statusText) @T("by") <b>@t.HandledBy</b> · @Format.Ago(t.HandledAt)</span> }
+</div>
+
+<div class="group-title">@(Model.Report ? T("What happened") : T("Why it should be lifted"))</div>
+<blockquote class="ticket-text">@t.Text</blockquote>
+
+<div class="player-grid">
+    @if (Model.Open)
+    {
+        <section>
+            <div class="group-title">@T("Answer")</div>
+            <form class="site-form" hx-post="@self?handler=Answer" hx-target="#toasts" hx-swap="beforeend">
+                <div class="site-grid">
+                    <label>@T("What")<select name="pick">
+                        @if (Model.Report)
+                        {
+                            @foreach (var a in Model.Acts) { <option value="@a.List:@a.Id" data-fields="@(a.Minutes ? "minutes reason" : "reason")">@a.Label</option> }
+                            <option value="close" data-fields="" data-calm="true" selected="@(Model.Acts.Count > 0 ? null : "selected")">@T("Close")</option>
+                        }
+                        else
+                        {
+                            <option value="accept">@T("Accept and unban")</option>
+                            <option value="reject">@T("Reject")</option>
+                        }
+                    </select></label>
+                    @if (Model.Report && Model.Acts.Count > 0)
+                    {
+                        <label data-field="minutes">@T("How long")<select name="minutes">
+                            @foreach (var (m, label) in PlayerModel.Lengths) { <option value="@m" selected="@(m == 1440)">@T(label)</option> }
+                        </select></label>
+                        <label class="wide" data-field="reason">@T("Reason")<input type="text" name="reason" maxlength="120" placeholder="@T("Empty: the report's text")"></label>
+                    }
+                    <label class="wide">@T("Comment") <small>@T("optional")</small><textarea name="comment" rows="2" maxlength="@Tickets.MaxComment"></textarea></label>
+                    <label class="check wide"><input type="checkbox" name="show" value="true"> @F("Show the comment to {0}", writer)</label>
+                </div>
+                <div class="buttons"><button type="submit" class="danger" data-confirm="@target (@t.TargetSteamId)." data-confirm-title="@T("Do it?")" data-confirm-yes="@T("Do it")" data-confirm-danger="true" data-act-from="pick">@T("Do it")</button></div>
+            </form>
+            @if (Model.Report && Model.Acts.Count == 0)
+            {
+                <p class="note">@T("Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.")</p>
+            }
+        </section>
+    }
+
+    <section>
+        <div class="group-title">@T("Comments") <small>@T("only staff see these, unless shown")</small></div>
+        @if (t.Comments.Count == 0)
+        {
+            <div class="empty">@T("No comments yet.")</div>
+        }
+        @foreach (var c in t.Comments)
+        {
+            bool fromWriter = c.SteamId == t.SteamId;   // The writer's own reply, from their profile
+            <div class="note-row @(c.Public && !fromWriter ? "shown" : "")">
+                <div><b>@c.Name</b> <span class="time">@Format.Ago(c.At)</span>@if (fromWriter) { <span class="ind warn">@T("Reply")</span> } else if (c.Public) { <span class="ind ok">@F("Shown to {0}", writer)</span> }
+                    <div class="note-text">@c.Text</div></div>
+            </div>
+        }
+        <form class="comment-form" hx-post="@self?handler=Comment" hx-target="#toasts" hx-swap="beforeend">
+            <textarea name="text" rows="2" maxlength="@Tickets.MaxComment" minlength="2" required placeholder="@T("Checked the demo, nothing seen")"></textarea>
+            <div class="comment-foot">
+                <label class="check"><input type="checkbox" name="show" value="true"> @F("Show to {0}", writer)</label>
+                <button type="submit" class="small">@T("Add comment")</button>
+            </div>
+        </form>
+    </section>
+</div>

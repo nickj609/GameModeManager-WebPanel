@@ -1,0 +1,11 @@
+@model ServerChoices
+@* The admin's servers, as links that keep the page: the header's switcher and the menu both show this *@
+@foreach (var server in Model.Servers.OrderBy(server => server.Name, StringComparer.OrdinalIgnoreCase))
+{
+    ServerView? view = Registry.Find(server.Name);
+    <a role="menuitem" href="@Model.Link(server.Name)" class="switcher-item @(server.Name == Model.Selected ? "on" : "")">
+        <span class="ind @(view?.Online == true ? "ok" : "bad")">@server.Name</span>
+        <small>@(view?.Status is { } st ? $"{st.Map.Label} · {st.Players}/{st.MaxPlayers}" : "no status")</small>
+    </a>
+}
+@inject AgentRegistry Registry

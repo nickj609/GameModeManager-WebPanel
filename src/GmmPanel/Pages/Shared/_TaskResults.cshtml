@@ -1,0 +1,19 @@
+@model TasksModel
+@* What Run now did on each server, a schedule saved, or what's wrong with the form *@
+@if (Model.Problem != null)
+{
+    <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg><span>@Model.Problem</span></div>
+}
+else if (Model.Scheduled != null)
+{
+    <div class="banner ok"><svg class="ic" aria-hidden="true"><use href="#i-ok"/></svg><span>Scheduled: @Model.Scheduled. It's in the list below.</span></div>
+}
+else if (Model.Results != null)
+{
+    <div class="task-results">
+        @foreach (var r in Model.Results)
+        {
+            <div class="row"><span class="label">@r.Server</span><span class="ind @(r.Skipped ? "off" : r.Ok ? "ok" : "bad")">@r.Message</span></div>
+        }
+    </div>
+}

@@ -1,0 +1,129 @@
+name: Release
+
+# Builds the single files (win-x64, linux-arm64, linux-x64) and the multi-arch Docker image, and publishes a release.
+# Run by hand with a version, or by dotnet-patch-watch.yml when a new .NET 10 runtime is out. Pull requests only build.
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, like 0.2.0. Empty = the last release's patch + 1
+        required: false
+      reason:
+        description: One line for the release notes
+        required: false
+        default: ''
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      runtime: ${{ steps.version.outputs.runtime }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version="$INPUT_VERSION"
+          if [ -z "$version" ]; then
+            last=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "v0.0.0")
+            IFS=. read -r major minor patch <<< "${last#v}"
+            version="$major.$minor.$((patch + 1))"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "Bad version: $version"; exit 1; fi
+          runtime=$(dotnet --list-runtimes | grep Microsoft.AspNetCore.App | awk '{print $2}' | sort -V | tail -1)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
+          echo "Panel $version on ASP.NET Core $runtime"
+
+      - name: Publish single files
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p out
+          for rid in win-x64 linux-arm64 linux-x64; do
+            dotnet publish src/GmmPanel/GmmPanel.csproj -c Release -r $rid --self-contained true \
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none \
+              -p:Version=$VERSION -o publish/$rid
+            cp src/GmmPanel/appsettings.json publish/$rid/
+            (cd publish/$rid && zip -q -r ../../out/gmmpanel-$VERSION-$rid.zip .)
+          done
+          (cd out && sha256sum *.zip > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: panel
+          path: out/
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: panel
+          path: out/
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: VERSION=${{ needs.build.outputs.version }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/gmm-webpanel:${{ needs.build.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/gmm-webpanel:0
+            ghcr.io/${{ github.repository_owner }}/gmm-webpanel:latest
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          RUNTIME: ${{ needs.build.outputs.runtime }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          {
+            [ -n "$REASON" ] && echo "$REASON" && echo
+            echo "Built with ASP.NET Core runtime $RUNTIME."
+            echo
+            echo "- Windows: \`gmmpanel-$VERSION-win-x64.zip\`"
+            echo "- Raspberry Pi 4/5 (64-bit OS): \`gmmpanel-$VERSION-linux-arm64.zip\`, or Docker: \`ghcr.io/${{ github.repository_owner }}/gmm-webpanel:$VERSION\`"
+            echo "- Other Linux: \`gmmpanel-$VERSION-linux-x64.zip\`"
+            echo
+            echo "Setup: [Installation](https://github.com/${{ github.repository }}/wiki/Installation)"
+            echo
+            echo "<!-- runtime:$RUNTIME -->"
+          } > notes.md
+          gh release create "v$VERSION" out/* --title "v$VERSION" --notes-file notes.md --target "${{ github.sha }}"

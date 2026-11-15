@@ -1,0 +1,29 @@
+@page "/rules"
+@model RulesModel
+@{
+    ViewData["Title"] = T("Rules");
+    int number = 0;
+}
+@* The server rules, numbered right through, in the owner's sections *@
+<div class="page-title">
+    <div class="eyebrow">@T("Rules")</div>
+    <h1>@T("Server rules")</h1>
+    <p>@T("These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.")</p>
+</div>
+<div class="rules">
+    @foreach (var part in Model.Sections)
+    {
+        @if (part.Title != null) { <div class="group-title">@part.Title</div> }
+        <ol class="rule-list" start="@(number + 1)">
+            @foreach (string rule in part.Rules)
+            {
+                number++;
+                <li>@Markdown.Inline(rule)</li>
+            }
+        </ol>
+    }
+</div>
+@if (Model.Viewer != null)
+{
+    @if (Model.FeatureOn("reports")) { <p class="note"><a href="/report">@T("Report a player")</a></p> }
+}

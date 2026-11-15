@@ -1,0 +1,175 @@
+@page "/players/{steamId}"
+@model PlayerModel
+@inject GmmPanel.Data.PanelStore PanelData
+@{
+    var r = Model.Record;
+    ViewData["Title"] = r?.Name ?? Model.SteamId;
+    string self = $"/players/{Model.SteamId}";
+    int bans = Model.Active("Bans"), mutes = Model.Active("Mutes & gags"), warns = Model.Active("Warnings");
+    int open = Model.About.Count(t => t.Status == "OPEN");
+    string Pane(string label) => label.ToLowerInvariant().Replace(" & ", "-");
+}
+@* Everything about one player for staff, laid out like My profile: who they are with what to do beside it (Act), the
+   numbers, then one section at a time: staff notes, their CS2-SimpleAdmin record, appeals and reports, recent chat *@
+<div class="eyebrow crumbs"><a href="/moderate">@T("Moderate")</a> &rsaquo; @T("Player")</div>
+<div class="me-head">
+    <div class="profile-head">
+        @if (Model.Avatar != null) { <img class="avatar huge" src="@Model.Avatar" alt="" width="96" height="96" referrerpolicy="no-referrer"> }
+        else { <span class="avatar huge letter">@((r?.Name ?? "?")[..1].ToUpperInvariant())</span> }
+        <div class="profile-who">
+            <h1>@(r?.Name ?? "Not seen yet")@(Model.FeatureOn("countries") ? Format.Flag(r?.Country) : null)</h1>
+            <div class="profile-tags">
+                @if (Model.Online is { } on) { <span class="ind ok">On @on.Server for @Format.Span(DateTimeOffset.UtcNow - on.Since)</span> }
+                else if (r != null) { <span class="ind off">Last seen @Format.Ago(r.LastSeen)</span> }
+                <span class="mono muted" title="SteamID64">@Model.SteamId</span>
+            </div>
+            @if (r != null && (r.Names.Count > 1 || r.Servers.Count > 0))
+            {
+                <div class="player-also">
+                    @if (r.Servers.Count > 0) { <span>Plays on @string.Join(", ", r.Servers)</span> }
+                    @if (r.Names.Count > 1) { <span>Also known as @string.Join(", ", r.Names.Skip(1))</span> }
+                </div>
+            }
+            <div class="profile-buttons">
+                <a class="button small" href="https://steamcommunity.com/profiles/@Model.SteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>Steam</a>
+                <a class="button small" href="https://leetify.com/app/profile/@Model.SteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-stats"/></svg>Leetify</a>
+                @if (Model.FeatureOn("profiles")) { <a class="button small" href="/u/@Model.SteamId"><svg class="ic" aria-hidden="true"><use href="#i-teamplayer"/></svg>Public profile</a> }
+            </div>
+        </div>
+    </div>
+    @* What to do: CS2-SimpleAdmin's actions (through @Model.Server, its database is shared) and Kick where they are *@
+    @if (Model.Acts.Count > 0 || Model.CanKick)
+    {
+        <div class="me-settings player-act">
+            <div class="public-label">Act</div>
+            <form class="act-form" hx-post="@self?handler=Act" hx-target="#toasts" hx-swap="beforeend">
+                <div class="act-row">
+                    <select name="pick" aria-label="What">
+                        @foreach (var a in Model.Acts) { <option value="@a.List:@a.Id" data-fields="@(a.Minutes ? "minutes reason" : "reason")">@a.Label</option> }
+                        @if (Model.CanKick) { <option value="kick" data-fields="reason">Kick (from @Model.Online!.Value.Server)</option> }
+                    </select>
+                    <select name="minutes" aria-label="How long" data-field="minutes">
+                        @foreach (var (m, label) in PlayerModel.Lengths) { <option value="@m" selected="@(m == 1440)">@label</option> }
+                    </select>
+                </div>
+                <input type="text" name="reason" maxlength="128" placeholder="Reason: what they did" aria-label="Reason" data-field="reason">
+                <button type="submit" class="danger small" data-confirm="@(r?.Name ?? Model.SteamId) (@Model.SteamId)." data-confirm-title="Do it?" data-confirm-yes="Do it" data-confirm-danger="true" data-act-from="pick">Do it</button>
+            </form>
+        </div>
+    }
+</div>
+
+@if (r == null)
+{
+    <p class="note">The panel hasn't seen this SteamID on a server since it started keeping history.</p>
+}
+
+@* The numbers at a glance; a sanction in force gets the red stripe, an open report or appeal the heads-up one *@
+<div class="stat-tiles me-tiles">
+    <div class="stat-tile"><small>Played</small><b>@Format.Hours(Model.Played)</b></div>
+    <div class="stat-tile"><small>This week</small><b>@Format.Hours(Model.PlayedThisWeek)</b></div>
+    @if (r != null)
+    {
+        <div class="stat-tile"><small>Visits</small><b>@r.Sessions.ToString("N0")</b></div>
+        <div class="stat-tile"><small>First seen</small><b>@Format.Ago(r.FirstSeen)</b></div>
+    }
+    @if (Model.Sanctions.Any(s => s.Label == "Bans")) { <div class="stat-tile @(bans > 0 ? "bad" : "")"><small>Active bans</small><b>@bans</b></div> }
+    @if (Model.Sanctions.Any(s => s.Label == "Mutes & gags")) { <div class="stat-tile @(mutes > 0 ? "bad" : "")"><small>Active mutes</small><b>@mutes</b></div> }
+    @if (Model.Sanctions.Any(s => s.Label == "Warnings")) { <div class="stat-tile @(warns > 0 ? "warn" : "")"><small>Warnings</small><b>@warns</b></div> }
+    <div class="stat-tile @(open > 0 ? "warn" : "")"><small>Open tickets</small><b>@open</b></div>
+</div>
+
+<div class="tab-body me-body" data-tabkey="gmm.tab.player">
+    <div class="manage">
+        <nav class="rail" aria-label="Sections">
+            <button type="button" class="rail-item" data-tab="notes"><svg class="ic"><use href="#i-list"/></svg><span>Staff notes</span>@if (Model.Notes.Count > 0) { <span class="count">@Model.Notes.Count</span> }<u>&rsaquo;</u></button>
+            @foreach (var (label, _) in Model.Sanctions)
+            {
+                int count = Model.Active(label);
+                string icon = label switch { "Bans" => "ban", "Mutes & gags" => "mute", _ => "gavel" };
+                <button type="button" class="rail-item" data-tab="@Pane(label)"><svg class="ic"><use href="#i-@icon"/></svg><span>@label</span>@if (count > 0) { <span class="count">@count</span> }<u>&rsaquo;</u></button>
+            }
+            @if (Model.About.Count > 0)
+            {
+                <button type="button" class="rail-item" data-tab="tickets"><svg class="ic"><use href="#i-appeal"/></svg><span>Appeals &amp; reports</span>@if (open > 0) { <span class="count">@open</span> }<u>&rsaquo;</u></button>
+            }
+            @if (Model.Chat != null)
+            {
+                <button type="button" class="rail-item" data-tab="chat"><svg class="ic"><use href="#i-chat"/></svg><span>Recent chat</span><u>&rsaquo;</u></button>
+            }
+        </nav>
+        <div class="panes">
+            @* Staff's private notes: the player never sees them *@
+            <section class="pane" data-pane="notes">
+                <div class="pane-head"><h2>Staff notes</h2><span class="crumb">Only staff see these</span></div>
+                @if (Model.Notes.Count == 0) { <div class="empty">No notes yet.</div> }
+                @foreach (var n in Model.Notes)
+                {
+                    <div class="note-row">
+                        <div><b>@n.ByName</b> <span class="time">@Format.Ago(n.At)</span><div class="note-text">@n.Text</div></div>
+                        @if (n.BySteamId == Model.Admin.SteamId || Model.PanelAdmin)
+                        {
+                            <form hx-post="@self?handler=DeleteNote" hx-target="#toasts" hx-swap="beforeend">
+                                <input type="hidden" name="id" value="@n.Id">
+                                <button type="submit" class="small quiet" title="Delete this note" data-confirm="The note is deleted." data-confirm-title="Delete it?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
+                            </form>
+                        }
+                    </div>
+                }
+                <form class="note-form" hx-post="@self?handler=Note" hx-target="#toasts" hx-swap="beforeend">
+                    <textarea name="text" rows="2" maxlength="@GmmPanel.Data.PlayerNotes.MaxText" minlength="2" required placeholder="Warned about mic spam, 13 Nov"></textarea>
+                    <button type="submit" class="small">Add note</button>
+                </form>
+            </section>
+
+            @foreach (var (label, result) in Model.Sanctions)
+            {
+                <section class="pane" data-pane="@Pane(label)">
+                    <div class="pane-head"><h2>@label</h2></div>
+                    @if (!result.Ok || result.Data == null)
+                    {
+                        <div class="empty">@result.Message</div>
+                    }
+                    else if (result.Data.Rows.Count == 0)
+                    {
+                        <div class="empty">None.</div>
+                    }
+                    else
+                    {
+                        <partial name="_Rows" model="result.Data" />
+                    }
+                </section>
+            }
+
+            @if (Model.About.Count > 0)
+            {
+                <section class="pane" data-pane="tickets">
+                    <div class="pane-head"><h2>Appeals &amp; reports</h2></div>
+                    @foreach (var t in Model.About)
+                    {
+                        <div class="row">
+                            <span class="label"><a href="/tickets/@t.Id">@(t.Kind == "appeal" ? "Appeal" : t.SteamId == Model.SteamId ? $"Reported {t.TargetName}" : $"Reported by {t.Name}")</a>@(t.Comments.Count > 0 ? $" · {t.Comments.Count} comments" : "")
+                                <small>@Format.Time(t.Created)@(t.Server.Length > 0 ? $" · {t.Server}" : "") · @t.Text</small></span>
+                            <span class="ind @(t.Status switch { "OPEN" => "warn", "ACCEPTED" => "ok", _ => "off" })">@(t.Status[..1] + t.Status[1..].ToLowerInvariant())</span>
+                        </div>
+                    }
+                </section>
+            }
+
+            @if (Model.Chat != null)
+            {
+                <section class="pane" data-pane="chat">
+                    <div class="pane-head"><h2>Recent chat</h2></div>
+                    @if (Model.Chat.Count == 0)
+                    {
+                        <div class="empty">@(PanelData.Current.Retention.ChatDays > 0 ? $"Nothing in the last {PanelData.Current.Retention.ChatDays} days." : "Nothing logged.")</div>
+                    }
+                    @foreach (var line in Model.Chat)
+                    {
+                        <div class="chat-line"><span class="time">@Format.Time(line.At)</span> <span class="dim">@line.Server@(line.TeamOnly ? $" ({line.Team})" : "")</span> @line.Text</div>
+                    }
+                </section>
+            }
+        </div>
+    </div>
+</div>

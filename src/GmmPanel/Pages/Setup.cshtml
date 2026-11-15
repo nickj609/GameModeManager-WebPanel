@@ -1,0 +1,112 @@
+@page "/setup"
+@model SetupModel
+@{
+    ViewData["Title"] = "Setup";
+    ViewData["Narrow"] = true;
+    string[] steps = { "Setup code", "Sign in", "First server", "Connect", "Make it yours" };
+    int at = Model.Step switch { "code" => 0, "signin" => 1, "server" or "token" => 2, "look" => 4, _ => 3 };
+}
+<h2 class="menu-heading">Set up the panel</h2>
+<ol class="steps" aria-label="Steps">
+    @for (int i = 0; i < steps.Length; i++)
+    {
+        <li class="@(i < at ? "done" : i == at ? "on" : "")"><span>@(i + 1)</span>@steps[i]</li>
+    }
+</ol>
+
+@if (Model.Problem != null)
+{
+    <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg><span>@Model.Problem</span></div>
+}
+
+@switch (Model.Step)
+{
+    case "code":
+        <p class="note">The panel printed a setup code in its log when it started: in its console window, or <code>docker logs gmmpanel</code>.
+            Whoever has it makes the first panel admin, so it never leaves the machine the panel runs on.</p>
+        <form method="post" asp-page-handler="Code" class="setup-form">
+            <label>Setup code<input type="text" name="code" required autocomplete="off" spellcheck="false" maxlength="20" placeholder="XXXXX-XXXXX" autofocus></label>
+            <label>Your name<input type="text" name="name" required maxlength="40" placeholder="Shown in the panel and its audit log"></label>
+            <button type="submit" class="primary">Next</button>
+        </form>
+        break;
+
+    case "signin":
+        <p class="note">Sign in with the Steam account that will be the panel admin. A panel admin can do everything, even while every
+            server is offline, and adds the other panel admins. Everyone else's rights come from each server's own admin flags.</p>
+        <form method="post" asp-page-handler="Steam">
+            <button class="primary big" type="submit">Sign in through Steam</button>
+        </form>
+        @if (Model.DevSteamId != null)
+        {
+            <form method="post" asp-page="/SignIn" asp-page-handler="Dev" class="setup-dev">
+                <input type="hidden" name="returnUrl" value="/setup">
+                <input type="hidden" name="steamId" value="@Model.DevSteamId">
+                <button type="submit">Development sign-in as @Model.DevSteamId</button>
+            </form>
+        }
+        break;
+
+    case "server":
+        <p class="note">Each game server gets its own token. GameModeManager connects out to the panel with it, so the game host opens no port.</p>
+        <form method="post" asp-page-handler="Server" class="setup-form">
+            <label>Server name<input type="text" name="name" required maxlength="40" pattern="[A-Za-z0-9_\-]+" placeholder="Production" value="@Model.Server"></label>
+            <label>Agent address<input type="text" name="agentUrl" required value="@Model.AgentUrl" spellcheck="false">
+                <small>The tunnel's hostname for agents, with /agent at the end</small></label>
+            <button type="submit" class="primary">Make its token</button>
+        </form>
+        <p class="note">Already set up? <a href="/">Go to the dashboard</a>. Panel admins and servers are in <a href="/site#admins">Site settings</a>.</p>
+        break;
+
+    case "token":
+        string panelBlock = "\"Panel\": {\n  \"Enabled\": true,\n  \"Url\": \"" + Model.AgentUrl + "\",\n  \"ServerName\": \"" + Model.Server + "\",\n  \"SecretsFile\": \"panel-secrets.json\",\n  \"Console\": true,\n  \"PublicAddress\": \"\",\n  \"PluginData\": true\n}";
+        string secrets = "{\n  \"Token\": \"" + Model.Token + "\",\n  \"AccessClientId\": \"\",\n  \"AccessClientSecret\": \"\"\n}";
+        <p class="note">This token is shown once: the panel keeps only its hash. Lost it? Make a new one on the Panel page; the old one stops working.</p>
+        <div class="group-title">1. In GameModeManager.json on @Model.Server</div>
+        <p class="note">Replace its <code>Panel</code> block (in <code>addons/counterstrikesharp/configs/plugins/GameModeManager/</code>).</p>
+        <div class="snippet"><pre id="snip-panel">@panelBlock</pre><button type="button" class="small" data-copy="snip-panel">Copy</button></div>
+        <div class="group-title">2. New file panel-secrets.json, next to it</div>
+        <p class="note">Keep it out of git. The panel only knows the token. The two Access values come from Cloudflare: Zero Trust,
+            Access, Service auth, Service tokens (the Client ID and Client Secret, shown once when you create the token). Leave them
+            empty only if the agent hostname isn't behind Access.</p>
+        <div class="snippet"><pre id="snip-secrets">@secrets</pre><button type="button" class="small" data-copy="snip-secrets">Copy</button></div>
+        <div class="group-title">3. Restart the server or change the map</div>
+        <a class="button primary" href="/setup?server=@Uri.EscapeDataString(Model.Server ?? "")">I've done it</a>
+        break;
+
+    case "wait":
+        <p class="note">GameModeManager connects within a minute of a map change or restart. Its console says <code>[Panel] Connecting to the panel as @Model.Server</code>.</p>
+        <div class="setup-wait" hx-get="/setup?handler=Wait&amp;server=@Uri.EscapeDataString(Model.Server ?? "")" hx-trigger="load, every 3s" hx-swap="innerHTML">
+            <span class="ind warn">Waiting for the server to connect</span>
+        </div>
+        <p class="note">Not connecting? Check the agent address and the token, then <a href="/setup">start this step again</a>.</p>
+        break;
+
+    case "look":
+        var look = Model.Look;
+        <p class="note">Optional: your community's name, logo, colour and a background. Everything here, and more (footer, panel and
+            header colours, a dot pattern, header links, map pictures), is on the <a href="/site">Site settings</a> page later.</p>
+        <form method="post" action="/site?handler=Site" enctype="multipart/form-data" class="setup-form">
+            @Html.AntiForgeryToken()
+            <label>Community name<input type="text" name="name" maxlength="40" value="@look.Name" placeholder="Example.gg"></label>
+            <label>Logo picture <small>PNG, JPEG or WebP, up to 512 KB</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label>
+            <label>Colour<input type="color" name="accent" value="@(look.Accent.Length > 0 ? look.Accent : "#d4801a")"></label>
+            <label>Language <small>for everyone who hasn't picked one; each can change it in the footer</small><select name="language">
+                <option value="" selected="@(look.Language.Length == 0)">Auto</option>
+                @foreach (var (code, langName) in Lang.Languages) { <option value="@code" selected="@(look.Language == code)">@langName</option> }
+            </select></label>
+            @foreach (var (field, value) in new[] { ("sub", look.Sub), ("footer", look.Footer), ("warn", look.Warn), ("bars", look.Bars), ("panel", look.Panel), ("page", look.Page), ("pattern", look.Pattern), ("patternStrength", look.PatternStrength.ToString()), ("radius", look.Radius.ToString()), ("background", look.Background), ("dim", look.Dim.ToString()), ("motion", look.Motion ? "true" : "") })
+            {
+                <input type="hidden" name="@field" value="@value">
+            }
+            <button type="submit" class="primary">Save</button>
+        </form>
+        <form method="post" action="/site?handler=Upload" enctype="multipart/form-data" class="setup-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="kind" value="background">
+            <label>Background <small>A picture or a short WebM / MP4 video of your own, up to 25 MB</small><input type="file" name="file" required accept="image/png,image/jpeg,image/webp,video/webm,video/mp4"></label>
+            <button type="submit">Upload</button>
+        </form>
+        <p class="note"><a href="/">Skip: go to the dashboard</a></p>
+        break;
+}

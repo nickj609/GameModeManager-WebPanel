@@ -1,0 +1,330 @@
+@using System.Text.Json
+@using GmmPanel.Agents
+@using GmmPanel.Auth
+@using GmmPanel.Data
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject PanelStore Store
+@inject Backgrounds BackgroundFiles
+@inject AgentRegistry Registry
+@inject AccessService AccessRights
+@inject PublicData PublicLists
+@inject SteamProfile Steam
+@inject UserPrefs Prefs
+@inject SiteTheme Theme
+@{
+    // Who's looking: null for a visitor; a panel admin or a player (whose rights come from each server's admin flags)
+    PanelUser? me = User.Identity?.IsAuthenticated == true ? PanelUser.From(User, Store) : null;
+    string token = Antiforgery.GetAndStoreTokens(Context).RequestToken ?? "";
+    string path = Context.Request.Path.Value ?? "/";
+    string title = ViewData["Title"] as string ?? "Servers";
+    bool narrow = ViewData["Narrow"] as bool? == true;
+    // Changes with every build, so browsers fetch the new stylesheet and script after an update
+    string Build = typeof(Program).Assembly.ManifestModule.ModuleVersionId.ToString("N")[..8];
+    // The owner's own backgrounds for people signed in, or for everyone when the site look says so
+    // CS2's menu scenes for everyone; the owner's other files for signed-in people, or everyone with Site settings' option
+    var backgrounds = BackgroundFiles.Own().ToList();
+    string backgroundJson = JsonSerializer.Serialize(backgrounds, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+    var mine = me == null ? new List<ServerEntry>() : Store.Current.Servers.Where(server => me.CanUse(server.Name)).ToList();
+    int online = mine.Count(server => Registry.Find(server.Name)?.Online == true);
+    // The selected server (header switcher) and what the viewer may do there, as the page found it
+    string? selected = me == null ? null : GmmPanel.Pages.Selection.Get(Context, me, Store);
+    Access access = AccessRights.Cached(me, selected);
+    bool staff = access.IsStaff;
+    string selectedPath = selected == null ? "/" : $"/servers/{Uri.EscapeDataString(selected)}";
+    bool onAdmin = path.EndsWith("/admin", StringComparison.OrdinalIgnoreCase);
+    bool onServer = path.StartsWith("/servers/", StringComparison.OrdinalIgnoreCase);
+    bool onModerate = path.StartsWith("/moderate", StringComparison.OrdinalIgnoreCase);
+    bool bans = PublicLists.Offers("simpleadmin", "bans");
+    bool stats = Store.Current.Servers.Count > 0 && Features.On(Store.Current, "playtime");   // Stats: the panel's own play-time boards
+    // Switching keeps the page: Manage, Admin or Moderate of the other server
+    string SwitchTo(string server) => onModerate
+        ? $"/moderate?server={Uri.EscapeDataString(server)}"
+        : onServer ? $"/servers/{Uri.EscapeDataString(server)}{(onAdmin ? "/admin" : "")}" : $"{path}?server={Uri.EscapeDataString(server)}";
+
+    // The pages: in the bar (main), and grouped in the menu
+    var main = new List<(string Href, string Label, string Icon, bool On)>();
+    var community = new List<(string Href, string Label, string Icon, bool On)>();
+    main.Add(("/", "Servers", "list", path == "/"));
+    if (staff && selected != null)
+    {
+        // One "Manage" item for Manage Game and Manage Server (a switch on the page moves between them)
+        if (access.CanManage || access.CanAdminister) main.Add((access.CanManage ? selectedPath : selectedPath + "/admin", "Manage", "crosshair", onServer));
+        main.Add(("/moderate", "Moderate", "ban", onModerate));
+    }
+    // Bans and Stats are in the bar for everyone, staff too (Moderate has the staff lists; these are the public ones)
+    var publicPages = main;
+    if (bans) publicPages.Add(("/bans", "Bans", "gavel", path.StartsWith("/bans")));
+    if (stats) publicPages.Add(("/stats", "Stats", "stats", path.StartsWith("/stats")));
+    var account = new List<(string Href, string Label, string Icon, bool On)>();
+    if (me != null) account.Add(("/profile", "My profile", "teamplayer", path.StartsWith("/profile")));
+    // Players report from here; staff act on Moderate instead, so they don't get it
+    if (me != null && !staff) account.Add(("/report", "Report a player", "flag", path.StartsWith("/report")));
+    // Tasks: one thing on several servers, now or on a schedule (the page checks each server's flags); in this menu, not the bar
+    if (staff && (access.CanManage || access.CanAdminister)) account.Add(("/tasks", "Tasks", "clock", path.StartsWith("/tasks")));
+    if (me?.IsPanelAdmin == true)
+    {
+        account.Add(("/audit", "Audit log", "shield", path.StartsWith("/audit")));
+        account.Add(("/site", "Site settings", "settings", path.StartsWith("/site") || path.StartsWith("/setup")));
+    }
+    account.Add(("/appearance", "Appearance", "settings", path.StartsWith("/appearance")));
+    // Their Steam picture (a link to Steam's own image server), their Discord name, and the community's links
+    string? avatar = me == null ? null : await Steam.AvatarAsync(me.SteamId);
+    string? discord = me == null ? null : Prefs.Discord(me.SteamId);
+    var links = Store.Current.Links;
+}
+<!doctype html>
+@{ string siteTheme = SiteLook.ThemeOf(Store.Current.Site.Theme); }
+@* appearance.js settles data-theme before the first paint: the viewer's pick on Appearance, else the site's (auto = the device) *@
+<html lang="@Lang.Current" data-site-theme="@siteTheme" data-theme="@(siteTheme == "light" ? "light" : "dark")">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    @* Link previews (Discord, Steam chat, socials): the page's title and a line about it, a picture, and the accent as the
+       embed's colour. A page can set ViewData Description and Image (an https address); otherwise the line is who's playing *@
+    @{
+        string origin = $"{Context.Request.Scheme}://{Context.Request.Host}";
+        var live = Registry.All().Where(v => v.Online && v.Status != null).ToList();
+        string description = ViewData["Description"] as string
+            ?? (live.Count > 0 ? F("{0} playing now on {1} servers.", live.Sum(v => v.Status!.Players), live.Count) : T("Our game servers, bans, stats and more."));
+        string? image = ViewData["Image"] as string ?? (Theme.LogoUrl is { } logo && !Theme.LogoIsSvg ? origin + logo : null);
+        string accent = SiteLook.IsColour(Store.Current.Site.Accent) ? Store.Current.Site.Accent : "#d4801a";
+    }
+    <meta property="og:site_name" content="@Theme.Name">
+    <meta property="og:title" content="@T(title)">
+    <meta property="og:description" content="@description">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="@(origin + Context.Request.Path)">
+    @if (image != null) { <meta property="og:image" content="@image"> <meta name="twitter:card" content="summary"> }
+    <meta name="description" content="@description">
+    <meta name="theme-color" content="@accent">   @* Discord colours the link card with it; phones tint the address bar *@
+    <meta name="request-token" content="@token">
+    @if (Lang.Current != "en") { <meta name="i18n" content="@JsonSerializer.Serialize(Lang.Script())"> }
+    <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"selfRequestsOnly":true,"historyCacheSize":0}'>
+    <meta name="robots" content="noindex, nofollow">
+    <title>@T(title) · @Theme.Name</title>
+    <link rel="icon" href="/img/favicon.svg?v=@Build" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="preload" href="/fonts/barlow-500.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/css/site.css?v=@Build">
+    <link rel="stylesheet" href="/theme.css?v=@Theme.Version">
+    <script src="/js/appearance.js?v=@Build"></script>
+    <script src="/js/htmx-2.0.4.min.js" defer></script>
+    <script src="/js/panel.js?v=@Build" defer></script>
+</head>
+<body>
+    <partial name="_Icons" />
+
+    @* The main-menu backdrop: a slowly turning panorama (or the owner's video), dust in the light, and a dark grade *@
+    <div class="bg" id="bg" aria-hidden="true" data-backgrounds="@backgroundJson" data-default="@Store.Current.Site.Background" data-fallback="@(backgrounds.FirstOrDefault(b => b.Map.Equals("de_dust2", StringComparison.OrdinalIgnoreCase))?.Id)" data-motion="@(Store.Current.Site.Motion ? "on" : "off")" data-map="@(selected == null ? null : Registry.Find(selected)?.Status?.Map.Name)">
+        <div class="bg-still" id="bg-still" hidden></div>
+        <video class="bg-video" id="bg-video" muted loop playsinline preload="auto" hidden></video>
+        <canvas class="bg-dust" id="bg-dust"></canvas>
+        <div class="bg-shade"></div>
+        <div class="bg-grain"></div>
+    </div>
+
+    @* The bar, fixed to the top: the server and the main pages while there's room, then the account (or Sign in). Below
+       1240 px only the menu button, and the menu from the right has everything. *@
+    <header class="site-top">
+        <partial name="_Logo" />
+        @if (staff && selected != null)
+        {
+            bool selectedOnline = Registry.Find(selected)?.Online == true;
+            <details class="switcher bar-wide" id="switcher">
+                <summary title="The server Manage, Admin and Moderate work on">
+                    <span class="ind @(selectedOnline ? "ok" : "bad")"><span class="switcher-name">@selected</span></span>
+                    @if (mine.Count > 1) { <svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg> }
+                </summary>
+                @if (mine.Count > 1)
+                {
+                    <div class="switcher-menu scroll" role="menu">
+                        <div class="switcher-title">Servers · @online of @mine.Count online</div>
+                        <partial name="_ServerChoices" model="@(new ServerChoices(mine, selected, SwitchTo))" />
+                    </div>
+                }
+            </details>
+        }
+        <nav class="top-nav bar-wide" aria-label="Pages">
+            @foreach (var link in main)
+            {
+                <a href="@link.Href" class="@(link.On ? "on" : "")">@T(link.Label)</a>
+            }
+        </nav>
+        @* At the right: search (an icon that opens into a box; Ctrl+K), the bell, a faint divider, then the account. The
+           community's links are in the footer *@
+        <div class="head-tools bar-wide">
+        <div class="search" id="search">
+            <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" name="q" placeholder="@T("Search")" autocomplete="off" spellcheck="false" maxlength="64" aria-label="@T("Search pages, servers and players")"
+                   hx-get="/search" hx-trigger="input changed delay:250ms, focus" hx-target="#search-results" hx-swap="innerHTML">
+            <kbd>Ctrl K</kbd>
+            <div class="search-results" id="search-results" role="listbox"></div>
+        </div>
+        </div>
+        @* The bell (Bell.cshtml): beside search, before the divider and the account *@
+        @if (me != null) { <div class="bell-slot" hx-get="/bell" hx-trigger="load, every 60s" hx-swap="innerHTML"></div> }
+        @if (me != null)
+        {
+            <details class="account bar-wide" id="account">
+                <summary title="@T("Your account")">
+                    <span class="account-text"><span class="account-name">@me.Name</span>
+                    <span class="account-role @access.RoleClass">@T(access.RoleName)</span></span>
+                    @if (avatar != null) { <img class="avatar" src="@avatar" alt="" width="34" height="34" referrerpolicy="no-referrer"> }
+                    <svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg>
+                </summary>
+                <div class="account-menu" role="menu">
+                    <div class="profile-card">
+                        @if (avatar != null) { <img class="avatar big" src="@avatar" alt="" width="56" height="56" referrerpolicy="no-referrer"> }
+                        <div><b>@me.Name</b><span class="role-tag @access.RoleClass">@T(access.RoleName)</span></div>
+                        <dl>
+                            <dt>SteamID64</dt><dd class="mono">@me.SteamId</dd>
+                            <dt>Steam</dt><dd><a href="https://steamcommunity.com/profiles/@me.SteamId" target="_blank" rel="noopener noreferrer">@T("Open profile")</a></dd>
+                            <dt>Discord</dt><dd>@if (discord != null) { @discord } else { <a href="/profile#discord">@T("Add yours")</a> }</dd>
+                        </dl>
+                    </div>
+                    @foreach (var link in community.Concat(account))
+                    {
+                        <a role="menuitem" class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
+                    }
+                    <form method="post" asp-page="/SignIn" asp-page-handler="SignOut">
+                        <button type="submit" class="primary"><svg class="ic" aria-hidden="true"><use href="#i-signout"/></svg>@T("Sign out")</button>
+                    </form>
+                </div>
+            </details>
+        }
+        else if (!path.StartsWith("/signin") && !path.StartsWith("/setup"))
+        {
+            <a class="button primary small sign-in bar-wide" href="/signin?returnUrl=@Uri.EscapeDataString(path)">@T("Sign in")</a>
+        }
+        <button type="button" class="menu-button bar-narrow" id="menu-button" aria-controls="drawer" aria-expanded="false" title="@T("Menu")">
+            <svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg><span class="sr">@T("Menu")</span>
+        </button>
+    </header>
+
+    @* The menu, from the right: who's signed in, the server, every page, the panel's own pages, sign in or out *@
+    <dialog class="drawer" id="drawer" aria-label="@T("Menu")">
+        <div class="drawer-head">
+            @if (avatar != null) { <img class="avatar" src="@avatar" alt="" width="40" height="40" referrerpolicy="no-referrer"> }
+            <div class="drawer-who">
+                <b>@(me?.Name ?? T("Not signed in"))</b>
+                <small>@T(access.RoleName)</small>
+            </div>
+            <button type="button" class="quiet drawer-close" id="drawer-close" title="@T("Close")"><svg class="ic" aria-hidden="true"><use href="#i-no"/></svg><span class="sr">@T("Close")</span></button>
+        </div>
+        <div class="drawer-body scroll">
+            @* Search, as in the bar (which hides it below 1240 px) *@
+            <div class="search drawer-search">
+                <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+                <input type="search" name="q" placeholder="@T("Search pages, servers, players")" autocomplete="off" spellcheck="false" maxlength="64" aria-label="@T("Search")"
+                       hx-get="/search" hx-trigger="input changed delay:250ms, focus" hx-target="#drawer-search-results" hx-swap="innerHTML">
+                <div class="search-results" id="drawer-search-results" role="listbox"></div>
+            </div>
+            @* The community's links (Panel page), as buttons *@
+            @if (links.Count > 0)
+            {
+                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
+            }
+            @if (staff && selected != null)
+            {
+                <div class="drawer-group">Server · @online of @mine.Count online</div>
+                <partial name="_ServerChoices" model="@(new ServerChoices(mine, selected, SwitchTo))" />
+            }
+            <div class="drawer-group">@T("Pages")</div>
+            @foreach (var link in main)
+            {
+                <a class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
+            }
+            @if (community.Count > 0)
+            {
+                <div class="drawer-group">@T("Community")</div>
+                @foreach (var link in community)
+                {
+                    <a class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
+                }
+            }
+            <div class="drawer-group">@T(me == null ? "Panel" : "You")</div>
+            @foreach (var link in account)
+            {
+                <a class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
+            }
+        </div>
+        @if (me != null)
+        {
+            <form class="drawer-foot" method="post" asp-page="/SignIn" asp-page-handler="SignOut">
+                <button type="submit" class="signout"><svg class="ic" aria-hidden="true"><use href="#i-signout"/></svg>@T("Sign out")</button>
+            </form>
+        }
+        else
+        {
+            <div class="drawer-foot"><a class="button primary" href="/signin?returnUrl=@Uri.EscapeDataString(path)">@T("Sign in through Steam")</a></div>
+        }
+    </dialog>
+
+
+    <div class="shell">
+        <main class="frame @(narrow ? "narrow" : "")">
+            <div class="frame-body">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    @* Over the backdrop, bottom right, like the main menu's corner buttons *@
+    <div class="bg-picker">
+        <div class="bg-menu" id="bg-menu" hidden>
+            <div class="bg-menu-title">@T("Background")</div>
+            <div id="bg-options" role="listbox" aria-label="Background"></div>
+            <div class="bg-menu-sep"></div>
+            <button type="button" class="bg-option" id="bg-motion" role="switch" aria-checked="true">
+                <span>@T("Motion")</span><span class="state on" id="bg-motion-state">On</span>
+            </button>
+            @if (me?.IsPanelAdmin == true) { <div class="bg-credit">CS2's menu scenery comes from tools/GameArt; add your own in the panel's data/backgrounds folder.</div> }
+        </div>
+        <button type="button" class="bg-button" id="bg-button" aria-expanded="false" aria-controls="bg-menu" title="@T("Background")">
+            <svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>
+            <span>@T("Background")</span>
+        </button>
+    </div>
+
+    @* A normal site footer, fixed to the bottom *@
+    @* The owner's line (or © year and the community's name), the community's links in their platforms' colours, the
+       site's pages, then the language *@
+    <footer class="site-foot">
+        @* The mark follows the header's logo: the owner's picture, else the built-in crosshair (a site name alone has no mark) *@
+        <span class="foot-text foot-brand">@if (Theme.LogoSvg("foot") is { } footSvg) { <span class="logo-svg foot-logo-svg" aria-label="@Theme.Brand">@footSvg</span> } else if (Theme.LogoUrl is { } footLogo) { <img class="foot-logo" src="@footLogo" alt="@Theme.Name"> } else { @if (Theme.Look.Name.Length == 0) { <svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg> }var (footName, footEnding) = GmmPanel.Data.SiteTheme.Domain(Theme.Brand); if (footEnding != null) { <b>@footName<span class="logo-io">@footEnding</span></b> } else { <b>@footName</b> } }@if (Theme.Look.Footer.Length > 0) { <small>@Theme.Look.Footer</small> } else { <small>© @DateTime.Now.Year</small> }</span>
+        @if (links.Count > 0)
+        {
+            <nav class="foot-icons" aria-label="@T("Community")">
+                @for (int i = 0; i < links.Count; i++)
+                {
+                    var link = links[i];
+                    <a class="foot-icon link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span class="sr">@T(link.Label)</span></a>
+                }
+            </nav>
+        }
+        <nav class="foot-pages" aria-label="@T("Pages")">
+            @if (Store.Current.Rules.Length > 0 && Features.On(Store.Current, "rules")) { <a class="foot-link" href="/rules">@T("Rules")</a> }
+            <a class="foot-link" href="/privacy">@T("Privacy")</a>
+        </nav>
+        @* The language: the browser's own until someone picks one here (a cookie, /lang in Program.cs) *@
+        <form class="foot-lang" method="post" action="/lang">
+            <input type="hidden" name="back" value="@(Context.Request.Path + Context.Request.QueryString)">
+            <svg class="ic" aria-hidden="true"><use href="#i-globe"/></svg>
+            <select name="code" aria-label="@T("Language")" data-autosubmit>
+                @foreach (var (code, name) in Lang.Languages) { <option value="@code" selected="@(code == Lang.Current)">@name</option> }
+            </select>
+            <noscript><button type="submit" class="small">OK</button></noscript>
+        </form>
+    </footer>
+
+    @* The choice dialog, styled like GameModeManager's in-game questions ("Changes need a match restart") *@
+    <dialog class="dlg" id="dlg" aria-labelledby="dlg-title">
+        <div class="dlg-head" id="dlg-title"></div>
+        <p class="dlg-text" id="dlg-text"></p>
+        <div class="dlg-choices" id="dlg-choices"></div>
+    </dialog>
+
+    <div id="toasts" aria-live="polite"></div>
+</body>
+</html>

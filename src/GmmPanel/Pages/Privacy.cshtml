@@ -1,0 +1,53 @@
+@page "/privacy"
+@inject GmmPanel.Data.SiteTheme Theme
+@inject GmmPanel.Data.PanelStore Store
+@{
+    ViewData["Title"] = "Privacy";
+    string site = Theme.Name;
+    var discord = Store.Current.Links.FirstOrDefault(l => l.Icon == "discord");
+    var keep = Store.Current.Retention;
+}
+@* What the panel keeps about players and visitors, in plain words, one translatable line per paragraph. It describes the
+   panel itself; the game servers' plugins (CS2-SimpleAdmin ...) keep their own data under their own rules. *@
+<div class="page-title">
+    <div class="eyebrow">@site</div>
+    <h1>@T("Privacy")</h1>
+    <p>@F("What this panel keeps about you, why, and for how long. It's run by {0}'s owners, not by Valve or Steam.", site)</p>
+</div>
+
+<div class="prose">
+    <h2>@T("Signing in")</h2>
+    <p>@T("You sign in through Steam. Steam tells the panel your SteamID, and the panel reads your public Steam name and picture. It never sees your Steam password or email. Signing in sets one cookie that keeps you signed in for up to 12 hours.")</p>
+
+    <h2>@T("Playing on the servers")</h2>
+    <p>@T("While you play, the game servers tell the panel who's on. From that it keeps:")</p>
+    <ul>
+        <li><b>@T("Player history:")</b> @T("your SteamID, the names you've used, when you were first and last seen, which servers and how long you've played. Staff see it, to know who's who.")@(keep.PlayerDays > 0 ? " " + F("Players not seen for {0} days are forgotten.", keep.PlayerDays) : "")</li>
+        <li><b>@T("Public profile:")</b> @T("your Steam name and picture, how long you've played and on which servers, and when you were last on, for anyone to see. You can hide it on My profile; staff still see your history.")</li>
+        <li><b>@T("Chat:")</b> @(keep.ChatDays > 0 ? F("what's said in game chat, for {0} days, then it's deleted. Only staff can read it, to deal with reports.", keep.ChatDays) : T("what's said in game chat, kept until the panel's owner deletes it. Only staff can read it, to deal with reports."))</li>
+        <li><b>@T("Player counts:")</b> @(keep.CountDays > 0 ? F("how many are on each server, for the graphs. No names; kept {0} days.", keep.CountDays) : T("how many are on each server, for the graphs. No names; kept until the panel's owner deletes them."))</li>
+        @if (GmmPanel.Data.Features.On(Store.Current, "countries"))
+        {
+            <li><b>@T("Country:")</b> @T("the game server looks up the country of your IP address and sends the panel only the country, never your IP. It's kept with your player history and shown as a flag next to your name; server pages show only totals per country, with countries of fewer than three players under Other.")</li>
+        }
+    </ul>
+
+    <h2>@T("What you send")</h2>
+    <ul>
+        <li><b>@T("Reports and appeals:")</b> @(keep.TicketDays > 0 ? F("what you write, who it's about, and staff's answer. Kept {0} days after they're answered.", keep.TicketDays) : T("what you write, who it's about, and staff's answer. Kept until the panel's owner deletes them."))</li>
+        <li><b>@T("Your Discord name,")</b> @T("if you add it on My profile, so staff can reach you. Remove it there at any time.")</li>
+    </ul>
+
+    <h2>@T("Staff actions")</h2>
+    <p>@T("Everything staff do through the panel (bans, kicks, changes to a server) goes in an audit log with who did it and when, so actions can be checked.")@(keep.AuditDays > 0 ? " " + F("The audit log is kept {0} days.", keep.AuditDays) : "")</p>
+
+    <h2>@T("Bans and mutes")</h2>
+    <p>@T("Bans and mutes belong to CS2-SimpleAdmin on the servers, not to the panel. The panel only shows them. Bans are public so everyone can see the servers are kept fair.")</p>
+
+    <h2>@T("In your browser")</h2>
+    <p>@T("The panel remembers a few choices on your own device: your background and colours, the server you picked on the dashboard, and your language. Only the picked server and the language are cookies. There are no ads, trackers or analytics.")</p>
+
+    <h2>@T("Questions, or to have your data removed")</h2>
+    <p>@F("Ask {0}'s staff.", site)@if (discord != null) { <text> <a href="@discord.Url" target="_blank" rel="noopener noreferrer">@T("Our Discord")</a>.</text> }
+        @T("Staff can close your reports, you can remove your Discord name yourself, and the panel's owner can delete your player history and chat from the panel's data. Bans are kept while they're in force.")</p>
+</div>

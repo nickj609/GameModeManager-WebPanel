@@ -1,0 +1,67 @@
+@page "/tasks"
+@model TasksModel
+@{
+    ViewData["Title"] = "Tasks";
+    string[] dayNames = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+    int[] dayValues = { 1, 2, 3, 4, 5, 6, 0 };
+}
+<div class="page-title">
+    <div class="eyebrow">@T("Staff")</div>
+    <h1>@T("Tasks")</h1>
+    <p>Do one thing on several servers at once, now or on a schedule. Each server checks your admin flags every time it runs,
+        and everything goes in the audit log.</p>
+</div>
+
+@* What, where and when. The when's own fields show as it's picked (site.css, with :has) *@
+<form class="site-form task-form" hx-post="/tasks?handler=Run" hx-target="#task-results" hx-swap="innerHTML">
+    <div class="site-grid">
+        <label>What
+            <select name="kind" hx-get="/tasks?handler=Fields" hx-target="#task-fields" hx-swap="innerHTML" hx-trigger="change">
+                @foreach (var kind in GmmPanel.Data.TaskKinds.All) { <option value="@kind.Id">@kind.Label</option> }
+            </select>
+        </label>
+        <div id="task-fields" class="task-fields"><partial name="_TaskFields" model="Model" /></div>
+    </div>
+
+    <div class="site-grid">
+        <div class="wide task-servers">
+            <div class="task-label">Servers <button type="button" class="small quiet" data-check-all="servers">All</button></div>
+            <div class="server-ticks">
+                @foreach (var server in Model.Servers)
+                {
+                    <label class="tick"><input type="checkbox" name="servers" value="@server.Name"><span class="ind @(server.Online ? "ok" : "bad")">@server.Name</span></label>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="site-grid task-when">
+        <label>When
+            <select name="when">
+                <option value="now">Now</option>
+                <option value="once">Once, later</option>
+                <option value="daily">Every day</option>
+                <option value="every">Every few minutes</option>
+            </select>
+        </label>
+        <label class="w-once">Date and time <small>panel time</small><input type="datetime-local" name="at"></label>
+        <label class="w-daily">Time <small>panel time</small><input type="time" name="time" value="04:00"></label>
+        <div class="w-daily wide days"><span class="task-label">Days <small>none ticked: every day</small></span>
+            @for (int i = 0; i < 7; i++) { <label class="tick"><input type="checkbox" name="days" value="@dayValues[i]"><span>@dayNames[i]</span></label> }
+        </div>
+        <label class="w-every">How often
+            <select name="every">@foreach (int m in TasksModel.EveryChoices) { <option value="@m">@(m >= 60 ? $"Every {m / 60} h" : $"Every {m} min")</option> }</select>
+        </label>
+        <label class="check"><input type="checkbox" name="onlyPlayers" value="true"> Only servers with players on</label>
+    </div>
+
+    <div class="buttons">
+        <button type="submit" class="primary w-now-btn" data-confirm="It runs on every ticked server now." data-confirm-title="Run it now?" data-confirm-yes="Run now"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Run now</button>
+        <button type="submit" class="primary w-later-btn" hx-post="/tasks?handler=Schedule" hx-target="#task-results"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Schedule it</button>
+    </div>
+</form>
+<div id="task-results" aria-live="polite"></div>
+
+<div id="jobs" hx-get="/tasks?handler=Jobs" hx-trigger="refreshJobs from:body, every 30s" hx-swap="innerHTML">
+    <partial name="_TaskList" model="Model" />
+</div>

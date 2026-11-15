@@ -1,0 +1,16 @@
+@model (string? Art, string Title)
+@* A server's map in a square (dashboard spotlight, Details, Manage): the owner's picture for it (data/maps), else the logo's
+   crosshair in white. panel.js sets the picture through CSSOM (the CSP forbids style=). *@
+<div class="spot-thumb card-art" data-art="@Model.Art" title="@Model.Title">
+    @if (Model.Art == null)
+    {
+        <svg class="thumb-cross" viewBox="0 0 48 48" aria-hidden="true">
+            <g fill="#fff" stroke="#0b0b0b" stroke-width="2.5" paint-order="stroke">
+                <rect x="20.25" y="2.5" width="7.5" height="13"/>
+                <rect x="20.25" y="32.5" width="7.5" height="13"/>
+                <rect x="2.5" y="20.25" width="13" height="7.5"/>
+                <rect x="32.5" y="20.25" width="13" height="7.5"/>
+            </g>
+        </svg>
+    }
+</div>

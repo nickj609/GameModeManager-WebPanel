@@ -1,0 +1,69 @@
+@page "/u/{steamId}"
+@model PublicProfileModel
+@{
+    ViewData["Title"] = Model.Hidden ? T("Private profile") : Model.Name;
+    // The link preview: their play time, with their Steam picture
+    if (!Model.Hidden && Model.Record != null) ViewData["Description"] = Format.Hours(Model.Played);
+    if (!Model.Hidden && Model.Avatar != null) ViewData["Image"] = Model.Avatar;
+    var r = Model.Record;
+}
+@* A player's public profile: who they are and where they play beside it (like My profile), then how much they play *@
+<div class="me-head">
+<div class="profile-head">
+    @if (Model.Avatar != null) { <img class="avatar huge" src="@Model.Avatar" alt="" width="96" height="96" referrerpolicy="no-referrer"> }
+    else { <span class="avatar huge letter">@(Model.Name.Length > 0 ? char.ToUpperInvariant(Model.Name[0]) : '?')</span> }
+    <div class="profile-who">
+        <div class="eyebrow">@T("Player")</div>
+        <h1>@Model.Name@(Model.FeatureOn("countries") ? Format.Flag(Model.Record?.Country) : null)</h1>
+        @if (!Model.Hidden)
+        {
+            <div class="profile-tags">
+                @if (Model.Online is { } on) { <span class="ind ok">@F("On {0} now", on.Server)</span> }
+                else if (r != null) { <span class="ind off">@F("Last seen {0}", Format.Ago(r.LastSeen))</span> }
+            </div>
+        }
+        else
+        {
+            <div class="profile-tags"><span class="role-tag hidden-tag"><svg class="ic" aria-hidden="true"><use href="#i-lock"/></svg>@T("Hidden")</span></div>
+        }
+        <div class="profile-buttons">
+            <a class="button small" href="https://steamcommunity.com/profiles/@Model.SteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>Steam</a>
+            <a class="button small" href="https://leetify.com/app/profile/@Model.SteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-stats"/></svg>Leetify</a>
+            @if (Model.Viewer != null && !Model.Own && Model.FeatureOn("reports")) { <a class="button small" href="/report?steamId=@Model.SteamId"><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg>@T("Report")</a> }
+            @if (Model.StaffLink) { <a class="button small" href="/players/@Model.SteamId"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>@T("Staff view")</a> }
+        </div>
+    </div>
+</div>
+@if (!Model.Hidden && r is { Servers.Count: > 0 })
+{
+    <div class="me-settings">
+        <div class="public-label">@T("Plays on")</div>
+        <div class="server-tags">@foreach (string server in r.Servers) { <a class="server-tag" href="/server/@Uri.EscapeDataString(server)">@server</a> }</div>
+    </div>
+}
+</div>
+
+@* Hidden: only the tag under the name, nothing else *@
+@if (Model.Hidden)
+{
+}
+else if (r == null)
+{
+    <div class="empty">@T("We haven't seen this player on our servers yet.")</div>
+}
+else
+{
+    @if (Model.Own)
+    {
+        <p class="note">@T("This is your public profile, as everyone sees it.") <a href="/profile#public">@T("Hide it on My profile")</a></p>
+    }
+    <div class="stat-tiles me-tiles">
+        @if (r != null)
+        {
+            <div class="stat-tile"><small>@T("Played")</small><b>@Format.Hours(Model.Played)</b></div>
+            <div class="stat-tile"><small>@T("This week")</small><b>@Format.Hours(Model.PlayedThisWeek)</b></div>
+            <div class="stat-tile"><small>@T("Visits")</small><b>@r.Sessions.ToString("N0")</b></div>
+        }
+        @if (r != null) { <div class="stat-tile"><small>@T("First seen")</small><b>@Format.Ago(r.FirstSeen)</b></div> }
+    </div>
+}

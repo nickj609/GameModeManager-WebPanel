@@ -1,0 +1,16 @@
+@model SearchModel
+@if (Model.Query.Length == 0)
+{
+    <div class="search-hint">Pages, servers, maps, modes@(Model.Viewer != null ? ", players" : "")</div>
+}
+else if (Model.Hits.Count == 0)
+{
+    <div class="search-hint">Nothing matches "@Model.Query".</div>
+}
+else
+{
+    @foreach (var hit in Model.Hits)
+    {
+        <a class="search-hit" href="@hit.Href"><svg class="ic" aria-hidden="true"><use href="#i-@hit.Icon"/></svg><span>@hit.Label<small>@hit.Detail</small></span></a>
+    }
+}

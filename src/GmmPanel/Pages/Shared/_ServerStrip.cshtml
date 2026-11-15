@@ -1,0 +1,24 @@
+@model IndexModel
+@* The server picker: one tab per server, by name (offline last), each with its players, mode and map (the 24-hour graph is on the picked server's card). Picking one
+   swaps the spotlight below (htmx) and remembers it. Scrolls sideways when there are many; panel.js filters by mode. *@
+@if (Model.Servers.Count == 0)
+{
+    <p class="note">@T("No servers yet. Panel admins add one on the setup page.")</p>
+}
+<div class="strip scroll" role="tablist" aria-label="@T("Servers")">
+@foreach (ServerView server in Model.Servers)
+{
+    StatusSnapshot? status = server.Status;
+    bool on = server == Model.Spot;
+    int players = server.Online ? status?.Players ?? 0 : 0;
+    <button type="button" role="tab" aria-selected="@(on ? "true" : "false")" class="chip-server @(on ? "on" : "")" data-mode="@(status?.Mode.Label ?? "")"
+            hx-get="/?handler=Spot&amp;s=@Uri.EscapeDataString(server.Name)" hx-target="#spot" hx-swap="innerHTML">
+        <span class="chip-top">
+            <span class="ind @(server.Online ? "ok" : "bad")"></span>
+            <b>@server.Name</b>
+            <span class="chip-count">@players<small>/@(status?.MaxPlayers ?? 0)</small></span>
+        </span>
+        <span class="chip-sub">@(status == null ? T("No status yet") : $"{status.Mode.Label} · {status.Map.Label}")</span>
+    </button>
+}
+</div>

@@ -1,0 +1,113 @@
+{
+  "type": "status",
+  "status": {
+    "gmmVersion": "2.4.0",
+    "cssVersion": "1.0.379",
+    "players": 7,
+    "maxPlayers": 16,
+    "mode": { "name": "Casual", "displayName": "Casual" },
+    "map": { "name": "de_dust2", "displayName": "de_dust2" },
+    "nextMap": "de_mirage",
+    "voteInProgress": false,
+    "votes": { "canStart": true, "unavailable": null },
+    "modes": [
+      { "name": "Casual", "displayName": "Casual", "maps": [ "de_dust2", "de_mirage", "de_inferno" ] },
+      { "name": "Competitive", "displayName": "Competitive", "maps": [ "de_dust2", "de_mirage", "de_inferno", "de_nuke" ] },
+      { "name": "Deathmatch", "displayName": "Deathmatch", "maps": [ "de_dust2", "aim_map" ] },
+      { "name": "BattleBall", "displayName": "Battle Ball", "maps": [ "battleball" ] }
+    ],
+    "maps": [
+      { "name": "de_dust2", "displayName": "de_dust2" },
+      { "name": "de_mirage", "displayName": "de_mirage" },
+      { "name": "de_inferno", "displayName": "de_inferno" },
+      { "name": "de_nuke", "displayName": "de_nuke" },
+      { "name": "aim_map", "displayName": "aim_map" },
+      { "name": "battleball", "displayName": "Battle Ball" }
+    ],
+    "settings": [
+      { "name": "bunnyhop", "displayName": "Bunnyhop", "state": "Off", "applies": "now", "cheats": false, "group": "Movement" },
+      { "name": "friendlyfire", "displayName": "Friendly fire", "state": "On", "applies": "round", "cheats": false, "group": "Rules" },
+      { "name": "startmoney", "displayName": "16000 start money", "state": "Off", "applies": "restart", "cheats": false, "group": "Rules" },
+      { "name": "infiniteammo", "displayName": "Infinite ammo", "state": "Mixed", "applies": "now", "cheats": false },
+      { "name": "noclip", "displayName": "Noclip for all", "state": "Off", "applies": "now", "cheats": true, "group": "Movement" },
+      { "name": "custom_hud", "displayName": "custom_hud", "state": "Unknown", "applies": "map", "cheats": false }
+    ],
+    "valueSettings": [
+      { "name": "roundtime", "displayName": "Round time", "value": "2 minutes", "choices": [ "1 minute", "2 minutes", "5 minutes" ], "cheatChoices": [], "applies": "round", "group": "Rules" },
+      { "name": "gravity", "displayName": "Gravity", "value": null, "choices": [ "Low", "Normal", "High" ], "cheatChoices": [ "Low" ], "applies": "now", "group": "Movement" }
+    ],
+    "actions": [
+      { "name": "actions/knife_round.cfg", "displayName": "Knife round", "group": "" },
+      { "name": "actions/add_bot_ct.cfg", "displayName": "Add bot CT", "group": "Bots" },
+      { "name": "actions/bots/kick.cfg", "displayName": "Kick bots", "group": "Bots" },
+      { "name": "actions/swap_teams.cfg", "displayName": "Swap teams", "group": "Teams" }
+    ],
+    "warmup": { "enabled": true, "scheduled": false, "running": false, "mode": "Deathmatch", "modes": [ "Aim", "Deathmatch", "Knives only" ], "unavailable": null },
+    "rotation": {
+      "maps": true, "modes": true, "interval": 3, "intervalChoices": [ 1, 2, 3, 4, 5, 6, 8, 10 ], "modeVote": "vote",
+      "countSkipped": false, "rtv": true, "whenEmpty": true, "emptyMinutes": 15, "emptyChoices": [ 5, 10, 15, 20, 30, 60 ],
+      "schedules": false, "mapsCounted": 2, "modeChangeDue": false
+    },
+    "rounds": {
+      "enabled": true, "pause": "Running", "pauseUnavailable": false, "canTimeout": true, "timeoutsByMatchZy": false, "matchZyLive": false, "frozen": false,
+      "canEndRound": true, "currentRound": 6, "backups": [ 6, 5, 4, 3, 2, 1 ]
+    },
+    "matchZy": { "live": false, "practice": false, "veto": false, "readyUp": true, "paused": false, "knifeRound": true, "playout": false, "whitelist": false },
+    "console": { "available": true, "reason": null },
+    "integrations": [
+      { "name": "PanoramaMenuManager", "found": true, "detail": "1.3.01" },
+      { "name": "GG1MapChooser", "found": true, "detail": "1.9.4" },
+      { "name": "PMM_GG1MapChooser", "found": true, "detail": "" },
+      { "name": "CS2-SimpleAdmin", "found": true, "detail": "1.9.1, admin section added" },
+      { "name": "MatchZy", "found": true, "detail": "0.8.x" },
+      { "name": "SharpTimer", "found": false, "detail": "" },
+      { "name": "Workshop addon", "found": true, "detail": "listed in mm_extra_addons" }
+    ],
+    "server": { "hostname": "Example Community | Casual", "address": "203.0.113.10:27015", "port": 27015, "teamCt": "", "teamT": "" },
+    "roster": [ { "steamId": "76561198000000003", "name": "Dev Player", "team": "CT", "score": 12, "kills": 6, "deaths": 3, "ping": 41, "country": "US" } ],
+    "plugins": [
+      { "name": "GameModeManager", "module": "GameModeManager", "version": "2.4.0", "author": "Striker-Nick", "description": "Game modes, maps and settings", "state": "loaded", "protected": true },
+      { "name": "MenuManagerCore", "module": "MenuManagerCore", "version": "1.3.01", "author": "NickFox, RRimmer", "description": "Panorama menus", "state": "loaded", "protected": false },
+      { "name": "GG1MapChooser", "module": "GG1_MapChooser", "version": "1.9.4", "author": "Sergey", "description": "Map chooser", "state": "loaded", "protected": false },
+      { "name": "CS2-SimpleAdmin", "module": "CS2-SimpleAdmin", "version": "1.9.1", "author": "daffyy", "description": "Admin plugin", "state": "loaded", "protected": false },
+      { "name": "MatchZy", "module": "MatchZy", "version": "0.8.15", "author": "WD-", "description": "Match plugin", "state": "loaded", "protected": false },
+      { "name": "VIPCore", "module": "[VIP] Core", "version": "1.2.8", "author": "thesamefabius", "description": "", "state": "loaded", "protected": false },
+      { "name": "K4-System", "module": "K4-System", "version": "4.5.3", "author": "K4ryuu", "description": "Ranks, stats and playtime", "state": "unloaded", "protected": false },
+      { "name": "SharpTimer", "module": "", "version": "", "author": "", "description": "", "state": "notloaded", "protected": false },
+      { "name": "RetakesPlugin", "module": "", "version": "", "author": "", "description": "", "state": "disabled", "protected": false }
+    ],
+    "data": [
+      {
+        "id": "server", "name": "This server", "available": true, "reason": null,
+        "lists": [
+          { "id": "players", "label": "Players", "search": true, "flag": "@css/generic", "filters": [], "actions": [
+            { "id": "kick", "label": "Kick", "row": true, "flag": "@css/kick", "fields": [ "steamid" ], "when": {} } ] },
+          { "id": "admins", "label": "Server admins", "search": true, "flag": "@css/generic", "filters": [], "actions": [] },
+          { "id": "groups", "label": "Admin groups", "search": false, "flag": "@css/generic", "filters": [], "actions": [] }
+        ]
+      },
+      {
+        "id": "simpleadmin", "name": "CS2-SimpleAdmin", "available": true, "reason": null,
+        "lists": [
+          { "id": "bans", "label": "Bans", "search": true, "flag": "@css/ban", "filters": [ "active", "all" ], "actions": [
+            { "id": "ban", "label": "Ban", "row": false, "flag": "@css/ban", "fields": [ "steamid", "minutes", "reason" ], "when": {} },
+            { "id": "unban", "label": "Unban", "row": true, "flag": "@css/unban", "fields": [ "steamid" ], "when": { "status": "ACTIVE" } } ] },
+          { "id": "mutes", "label": "Mutes & gags", "search": true, "flag": "@css/chat", "filters": [ "active", "all" ], "actions": [
+            { "id": "mute", "label": "Mute", "row": false, "flag": "@css/chat", "fields": [ "steamid", "minutes", "reason" ], "when": {} },
+            { "id": "gag", "label": "Gag", "row": false, "flag": "@css/chat", "fields": [ "steamid", "minutes", "reason" ], "when": {} },
+            { "id": "unmute", "label": "Unmute", "row": true, "flag": "@css/chat", "fields": [ "steamid" ], "when": { "status": "ACTIVE", "type": "MUTE" } },
+            { "id": "ungag", "label": "Ungag", "row": true, "flag": "@css/chat", "fields": [ "steamid" ], "when": { "status": "ACTIVE", "type": "GAG" } },
+            { "id": "unsilence", "label": "Unsilence", "row": true, "flag": "@css/chat", "fields": [ "steamid" ], "when": { "status": "ACTIVE", "type": "SILENCE" } } ] },
+          { "id": "warns", "label": "Warnings", "search": true, "flag": "@css/kick", "filters": [ "active", "all" ], "actions": [
+            { "id": "warn", "label": "Warn", "row": false, "flag": "@css/kick", "fields": [ "steamid", "reason" ], "when": {} } ] },
+          { "id": "admins", "label": "Admins", "search": true, "flag": "@css/root", "filters": [], "actions": [
+            { "id": "addadmin", "label": "Add admin", "row": false, "flag": "@css/root", "fields": [ "steamid", "name", "flags", "immunity", "minutes" ], "when": {} },
+            { "id": "removeadmin", "label": "Remove", "row": true, "flag": "@css/root", "fields": [ "steamid" ], "when": {} } ] },
+          { "id": "groups", "label": "Groups", "search": false, "flag": "@css/root", "filters": [], "actions": [
+            { "id": "addgroup", "label": "Add group", "row": false, "flag": "@css/root", "fields": [ "group", "flags", "immunity" ], "when": {} },
+            { "id": "removegroup", "label": "Remove", "row": true, "flag": "@css/root", "fields": [ "group" ], "when": {} } ] }
+        ]
+      }
+    ]
+  }
+}

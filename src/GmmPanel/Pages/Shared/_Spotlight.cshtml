@@ -1,0 +1,84 @@
+@model IndexModel
+@* The picked server: a banner with its map picture and Connect, who's on now (the centrepiece) and its last 24 hours.
+   Refreshes every 10 s with the same server. *@
+@{
+    ServerView? view = Model.Spot;
+    StatusSnapshot? s = view?.Status;
+    DateTimeOffset now = DateTimeOffset.UtcNow;
+}
+@if (view == null)
+{
+    return;
+}
+@{
+    string? art = s == null ? null : Model.ArtFor(s.Map.Name);
+    string? address = view.Online ? view.ConnectAddress : null;
+    var roster = view.Online ? s?.Roster ?? new() : new();
+    int peak = Model.SpotDay.Count == 0 ? 0 : Model.SpotDay.Max(d => d.Players);
+    string info = $"/server/{Uri.EscapeDataString(view.Name)}";
+}
+<div class="spot" data-map="@(s?.Map.Name ?? "")" hx-get="/?handler=Spot&amp;s=@Uri.EscapeDataString(view.Name)" hx-trigger="every 10s" hx-swap="outerHTML" hx-select=".spot">
+    <div class="spot-banner">
+        <partial name="_MapSquare" model="@((art, s?.Map.Label ?? ""))" />
+        <div class="spot-title">
+            <small>@(s?.Mode.Label ?? T("No status yet")) · @(view.Online ? F("online for {0}", Format.Span(now - (view.OnlineSince ?? now))) : T("offline"))</small>
+            <h2>@view.Name</h2>
+            <span class="spot-map">@(s?.Map.Label ?? "")@(s?.NextMap != null ? " · " + F("next {0}", s.NextMap) : "")</span>
+        </div>
+        <div class="spot-actions">
+            @if (address != null)
+            {
+                <a class="button primary" href="steam://connect/@address" title="@F("Opens CS2 and joins {0}", address)"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>@T("Connect")</a>
+            }
+            else
+            {
+                <span class="button primary disabled" title="@T(view.Online ? "The server didn't report its public address" : "The server is offline")"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>@T("Connect")</span>
+            }
+            @if (Model.CanManage(view.Name))
+            {
+                <a class="button" href="/servers/@Uri.EscapeDataString(view.Name)"><svg class="ic" aria-hidden="true"><use href="#i-crosshair"/></svg>@T("Manage")</a>
+            }
+            <a class="button" href="@info"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>@T("Details")</a>
+        </div>
+    </div>
+
+    <div class="spot-grid">
+        <section class="spot-live">
+            <div class="group-title">@T("Who's on") <small>@roster.Count / @(s?.MaxPlayers ?? 0)</small></div>
+            @if (roster.Count == 0)
+            {
+                <div class="empty">@T(view.Online ? "Nobody right now. Be the first." : "The server is offline.")</div>
+            }
+            else
+            {
+                bool board = roster.Any(p => p.Score != 0 || p.Ping != 0 || p.Kills != 0);
+                if (board) { <div class="live-head"><span></span><span class="live-name">@T("Player")</span><span class="live-stat">K / D</span><span class="live-stat score">@T("Score")</span><span class="live-stat ping">@T("Ping")</span><span class="team"></span></div> }
+                <div class="live-list scroll">
+                @foreach (RosterEntry p in roster.OrderBy(p => p.Team).ThenByDescending(p => p.Score).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    string? avatar = Model.AvatarOf(p.SteamId);
+                    <div class="live-row">
+                        @if (avatar != null) { <img class="avatar small" src="@avatar" alt="" width="28" height="28" referrerpolicy="no-referrer"> }
+                        else { <span class="avatar small letter">@(p.Name.Length > 0 ? char.ToUpperInvariant(p.Name[0]) : '?')</span> }
+                        <a class="live-name" href="/u/@p.SteamId">@p.Name</a>
+                        @if (board) { <span class="live-stat" title="@T("Kills") / @T("Deaths")">@p.Kills / @p.Deaths</span><span class="live-stat score" title="@T("Score")">@p.Score</span><span class="live-stat ping" title="@T("Ping")">@p.Ping ms</span> } else { <span class="live-time">@(Model.SpotSince.TryGetValue(p.SteamId, out DateTimeOffset since) ? Format.Span(now - since) : "")</span> }
+                        <span class="team team-@p.Team.ToLowerInvariant()">@p.Team</span>
+                    </div>
+                }
+                </div>
+            }
+        </section>
+        <section>
+            <div class="group-title">@T("Last 24 hours") <small>@F("peak {0}", peak)</small></div>
+            @if (Model.SpotDay.Count > 1)
+            {
+                @Graph.Players(Model.SpotDay, now.AddHours(-24), now, 600, 110, "graph", F("{0}: players over the last 24 hours, peak {1}", view.Name, peak))
+            }
+            else
+            {
+                <div class="empty">@T("The graph fills in as the panel samples, every 5 minutes.")</div>
+            }
+        </section>
+    </div>
+    @if (Model.SpotCountries is { } countries) { <partial name="_Countries" model="countries" /> }
+</div>

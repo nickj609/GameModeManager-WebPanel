@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GmmPanel/GmmPanel.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/FakeAgent/FakeAgent.csproj" />
+    <Project Path="tools/GameArt/GameArt.csproj" />
+    <Project Path="tools/LangTool/LangTool.csproj" />
+  </Folder>
+</Solution>

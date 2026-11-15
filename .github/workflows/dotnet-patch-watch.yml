@@ -1,0 +1,33 @@
+name: .NET patch watch
+
+# The single files carry their own .NET runtime, so a .NET security fix only reaches users through a new panel release.
+# Every Wednesday (the day after Microsoft's Patch Tuesday releases land), this compares the newest ASP.NET Core 10
+# runtime with the one the last release was built on, and starts Release when it's newer.
+
+permissions: {}
+
+on:
+  schedule:
+    - cron: '17 6 * * 3'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Compare runtimes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          latest=$(curl -sSf https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json | jq -r '.["latest-runtime"]')
+          built=$(gh release view --repo "$REPO" --json body -q .body 2>/dev/null | grep -oP '(?<=<!-- runtime:)[0-9.]+' || echo "none")
+          echo "Newest .NET 10 runtime: $latest, last release built on: $built"
+          if [ "$built" = "none" ]; then echo "No release yet; nothing to do."; exit 0; fi
+          if [ "$(printf '%s\n%s\n' "$built" "$latest" | sort -V | tail -1)" != "$built" ]; then
+            gh workflow run release.yml --repo "$REPO" -f reason=".NET $latest security and bug fixes (was $built)."
+            echo "Started a release for .NET $latest."
+          fi

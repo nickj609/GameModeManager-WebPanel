@@ -1,0 +1,30 @@
+@model (string? Name, string? SteamId)
+@inject GmmPanel.Auth.SteamProfile Steam
+@inject GmmPanel.Data.History History
+@inject GmmPanel.Data.PanelStore PanelData
+@* A player in a list: their Steam picture (or initial) and name, linked to their history; the SteamID shows on hover. A row
+   without a name (server admins, an old report, a ban) takes the name our servers saw, else their Steam name, else the SteamID. *@
+@{
+    string? id = Model.SteamId is { } s && CommandCatalog.IsSteamId(s) ? s : null;
+    string? known = !string.IsNullOrWhiteSpace(Model.Name) ? Model.Name
+        : id == null ? null
+        : History.Player(id)?.Name is { Length: > 0 } seen ? seen
+        : Steam.KnownName(id);
+    string name = known ?? Model.SteamId ?? "";
+    string? avatar = id == null ? null : Steam.KnownAvatar(id);
+    bool steamLink = ViewData["SteamLink"] is true;   // Public tables: their public profile (/u/), not the staff-only history
+    // Their country's flag after the name, when Player countries is on (Site settings, Features)
+    string? country = id != null && GmmPanel.Data.Features.On(PanelData.Current, "countries") ? (History.Player(id)?.Country ?? ViewData["Country"] as string) : null;   // A row's own country (a ban's), when our servers haven't seen them
+}
+@if (id != null)
+{
+    <a class="player" href="@(steamLink ? (GmmPanel.Data.Features.On(PanelData.Current, "profiles") ? $"/u/{id}" : $"https://steamcommunity.com/profiles/{id}") : $"/players/{id}")" title="@name · SteamID64 @id">
+        @if (avatar != null) { <img class="avatar small" src="@avatar" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer"> }
+        else { <span class="avatar small letter">@(known is { Length: > 0 } ? char.ToUpperInvariant(known[0]) : '?')</span> }
+        <span class="player-name @(known == null ? "mono" : "")">@name</span>@Format.Flag(country)
+    </a>
+}
+else
+{
+    <span class="player"><span class="player-name">@name</span></span>
+}

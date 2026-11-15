@@ -1,0 +1,39 @@
+@model (List<(string Country, int Players)> Countries, int Other, int Total)
+@* Player countries: a world map with each country shaded by its share, and the top countries as bars. The map is
+   wwwroot/img/world.svg (Natural Earth, public domain), one shape per country used through <use>; panel.js writes the
+   countries' names in the page's language (Intl.DisplayNames). Countries with fewer than History.MinPerCountry players
+   are in Other, so nobody stands out. Each player's country comes from GameModeManager (DB-IP's database, on the game
+   server); the panel never sees an IP. *@
+@{
+    var (countries, other, total) = Model;
+    int top = countries.Count > 0 ? countries[0].Players : 1;
+    int Share(int players) => total == 0 ? 0 : (int)Math.Round(players * 100.0 / total);
+    int Shade(int players) => Math.Clamp((int)Math.Ceiling(players * 5.0 / top), 1, 5);
+}
+@if (countries.Count > 0)
+{
+    <section class="countries">
+        <div class="group-title">@T("Player countries") <small>@F("{0} players, last 30 days", total)</small></div>
+        <div class="countries-body">
+            <svg class="worldmap" viewBox="0 0 1000 394" role="img" aria-label="@T("Player countries")">
+                <use href="/img/world.svg#world" class="land"/>
+                @foreach (var (country, players) in countries)
+                {
+                    <use href="/img/world.svg#@country" class="hot s@(Shade(players))"><title>@country: @Share(players)%</title></use>
+                }
+            </svg>
+            <ol class="country-list">
+                @foreach (var (country, players) in countries.Take(5))
+                {
+                    <li><span class="country-cell">@Format.Flag(country)<span class="country-name" data-region="@country">@country</span></span><progress max="100" value="@Share(players)">@Share(players)%</progress><b>@Share(players)%</b></li>
+                }
+                @if (countries.Count > 5 || other > 0)
+                {
+                    int rest = total - countries.Take(5).Sum(c => c.Players);
+                    <li class="other"><span class="country-cell"><span class="flag-blank" aria-hidden="true"></span><span class="country-name">@T("Other")</span></span><progress max="100" value="@Share(rest)">@Share(rest)%</progress><b>@Share(rest)%</b></li>
+                }
+            </ol>
+        </div>
+        <div class="countries-credit"><a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP geolocation by DB-IP</a></div>
+    </section>
+}

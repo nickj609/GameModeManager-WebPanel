@@ -1,0 +1,76 @@
+@page "/audit"
+@model GmmPanel.Pages.Audit.IndexModel
+@{
+    ViewData["Title"] = "Audit log";
+}
+<div class="page-title">
+    <div class="eyebrow">Owner</div>
+    <h1>Audit log</h1>
+    <p>Every sign-in, refusal and command, newest first. Search it below, or export it. How long it's kept is under
+        <a href="/site#retention">Site settings, Retention</a>.</p>
+</div>
+
+@* Filters: a plain GET form, so a search can be bookmarked or shared with another panel admin *@
+<form class="audit-export" method="get" action="/audit">
+    <span class="mod-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" name="q" value="@Model.Q" maxlength="64" placeholder="Search users, actions or details" aria-label="Search the audit log"></span>
+    <select name="server" aria-label="Server">
+        <option value="">Every server</option>
+        @foreach (string s in Model.ServerNames) { <option value="@s" selected="@(Model.Server == s)">@s</option> }
+    </select>
+    <select name="result" aria-label="Result">
+        <option value="" selected="@(Model.Result == "")">Any result</option>
+        <option value="ok" selected="@(Model.Result == "ok")">Success</option>
+        <option value="refused" selected="@(Model.Result == "refused")">Failure</option>
+    </select>
+    <select name="days" aria-label="How far back">
+        @foreach (var (d, label) in new[] { (1, "Last day"), (7, "Last 7 days"), (30, "Last 30 days"), (90, "Last 90 days"), (0, "Everything") }) { <option value="@d" selected="@(Model.Days == d)">@label</option> }
+    </select>
+    <button type="submit" class="small primary">Search</button>
+    @if (Model.Q.Length > 0 || Model.Server.Length > 0 || Model.Result.Length > 0 || Model.Days != 7) { <a class="button small" href="/audit">Clear</a> }
+</form>
+
+@* Export: what the search above shows (every page of it), as a file *@
+<form class="audit-export" method="get" action="/audit">
+    <input type="hidden" name="handler" value="Export">
+    <input type="hidden" name="q" value="@Model.Q">
+    <input type="hidden" name="server" value="@Model.Server">
+    <input type="hidden" name="result" value="@Model.Result">
+    <input type="hidden" name="days" value="@Model.Days">
+    <span class="muted">Export @Model.Total @(Model.Total == 1 ? "entry" : "entries")</span>
+    <button type="submit" class="small" name="format" value="csv" disabled="@(Model.Total == 0)">CSV</button>
+    <button type="submit" class="small" name="format" value="json" disabled="@(Model.Total == 0)">JSON</button>
+</form>
+
+<div class="table-wrap">
+    @if (Model.Entries.Count == 0)
+    {
+        <div class="empty">@(Model.Q.Length > 0 || Model.Server.Length > 0 || Model.Result.Length > 0 ? "Nothing matches." : "Nothing logged in that time.")</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Time (UTC)</th><th>User</th><th>Action</th><th>Server</th><th>Result</th></tr></thead>
+            <tbody>
+            @foreach (var entry in Model.Entries)
+            {
+                @* "Name (SteamID64)" shows as the name, the ID quietly under it; the action's details (or why it failed) under the action *@
+                var who = System.Text.RegularExpressions.Regex.Match(entry.Who, @"^(.*) \((\d{17})\)$");
+                var action = AuditText.Describe(entry.What);
+                <tr>
+                    <td class="time">@Format.TimeUtc(entry.At)</td>
+                    <td class="audit-user">@if (who.Success) { <b>@who.Groups[1].Value</b><small>@who.Groups[2].Value</small> } else { <b>@entry.Who</b> }</td>
+                    <td class="audit-action"><b>@action.Title</b>@if (action.Code != null) { <code>@action.Code</code> }@if (entry.Detail.Length > 0) { <small>@entry.Detail</small> }</td>
+                    <td>@(entry.Server ?? "–")</td>
+                    <td><span class="ind @(entry.Ok ? "ok" : "bad")">@(entry.Ok ? "Success" : "Failure")</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div class="pager">
+            <span>@Model.Total.ToString("N0") in all · page @Model.P of @Model.Pages</span>
+            @if (Model.P > 1) { <a class="button small" href="@Model.PageUrl(Model.P - 1)">Previous</a> } else { <button type="button" class="small" disabled>Previous</button> }
+            @if (Model.P < Model.Pages) { <a class="button small" href="@Model.PageUrl(Model.P + 1)">Next</a> } else { <button type="button" class="small" disabled>Next</button> }
+        </div>
+    }
+</div>

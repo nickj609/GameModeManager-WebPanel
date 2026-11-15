@@ -1,0 +1,107 @@
+@page "/appearance"
+@model AppearanceModel
+@{
+    ViewData["Title"] = "Appearance";
+}
+@* Each control changes the page as it moves; panel.js saves it to this browser through appearance.js *@
+<div class="page-title">
+    <div class="eyebrow">Panel</div>
+    <h1>Appearance</h1>
+    <p>How the panel looks in this browser. Changes show straight away and are saved here only: other admins and your other
+        devices keep their own.@if (Model.Owner) { <text> What everyone gets is on <a href="/site">Site settings</a>.</text> }</p>
+</div>
+@if (Model.Message != null)
+{
+    <div class="banner @(Model.Failed ? "" : "ok")"><svg class="ic" aria-hidden="true"><use href="#i-@(Model.Failed ? "warning" : "ok")"/></svg><span>@Model.Message</span></div>
+}
+<div class="group-title look-part">Your look, in this browser</div>
+
+<div id="look">
+    <div class="group-title">Theme</div>
+    <div class="row look-row">
+        <label class="label" for="look-theme">Theme <small>The site's default is @(Model.SiteTheme switch { "light" => "light", "auto" => "your device's setting", _ => "dark" })</small></label>
+        <select id="look-theme">
+            <option value="">Default</option>
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+        </select>
+    </div>
+
+    <div class="group-title">Accent colour</div>
+    <div class="row look-row">
+        <span class="label">Colour <small>Buttons, switches, side bars, the logo's crosshair and the section icons</small></span>
+        <div class="swatches" role="group" aria-label="Accent colour">
+            <button type="button" class="swatch s-red" data-accent="#d83a30" title="Red" aria-label="Red"></button>
+            <button type="button" class="swatch s-orange" data-accent="#d4801a" title="Orange (default)" aria-label="Orange"></button>
+            <button type="button" class="swatch s-gold" data-accent="#d9b44a" title="Gold" aria-label="Gold"></button>
+            <button type="button" class="swatch s-green" data-accent="#4caf6a" title="Green" aria-label="Green"></button>
+            <button type="button" class="swatch s-teal" data-accent="#2fb3a4" title="Teal" aria-label="Teal"></button>
+            <button type="button" class="swatch s-blue" data-accent="#3b82f6" title="Blue" aria-label="Blue"></button>
+            <button type="button" class="swatch s-purple" data-accent="#8b5cf6" title="Purple" aria-label="Purple"></button>
+            <button type="button" class="swatch s-pink" data-accent="#e0569b" title="Pink" aria-label="Pink"></button>
+            <input type="color" id="look-accent" aria-label="Any colour" title="Any colour">
+        </div>
+    </div>
+
+    <div class="row look-row">
+        <label class="label" for="look-warn">Notifications <small>The bell's count, the staff heads-up, open reports and appeals, staff notes, pauses and warmup</small></label>
+        <input type="color" id="look-warn" aria-label="Warnings colour">
+    </div>
+
+    <div class="group-title">Panel</div>
+    <div class="row look-row">
+        <label class="label" for="look-glass">Panel opacity <small>Lower lets more of the background through</small></label>
+        <input type="range" id="look-glass" min="0.4" max="1" step="0.02">
+        <output for="look-glass" id="look-glass-out"></output>
+    </div>
+    <div class="row look-row">
+        <label class="label" for="look-blur">Blur behind the panel</label>
+        <input type="range" id="look-blur" min="0" max="32" step="1">
+        <output for="look-blur" id="look-blur-out"></output>
+    </div>
+    <div class="row look-row">
+        <label class="label" for="look-bars">Header and footer opacity</label>
+        <input type="range" id="look-bars" min="0.4" max="1" step="0.02">
+        <output for="look-bars" id="look-bars-out"></output>
+    </div>
+
+    <div class="group-title">Pattern</div>
+    <div class="row look-row">
+        <label class="label" for="look-pattern">Pattern on the panel</label>
+        <select id="look-pattern">
+            <option value="">Default</option>
+            <option value="none">None</option>
+            <option value="dots">Dots</option>
+            <option value="grid">Grid</option>
+            <option value="lines">Diagonal lines</option>
+        </select>
+    </div>
+    <div class="row look-row">
+        <label class="label" for="look-pstrength">Pattern strength <small>1 (faint) to 20</small></label>
+        <input type="range" id="look-pstrength" min="1" max="20" step="1">
+        <output for="look-pstrength" id="look-pstrength-out"></output>
+    </div>
+
+    <div class="group-title">Background</div>
+    <div class="row look-row">
+        <label class="label" for="look-dim">Darken the background <small>0% shows the scene as it is. The scene itself is picked with the round button at bottom right</small></label>
+        <input type="range" id="look-dim" min="0" max="1" step="0.05">
+        <output for="look-dim" id="look-dim-out"></output>
+    </div>
+
+    <div class="group-title">Preview</div>
+    <div class="row look-preview">
+        <button type="button" class="primary">Main button</button>
+        <button type="button">Other button</button>
+        <button type="button" class="danger">Risky button</button>
+        <button type="button" class="switch on" aria-label="Switch, on"></button>
+        <span class="ind ok">Online</span>
+        <span class="ind warn">Pauses next round</span>
+    </div>
+
+    <div class="row">
+        <span class="label">Back to the panel's look <small>The site's theme, colours, opacity and blur</small></span>
+        <button type="button" id="look-reset">Reset</button>
+    </div>
+</div>
+

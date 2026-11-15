@@ -1,0 +1,15 @@
+@inject GmmPanel.Data.SiteTheme Theme
+@{
+    string? picture = Theme.LogoUrl;
+    string sub = Theme.Look.Sub.Length > 0 ? Theme.Look.Sub : "GameModeManager";
+    var (main, ending) = GmmPanel.Data.SiteTheme.Domain(Theme.Brand);
+}
+@* The site's logo (Site settings, Site look): its picture, else its name as text, a domain's ending ("Example.gg") in the
+   accent colour. Until the owner names the site it's the placeholder Example.gg. *@
+<a href="/" class="logo" aria-label="@Theme.Brand, servers">
+    @if (Theme.LogoSvg("logo") is { } svg) { <span class="logo-svg" aria-label="@Theme.Brand">@svg</span> }
+    else if (picture != null) { <img class="logo-img" src="@picture" alt="@Theme.Brand"> }
+    else if (ending != null) { <span class="logo-name">@main<span class="logo-io">@ending</span></span> }
+    else { <span class="logo-name">@main</span> }
+    <span class="logo-sub">@sub</span>
+</a>

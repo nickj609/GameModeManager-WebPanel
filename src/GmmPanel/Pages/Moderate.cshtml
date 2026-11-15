@@ -1,0 +1,131 @@
+@page "/moderate"
+@model ModerateModel
+@{
+    ViewData["Title"] = "Moderate";
+    StatusSnapshot? s = Model.View?.Status;
+    string server = Model.Server ?? "";
+    string q = Uri.EscapeDataString(server);
+    // Writes the viewer's flags allow (the plugins' own command flags)
+}
+<div id="mod-body" data-tabkey="gmm.tab.mod">
+    <div class="title-row">
+        <div class="page-title">
+            <div class="eyebrow"><a href="/">@T("Servers")</a> &rsaquo; @T("Moderate")</div>
+            <h1>@T("Moderate")</h1>
+        </div>
+        @if (Model.View != null)
+        {
+            <span class="ind @(Model.View.Online ? "ok" : "bad")">Read through @server</span>
+        }
+    </div>
+
+    @if (Model.View == null)
+    {
+        <p class="note">No servers yet.</p>
+    }
+    else if (!Model.View.Online || s == null)
+    {
+        <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg>
+            <span>@server isn't connected. The lists are read through a connected server: pick another in the header.</span></div>
+    }
+    else if (s.Data == null)
+    {
+        <p class="note">@server's GameModeManager is older than the panel: update it to read the plugins' data.</p>
+    }
+    else
+    {
+        <p class="note">Plugins' lists are read through @server's GameModeManager from each plugin's own database; changes go through the plugins' own commands. Appeals, reports, the chat log and player history are kept by the panel. Everything you change is in the audit log.</p>
+        <div class="manage">
+            <nav class="rail" aria-label="Sections">
+                @foreach (var group in Model.Shown.GroupBy(tab => tab.Group))
+                {
+                    <div class="rail-group">@T(group.Key)</div>
+                    @foreach (var tab in group)
+                    {
+                        int open = Model.OpenCount(tab.Id);
+                        <button type="button" class="rail-item @(tab.Id == "bans" ? "on" : "")" data-tab="@tab.Id"><svg class="ic"><use href="#i-@tab.Icon"/></svg><span>@T(tab.Label)</span>@if (open > 0) { <b class="count" title="@open open">@open</b> }<u>&rsaquo;</u></button>
+                    }
+                }
+            </nav>
+            <div class="panes">
+                @foreach (var tab in Model.Shown)
+                {
+                    var found = Model.Find(tab);
+                    <section class="pane @(tab.Id == "bans" ? "on" : "")" data-pane="@tab.Id" data-load="@(found is { Source.Available: true, List: not null } ? "1" : null)">
+                        <div class="pane-head"><span class="crumb">@tab.Group &rsaquo; @(found?.Source.Name ?? "")</span><h2>@tab.Label</h2></div>
+                        @if (found is not { } f || f.List == null)
+                        {
+                            <div class="empty">@(found is { } nf && !nf.Source.Available ? nf.Source.Reason ?? $"{nf.Source.Name}'s data can't be read." : tab.Empty)</div>
+                        }
+                        else if (!f.Source.Available)
+                        {
+                            <div class="empty">@(f.Source.Reason ?? $"{f.Source.Name}'s data can't be read.")</div>
+                        }
+                        else
+                        {
+                            DataList list = f.List;
+                            string listUrl = $"/moderate?handler=List&server={q}&source={f.Source.Id}&list={list.Id}";
+                            string target = $"list-{tab.Id}";
+                            @* Writes offered above the list (ban a SteamID, add an admin ...) *@
+                            @* Writes with the same fields share one form, with a choice of which (Mute, Gag, Silence) *@
+                            @foreach (var same in list.Actions.Where(a => !a.Row && Model.CanDo(a)).GroupBy(a => string.Join(",", a.Fields)))
+                            {
+                                DataAction action = same.First();
+                                bool choice = same.Count() > 1;
+                                <form class="mod-form" hx-post="/moderate?handler=Moderate&amp;server=@q" hx-target="#toasts" hx-swap="beforeend">
+                                    <input type="hidden" name="source" value="@f.Source.Id">
+                                    <input type="hidden" name="list" value="@list.Id">
+                                    @if (choice)
+                                    {
+                                        <label>Type<select name="action">@foreach (DataAction option in same) { <option value="@option.Id">@option.Label</option> }</select></label>
+                                    }
+                                    else
+                                    {
+                                        <input type="hidden" name="action" value="@action.Id">
+                                    }
+                                    @foreach (string field in action.Fields)
+                                    {
+                                        switch (field)
+                                        {
+                                            case "steamid": <label>SteamID64<input type="text" name="steamid" inputmode="numeric" pattern="7656119[0-9]{10}" maxlength="17" required placeholder="7656119..."></label> break;
+                                            case "minutes": <label>Length<select name="minutes">
+                                                <option value="60">1 hour</option><option value="1440">1 day</option><option value="10080">1 week</option>
+                                                <option value="43200">30 days</option><option value="0" selected="@(list.Id == "admins")">Permanent</option></select></label> break;
+                                            case "reason": <label>Reason<input type="text" name="reason" maxlength="128" placeholder="Optional"></label> break;
+                                            case "group": <label>Group<input type="text" name="group" maxlength="32" required placeholder="#moderator"></label> break;
+                                            case "amount": <label>Amount<input type="text" name="amount" inputmode="numeric" maxlength="7" required></label> break;
+                                            case "name": <label>Name<input type="text" name="name" maxlength="64" required></label> break;
+                                            case "flags": <label>Flags or group<input type="text" name="flags" maxlength="256" required placeholder="@@css/ban @@css/kick or #mod"></label> break;
+                                            case "immunity": <label>Immunity<input type="text" name="immunity" inputmode="numeric" maxlength="6" value="10" required></label> break;
+                                        }
+                                    }
+                                    @{ string verb = choice ? "Apply" : action.Label; }
+                                    <button type="submit" class="primary" data-confirm="@(choice ? string.Join(", ", same.Select(a => a.Label)) : action.Label): @f.Source.Name runs it on @server, and its database is shared by its servers." data-confirm-title="@verb?" data-confirm-yes="@verb">@verb</button>
+                                </form>
+                            }
+                            <form class="mod-tools" hx-get="@listUrl" hx-target="#@target" hx-swap="innerHTML" hx-trigger="input delay:450ms, submit">
+                                @if (list.Search)
+                                {
+                                    <span class="mod-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+                                        <input type="search" name="search" maxlength="64" placeholder="Name or SteamID64" aria-label="Search @tab.Label"></span>
+                                }
+                                @if (list.Filters.Count > 0)
+                                {
+                                    <select name="filter" aria-label="Show" class="narrow-select">
+                                        @foreach (string filter in list.Filters)
+                                        {
+                                            <option value="@filter">@(filter switch { "active" => "Active only", "open" => "Open only", "all" => "All", "expired" => "Expired", _ => filter })</option>
+                                        }
+                                    </select>
+                                }
+                            </form>
+                            <div id="@target" data-list hx-get="@listUrl" hx-trigger="load-list" hx-include="previous .mod-tools" hx-swap="innerHTML">
+                                <div class="loading">Loading…</div>
+                            </div>
+                        }
+                    </section>
+                }
+            </div>
+        </div>
+    }
+</div>

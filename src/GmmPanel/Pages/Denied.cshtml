@@ -1,0 +1,10 @@
+@page "/denied"
+@{
+    ViewData["Title"] = "Not allowed";
+    ViewData["Narrow"] = true;
+}
+<h2 class="menu-heading">@T("Not allowed")</h2>
+<div class="center-box">
+    <p>@T("Your Steam account can't open that page. On a server's pages you see what your admin flags on that server allow, as in game; the panel's own pages are for panel admins.")</p>
+    <a class="button" href="/">@T("Back to the servers")</a>
+</div>

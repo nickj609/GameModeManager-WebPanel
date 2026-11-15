@@ -1,0 +1,199 @@
+@page "/profile"
+@model ProfileModel
+@{
+    ViewData["Title"] = "My profile";
+    var top = Model.Servers.Select(s => s.Access).FirstOrDefault();
+    int bans = Model.Active("Bans"), mutes = Model.Active("Mutes & gags"), warns = Model.Active("Warnings");
+    int waiting = Model.Mine.Count(t => t.Status == "OPEN");
+    bool tickets = Model.Mine.Count > 0 || (Model.Banned && Model.FeatureOn("appeals"));
+}
+@* My profile: who they are and their two settings at the top, a line of numbers, then one section at a time (like Site
+   settings): what they may do on the servers, their bans, mutes and warnings, and their appeals and reports *@
+@if (Model.Message != null)
+{
+    <div class="banner @(Model.MessageOk ? "ok" : "")"><svg class="ic" aria-hidden="true"><use href="#i-@(Model.MessageOk ? "ok" : "warning")"/></svg><span>@T(Model.Message)</span></div>
+}
+
+<div class="me-head">
+    <div class="profile-head">
+        @if (Model.Avatar != null) { <img class="avatar huge" src="@Model.Avatar" alt="" width="96" height="96" referrerpolicy="no-referrer"> }
+        <div class="profile-who">
+            <div class="eyebrow">@T("My profile")</div>
+            <h1>@Model.Admin.Name@(Model.FeatureOn("countries") ? Format.Flag(Model.Country) : null)</h1>
+            <div class="profile-tags">
+                @if (top != null) { <span class="role-tag @top.RoleClass">@T(top.RoleName)</span> }
+                @if (Model.DiscordName != null) { <span class="discord-tag"><svg class="ic" aria-hidden="true"><use href="#i-discord"/></svg>@Model.DiscordName</span> }
+            </div>
+            <div class="profile-buttons">
+                <a class="button small" href="https://steamcommunity.com/profiles/@Model.Admin.SteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>Steam</a>
+                <a class="button small" href="https://leetify.com/app/profile/@Model.Admin.SteamId" target="_blank" rel="noopener noreferrer" title="@T("Your CS2 rank and stats on Leetify")"><svg class="ic" aria-hidden="true"><use href="#i-stats"/></svg>Leetify</a>
+                @if (Model.FeatureOn("reports") && !Model.Servers.Any(s => s.Access.IsStaff)) { <a class="button small" href="/report"><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg>@T("Report")</a> }
+            </div>
+        </div>
+    </div>
+    @* Their two settings, side by side with who they are *@
+    <div class="me-settings">
+        <form method="post" asp-page-handler="Discord" class="discord-name" id="discord">
+            <label>@T("Discord username")<input type="text" name="discord" value="@Model.DiscordName" maxlength="37" placeholder="username" autocomplete="off" spellcheck="false"></label>
+            <button type="submit" class="small">@T("Save")</button>
+            <small>@T("Shown on your profile. Empty hides it.")</small>
+        </form>
+        <form method="post" asp-page-handler="Public" class="public-toggle" id="public">
+            <span class="public-label">@T("Public profile")</span>
+            <span class="public-row">
+                <input type="hidden" name="hide" value="@(Model.ProfileHidden ? "false" : "true")">
+                <button type="submit" class="switch @(Model.ProfileHidden ? "" : "on")" role="switch" aria-checked="@(Model.ProfileHidden ? "false" : "true")" aria-label="@T("Public profile")" title="@T(Model.ProfileHidden ? "Show it" : "Hide it")"></button>
+                <span class="public-state @(Model.ProfileHidden ? "off" : "on")"><svg class="ic" aria-hidden="true"><use href="#i-@(Model.ProfileHidden ? "lock" : "globe")"/></svg>@T(Model.ProfileHidden ? "Hidden" : "Public")</span>
+                <a class="public-open" href="/u/@Model.Admin.SteamId">@T("Open")<span aria-hidden="true"> ›</span></a>
+            </span>
+        </form>
+    </div>
+</div>
+
+@* The numbers at a glance; a sanction in force gets the red stripe, something waiting the heads-up one *@
+<div class="stat-tiles me-tiles">
+    <div class="stat-tile"><small>@T("Played")</small><b>@Format.Hours(Model.Played)</b></div>
+    <div class="stat-tile"><small>@T("This week")</small><b>@Format.Hours(Model.PlayedThisWeek)</b></div>
+    @if (Model.Sections.Any())
+    {
+        <div class="stat-tile @(bans > 0 ? "bad" : "")"><small>@T("Active bans")</small><b>@bans</b></div>
+        <div class="stat-tile @(mutes > 0 ? "bad" : "")"><small>@T("Active mutes")</small><b>@mutes</b></div>
+        <div class="stat-tile @(warns > 0 ? "warn" : "")"><small>@T("Warnings")</small><b>@warns</b></div>
+    }
+    <div class="stat-tile @(waiting > 0 ? "warn" : "")"><small>@T("Waiting")</small><b>@waiting</b></div>
+</div>
+
+<div class="tab-body me-body" data-tabkey="gmm.tab.me">
+    <div class="manage">
+        <nav class="rail" aria-label="Sections">
+            <button type="button" class="rail-item" data-tab="access"><svg class="ic"><use href="#i-shield"/></svg><span>@T("Server roles")</span><u>&rsaquo;</u></button>
+            @foreach (var (label, _) in Model.Sections)
+            {
+                int count = Model.Active(label);
+                string icon = label switch { "Bans" => "ban", "Mutes & gags" => "mute", _ => "gavel" };
+                <button type="button" class="rail-item" data-tab="@label.ToLowerInvariant().Replace(" & ", "-")"><svg class="ic"><use href="#i-@icon"/></svg><span>@T(label)</span>@if (count > 0) { <span class="count">@count</span> }<u>&rsaquo;</u></button>
+            }
+            @if (tickets)
+            {
+                <button type="button" class="rail-item" data-tab="tickets"><svg class="ic"><use href="#i-appeal"/></svg><span>@T("Appeals & reports")</span>@if (waiting > 0) { <span class="count">@waiting</span> }<u>&rsaquo;</u></button>
+            }
+        </nav>
+        <div class="panes">
+            <section class="pane" data-pane="access">
+                <div class="pane-head"><h2>@T("Server roles")</h2></div>
+                @if (Model.Servers.Count == 0)
+                {
+                    <div class="empty">@T("No servers yet.")</div>
+                }
+                @foreach (var (servers, access, detail) in Model.AccessGroups)
+                {
+                    <div class="row">
+                        <span class="label">@(servers.Count == Model.Servers.Count && servers.Count > 1 ? F("All servers ({0})", servers.Count) : string.Join(", ", servers))
+                            <small>@detail</small></span>
+                        <span class="role-tag @access.RoleClass">@T(access.RoleName)</span>
+                    </div>
+                }
+            </section>
+
+            @foreach (var (label, result) in Model.Sections)
+            {
+                <section class="pane" data-pane="@label.ToLowerInvariant().Replace(" & ", "-")">
+                    <div class="pane-head"><h2>@T(label)</h2></div>
+                    @if (!result.Ok || result.Data == null)
+                    {
+                        <div class="empty">@result.Message</div>
+                    }
+                    else if (result.Data.Rows.Count == 0)
+                    {
+                        <div class="empty">@T(label switch { "Bans" => "No bans. Keep it that way.", "Mutes & gags" => "No mutes or gags.", "Warnings" => "No warnings.", _ => "Nothing yet." })</div>
+                    }
+                    else
+                    {
+                        <partial name="_Rows" model="result.Data" />
+                    }
+                    @if (label == "Bans" && Model.Banned && Model.FeatureOn("appeals"))
+                    {
+                        <p class="note">@T("Think the ban is wrong? Appeal it under Appeals & reports.")</p>
+                    }
+                </section>
+            }
+
+            @if (tickets)
+            {
+                <section class="pane" data-pane="tickets">
+                    <div class="pane-head"><h2>@T("Appeals & reports")</h2></div>
+                    @if (Model.Banned && Model.FeatureOn("appeals"))
+                    {
+                        <div class="group-title">@T("Appeal your ban")</div>
+                        <form method="post" asp-page-handler="Appeal" class="ticket-form" id="appeal-form">
+                            <label>@T("Why should it be lifted?")<textarea name="text" rows="4" maxlength="@Tickets.MaxText" minlength="10" required></textarea></label>
+                            <button type="submit" class="primary">@T("Send appeal")</button>
+                        </form>
+                    }
+                    @* Each one opens in a pop-up: what they wrote, staff's replies shown to them, and a reply while it's open *@
+                    @foreach (var t in Model.Mine)
+                    {
+                        string title = t.Kind == "appeal" ? T("Ban appeal") : F("Report: {0}", t.TargetName.Length > 0 ? t.TargetName : t.TargetSteamId);
+                        string ind = t.Status switch { "OPEN" => "warn", "ACCEPTED" => "ok", _ => "off" };
+                        string state = T(t.Status switch { "OPEN" => "Waiting", "ACCEPTED" => "Accepted", "REJECTED" => "Rejected", _ => "Closed" });
+                        var thread = t.Comments.Where(c => c.Public || c.SteamId == t.SteamId).ToList();
+                        <button type="button" class="row row-button" data-dlg="tdlg-@t.Id">
+                            <span class="label">@title
+                                <small>@Format.Time(t.Created)@(t.HandledAt != null ? " · " + F("answered {0}", Format.Ago(t.HandledAt)) : "")@(thread.Count > 0 ? " · " + N(thread.Count, "{0} reply", "{0} replies") : "")</small></span>
+                            <span class="ind @ind">@state</span><u>&rsaquo;</u>
+                        </button>
+                        <dialog class="dlg details-dlg ticket-dlg" id="tdlg-@t.Id" aria-labelledby="tdlg-@t.Id-title">
+                            <div class="dlg-head details-head"><span id="tdlg-@t.Id-title">@title</span><span class="ind @ind">@state</span></div>
+                            <div class="ticket-scroll">
+                                <dl class="details-list">
+                                    <dt>@T("Sent")</dt><dd>@Format.Time(t.Created)</dd>
+                                    @if (t.Kind != "appeal") { <dt>@T("Player")</dt><dd>@(t.TargetName.Length > 0 ? t.TargetName : t.TargetSteamId) <small class="mono muted">@t.TargetSteamId</small></dd> }
+                                    @if (t.Server.Length > 0) { <dt>@T("Server")</dt><dd>@t.Server</dd> }
+                                    <dt>@T("Answered")</dt><dd>@(t.HandledAt != null ? Format.Time(t.HandledAt.Value) : T("Not yet"))</dd>
+                                </dl>
+                                <div class="ticket-section">
+                                    <div class="group-title">@T(t.Kind == "appeal" ? "Appeal details" : "Report details")</div>
+                                    <blockquote class="ticket-text">@t.Text</blockquote>
+                                </div>
+                                <div class="ticket-section">
+                                    <div class="group-title">@T("Replies")@if (thread.Count > 0) { <small>@thread.Count</small> }</div>
+                                    @if (thread.Count == 0)
+                                    {
+                                        <p class="ticket-empty">@T(t.Status == "OPEN" ? "No replies yet. Staff answer here." : "No replies.")</p>
+                                    }
+                                    @foreach (var c in thread)
+                                    {
+                                        bool mine = c.SteamId == t.SteamId;
+                                        <div class="ticket-reply @(mine ? "mine" : "")">
+                                            <div class="ticket-reply-head"><b>@(mine ? T("You") : T("Staff"))</b><span class="time">@Format.Ago(c.At)</span></div>
+                                            <div class="note-text">@c.Text</div>
+                                        </div>
+                                    }
+                                    @if (t.Status == "OPEN")
+                                    {
+                                        <form method="post" asp-page-handler="Reply" class="ticket-reply-form">
+                                            <input type="hidden" name="id" value="@t.Id">
+                                            <textarea name="text" rows="3" maxlength="@Tickets.MaxComment" minlength="2" required aria-label="@T("Reply")" placeholder="@T("Add something staff should know")"></textarea>
+                                            <div class="comment-foot"><small>@T("Staff see your reply here.")</small><button type="submit" class="small primary">@T("Send reply")</button></div>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                            <div class="details-links">
+                                @if (t.Kind == "appeal" && t.Status != "OPEN" && Model.Banned && Model.FeatureOn("appeals"))
+                                {
+                                    <a class="button small" href="#appeal-form" data-dlg-close>@T("Appeal again")</a>
+                                }
+                                <button type="button" class="small dlg-close" data-dlg-close>@T("Close")</button>
+                            </div>
+                        </dialog>
+                    }
+                </section>
+            }
+        </div>
+    </div>
+</div>
+@if (!Model.Sections.Any())
+{
+    <p class="note">@T("None of the servers' plugins can show your data right now.")</p>
+}

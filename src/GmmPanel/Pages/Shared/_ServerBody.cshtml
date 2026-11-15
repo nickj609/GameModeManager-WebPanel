@@ -1,0 +1,641 @@
+@model ServerModel
+@{
+    ServerView view = Model.View;
+    StatusSnapshot? s = view.Status;
+    bool live = view.Online && s != null;
+    Access a = Model.Access;
+    // Each section needs the flag its in-game page needs (GameModeManager's admin menus); a section with rows of their own
+    // (settings, actions) shows when any of its rows is allowed
+    bool Allowed(string pane) => pane switch
+    {
+        "maps" or "modes" => a.Has(PanelPermissions.Need("maps")),
+        "settings" => s != null && (s.Settings.Any(x => a.Has(x.Flag)) || s.ValueSettings.Any(x => a.Has(x.Flag))),
+        "rounds" => s != null && a.Has(s.Rounds.Flag),
+        "actions" => s != null && (s.Actions.Count == 0 ? a.Has(Flags.Cvar) : s.Actions.Any(x => a.Has(x.Flag))),
+        "warmup" or "rotation" or "server" or "matchzy" or "console" => a.Has(PanelPermissions.Need(pane)),
+        "plugins" => a.CanAdminister,
+        _ => true
+    };
+    string post = $"/servers/{Uri.EscapeDataString(view.Name)}?handler=Command";
+    string disabled = live ? "" : "disabled";
+    ModeInfo? currentMode = s?.Modes.FirstOrDefault(mode => mode.Name == s.Mode.Name);
+    // The current mode's maps first, then every other map
+    List<NamedItem> maps = s == null ? new() : s.Maps
+        .OrderBy(map => currentMode?.Maps.Contains(map.Name) == true ? 0 : 1)
+        .ThenBy(map => map.Label, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+    var events = view.Events;
+
+    string Applies(string applies) => applies switch
+    {
+        "round" => "Applies next round",
+        "restart" => "Applies after a match restart",
+        "map" => "Applies on the next map",
+        _ => "Applies now"
+    };
+}
+@* One panel, like the admin menu: sections down the left (with the icons CS2-SimpleAdmin's menu uses), the chosen one on
+   the right. panel.js keeps the section across the 5-second refresh; the console's log and input are kept by hx-preserve.
+   data-map lets "Auto" pick the background for the map being played. *@
+@* translate="no": map, mode, cfg and cvar names read as another language to the browser, which then offers to translate
+   a page the panel already shows in the viewer's language *@
+<div id="server-body" translate="no"
+     data-post="@post"
+     data-map="@(s?.Map.Name ?? "")"
+     data-tabkey="@(Model.IsAdmin ? "gmm.tab.admin" : "gmm.tab")"
+     hx-get="@Model.Address?handler=Live&amp;rev=@view.Revision"
+     hx-trigger="every 5s, refresh from:body delay:700ms"
+     hx-swap="outerHTML">
+
+    @* The header, as on the dashboard and Details: the map in a square, the server and what it's doing, then Connect and
+       Details together *@
+    @* One "Server" page in the header: this switch moves between managing the game and the server, when both are allowed *@
+    <div class="server-head-row">
+        <div class="eyebrow crumbs"><a href="/">@T("Servers")</a> &rsaquo; @T(Model.IsAdmin ? "Manage Server" : "Manage Game")</div>
+        @if (Model.Access.CanManage && Model.Access.CanAdminister)
+        {
+            <nav class="seg server-switch" aria-label="Manage">
+                <a href="@Model.PagePath(false)" class="@(Model.IsAdmin ? "" : "on")" aria-current="@(Model.IsAdmin ? null : "page")"><svg class="ic" aria-hidden="true"><use href="#i-crosshair"/></svg>@T("Game")</a>
+                <a href="@Model.PagePath(true)" class="@(Model.IsAdmin ? "on" : "")" aria-current="@(Model.IsAdmin ? "page" : null)"><svg class="ic" aria-hidden="true"><use href="#i-server"/></svg>@T("Server")</a>
+            </nav>
+        }
+    </div>
+    <div class="spot-banner info-banner">
+        <partial name="_MapSquare" model="@((s == null ? null : Model.ArtFor(s.Map.Name), s?.Map.Label ?? ""))" />
+        <div class="spot-title">
+            <small><span class="ind @(view.Online ? "ok" : "bad")">@(view.Online ? $"Online for {Format.Span(DateTimeOffset.UtcNow - (view.OnlineSince ?? DateTimeOffset.UtcNow))}" : "Offline")</span></small>
+            <h1>@view.Name</h1>
+            @if (s?.Server?.Hostname is { Length: > 0 } host) { <div class="info-host">@host</div> }
+            @if (s != null)
+            {
+                @* The same on Manage Game and Manage Server: what the server is doing now *@
+                <div class="facts">
+                    <span><b>@s.Mode.Label</b></span>
+                    <span>@s.Map.Label@(s.NextMap != null ? $" · next {s.NextMap}" : "")</span>
+                    <span><b>@s.Players</b> / @s.MaxPlayers players</span>
+                </div>
+                <div class="facts">
+                    @switch (s.Rounds.Pause)
+                    {
+                        case "Paused": <span class="ind bad">Paused</span> break;
+                        case "Pending": <span class="ind warn">Pauses next round</span> break;
+                        default: <span class="ind ok">Match running</span> break;
+                    }
+                    @if (s.Warmup.Running) { <span class="ind warn">Warmup</span> }
+                    @if (s.VoteInProgress) { <span class="ind warn">Vote running</span> }
+                </div>
+            }
+        </div>
+        <div class="spot-actions">
+            @* As on the dashboard card: Connect is always there, greyed out with the reason when it can't join *@
+            @if (view.Online && view.ConnectAddress is { } address)
+            {
+                <a class="button primary" href="steam://connect/@address" title="@F("Opens CS2 and joins {0}", address)"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>@T("Connect")</a>
+            }
+            else
+            {
+                <span class="button primary disabled" title="@T(view.Online ? "The server didn't report its public address" : "The server is offline")"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>@T("Connect")</span>
+            }
+            <a class="button" href="/server/@Uri.EscapeDataString(view.Name)"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>@T("Details")</a>
+        </div>
+    </div>
+
+    @if (!view.Online)
+    {
+        <div class="banner">
+            <svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg>
+            <span>@(view.OfflineSince == null ? "This server hasn't connected since the panel started." : $"Not connected since {Format.Ago(view.OfflineSince)}. Showing what it last reported; the controls come back when it reconnects.")</span>
+        </div>
+    }
+
+    @if (s == null)
+    {
+        <p class="note">Turn the panel on in GameModeManager's config on that server (<code>Panel.Enabled</code>) and put its token in
+            <code>panel-secrets.json</code>. The server connects within a minute of a map change or restart.</p>
+    }
+    else
+    {
+        <div class="manage">
+            <nav class="rail" aria-label="Sections">
+                @if (Model.IsAdmin)
+                {
+                @if (Allowed("server")) { <button type="button" class="rail-item on" data-tab="server"><svg class="ic"><use href="#i-settings"/></svg><span>@T("Server")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("plugins")) { <button type="button" class="rail-item" data-tab="plugins"><svg class="ic"><use href="#i-plugins"/></svg><span>@T("Plugins")</span><u>&rsaquo;</u></button> }
+                @if (true)
+                {
+                    @if (Allowed("console")) { <button type="button" class="rail-item" data-tab="console"><svg class="ic"><use href="#i-terminal"/></svg><span>@T("Console")</span><u>&rsaquo;</u></button> }
+                }
+                }
+                else
+                {
+                @if (Allowed("maps")) { <button type="button" class="rail-item on" data-tab="maps"><svg class="ic"><use href="#i-random"/></svg><span>@T("Maps")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("modes")) { <button type="button" class="rail-item" data-tab="modes"><svg class="ic"><use href="#i-trophy"/></svg><span>@T("Modes")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("settings")) { <button type="button" class="rail-item" data-tab="settings"><svg class="ic"><use href="#i-check"/></svg><span>@T("Settings")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("rounds")) { <button type="button" class="rail-item" data-tab="rounds"><svg class="ic"><use href="#i-replay"/></svg><span>@T("Rounds")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("actions")) { <button type="button" class="rail-item" data-tab="actions"><svg class="ic"><use href="#i-fast"/></svg><span>@T("Actions")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("warmup")) { <button type="button" class="rail-item" data-tab="warmup"><svg class="ic"><use href="#i-timer"/></svg><span>@T("Warmup")</span><u>&rsaquo;</u></button> }
+                @if (Allowed("rotation")) { <button type="button" class="rail-item" data-tab="rotation"><svg class="ic"><use href="#i-refresh"/></svg><span>@T("Rotation")</span><u>&rsaquo;</u></button> }
+                @if (s.MatchZy != null)
+                {
+                    @if (Allowed("matchzy")) { <button type="button" class="rail-item" data-tab="matchzy"><svg class="ic"><use href="#i-star"/></svg><span>@T("MatchZy")</span><u>&rsaquo;</u></button> }
+                }
+                @if (Allowed("events")) { <button type="button" class="rail-item" data-tab="events"><svg class="ic"><use href="#i-list"/></svg><span>@T("Recent events")</span><u>&rsaquo;</u></button> }
+                }
+            </nav>
+
+            <div class="panes">
+                @if (Model.IsAdmin)
+                {
+                    <partial name="_AdminPanes" model="Model" />
+                }
+                else
+                {
+                @* ---------- Maps ---------- *@
+                @if (Allowed("maps"))
+                {
+                <section class="pane on" data-pane="maps">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Maps</h2></div>
+                    <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                        <input type="hidden" name="kind" value="map">
+                        <div class="row stack">
+                            <span class="label">Change map <small>The current mode's maps come first. Vote asks the players yes or no</small></span>
+                            <select name="map" aria-label="Map" @disabled>
+                                @foreach (NamedItem map in maps)
+                                {
+                                    <option value="@map.Name" selected="@(map.Name == s.Map.Name)">@map.Label@(currentMode?.Maps.Contains(map.Name) == true ? "" : " (other mode)")</option>
+                                }
+                            </select>
+                            <button type="submit" name="command" value="change_map" class="primary" @disabled
+                                    data-confirm="Players are moved to the new map straight away." data-confirm-title="Change the map now?" data-confirm-yes="Change now">Change now</button>
+                            <button type="submit" name="command" value="set_next_map" @disabled>Set next</button>
+                            <button type="submit" name="command" value="start_vote" @(live && s.Votes.CanStart ? "" : "disabled") title="@(s.Votes.Unavailable ?? "Players vote yes or no on this map")">Vote</button>
+                        </div>
+                    </form>
+                    <div class="row">
+                        <span class="label">Random map <small>A map from @s.Mode.Label's map groups</small></span>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <button type="submit" name="command" value="random_map" @disabled
+                                    data-confirm="GameModeManager picks a map from this mode and changes to it." data-confirm-title="Change to a random map?" data-confirm-yes="Change">Random</button>
+                        </form>
+                    </div>
+                    <div class="row">
+                        <span class="label">Random vote <small>@(s.Votes.CanStart ? "GG1MapChooser's vote across several maps" : s.Votes.Unavailable ?? "A vote can't start now")</small></span>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <input type="hidden" name="kind" value="random">
+                            <button type="submit" name="command" value="start_vote" @(live && s.Votes.CanStart ? "" : "disabled")>Random vote</button>
+                        </form>
+                    </div>
+                </section>
+                }
+
+                @* ---------- Modes ---------- *@
+                @if (Allowed("modes"))
+                {
+                <section class="pane" data-pane="modes">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Modes</h2></div>
+                    <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                        <input type="hidden" name="kind" value="mode">
+                        <div class="row stack">
+                            <span class="label">Change mode <small>The map changes too. Vote asks the players yes or no</small></span>
+                            <select name="mode" aria-label="Mode" @disabled>
+                                @foreach (ModeInfo mode in s.Modes)
+                                {
+                                    <option value="@mode.Name" selected="@(mode.Name == s.Mode.Name)">@mode.Label</option>
+                                }
+                            </select>
+                            <button type="submit" name="command" value="change_mode" class="primary" @disabled
+                                    data-confirm="The mode and the map change straight away." data-confirm-title="Change the mode now?" data-confirm-yes="Change now">Change now</button>
+                            <button type="submit" name="command" value="set_next_mode" @disabled>Set next</button>
+                            <button type="submit" name="command" value="start_vote" @(live && s.Votes.CanStart ? "" : "disabled") title="@(s.Votes.Unavailable ?? "Players vote yes or no on this mode")">Vote</button>
+                        </div>
+                    </form>
+                    <div class="row">
+                        <span class="label">Random mode</span>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <button type="submit" name="command" value="random_mode" @disabled
+                                    data-confirm="GameModeManager picks another mode and changes to it." data-confirm-title="Change to a random mode?" data-confirm-yes="Change">Random</button>
+                        </form>
+                    </div>
+                    <p class="note">GG1MapChooser's vote across random modes needs an admin in game: it's on the in-game Modes page.</p>
+                </section>
+                }
+
+                @* ---------- Settings ---------- *@
+                @if (Allowed("settings"))
+                {
+                <section class="pane" data-pane="settings">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Settings</h2></div>
+                    @if (s.Settings.Count == 0 && s.ValueSettings.Count == 0)
+                    {
+                        <div class="empty">No settings on this server.</div>
+                    }
+                    @* Grouped by the cfg's "// group:", as the in-game menu's pages: groups first, then the rest *@
+                    @{ var settingGroups = s.Settings.Where(x => a.Has(x.Flag)).Select(x => x.Group).Concat(s.ValueSettings.Where(x => a.Has(x.Flag)).Select(x => x.Group))
+                        .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(g => g.Length == 0 ? 1 : 0).ThenBy(g => g, StringComparer.OrdinalIgnoreCase).ToList(); }
+                    @foreach (string settingGroup in settingGroups)
+                    {
+                    @if (settingGroups.Count > 1) { <div class="group-title">@(settingGroup.Length > 0 ? settingGroup : "Other")</div> }
+                    @foreach (SettingInfo setting in s.Settings.Where(x => a.Has(x.Flag) && string.Equals(x.Group, settingGroup, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        bool on = setting.State == "On";
+                        bool askCheats = setting.Cheats && !on;
+                        <div class="row">
+                            <span class="label">@setting.Label
+                                <small>@Applies(setting.Applies)@if (setting.Cheats) {<span class="cheats"> · turns on sv_cheats</span>}</small></span>
+                            @if (setting.State is "On" or "Off")
+                            {
+                                <span class="state @(on ? "on" : "")">@(on ? "On" : "Off")</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                                    <input type="hidden" name="setting" value="@setting.Name">
+                                    <input type="hidden" name="on" value="@(on ? "false" : "true")">
+                                    @if (askCheats) { <input type="hidden" name="confirm" value="true"> }
+                                    <button type="submit" name="command" value="set_setting" class="switch @(on ? "on" : "")" @disabled
+                                            aria-label="Turn @setting.Label @(on ? "off" : "on")" aria-pressed="@(on ? "true" : "false")"
+                                            data-confirm="@(askCheats ? $"{setting.Label} turns on sv_cheats: every player can use cheat commands like noclip and god mode until it's turned off." : null)"
+                                            data-confirm-title="Turn on sv_cheats?" data-confirm-yes="Turn it on" data-confirm-danger="true"></button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="state">@(setting.State == "Mixed" ? "Tied" : "Unknown")</span>
+                                @foreach (string choice in new[] { "true", "false" })
+                                {
+                                    bool cheatsHere = setting.Cheats && choice == "true";
+                                    <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                                        <input type="hidden" name="setting" value="@setting.Name">
+                                        <input type="hidden" name="on" value="@choice">
+                                        @if (cheatsHere) { <input type="hidden" name="confirm" value="true"> }
+                                        <button type="submit" name="command" value="set_setting" class="small" @disabled
+                                                data-confirm="@(cheatsHere ? $"{setting.Label} turns on sv_cheats: every player can use cheat commands like noclip and god mode until it's turned off." : null)"
+                                                data-confirm-title="Turn on sv_cheats?" data-confirm-yes="Turn it on" data-confirm-danger="true">@(choice == "true" ? "On" : "Off")</button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    }
+                    @foreach (ValueSettingInfo setting in s.ValueSettings.Where(x => a.Has(x.Flag) && string.Equals(x.Group, settingGroup, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend" data-cheats-check="true">
+                            <input type="hidden" name="setting" value="@setting.Name">
+                            <div class="row stack">
+                                <span class="label">@setting.Label <small>Now: @(setting.Value ?? "can't tell") · @Applies(setting.Applies)</small></span>
+                                <select name="value" aria-label="@setting.Label" @disabled>
+                                    @foreach (string choice in setting.Choices)
+                                    {
+                                        <option value="@choice" selected="@(choice == setting.Value)" data-cheats="@(setting.CheatChoices.Contains(choice) ? "true" : null)">@choice@(setting.CheatChoices.Contains(choice) ? " (sv_cheats)" : "")</option>
+                                    }
+                                </select>
+                                <button type="submit" name="command" value="set_value" @disabled>Set</button>
+                            </div>
+                        </form>
+                    }
+                    }
+                </section>
+                }
+
+                @* ---------- Rounds ---------- *@
+                @if (Allowed("rounds"))
+                {
+                <section class="pane" data-pane="rounds">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Rounds</h2></div>
+                    <div class="row">
+                        <span class="label">@(s.Rounds.MatchZyLive ? "Pause (through MatchZy)" : "Pause the match")
+                            <small>@(s.Rounds.Pause == "Pending" ? "Waiting for the next freeze time" : "Takes effect in freeze time")</small></span>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            @switch (s.Rounds.Pause)
+                            {
+                                case "Running": <button type="submit" name="command" value="pause" @(live && !s.Rounds.PauseUnavailable ? "" : "disabled") title="@(s.Rounds.PauseUnavailable ? "Not in warmup or during a timeout" : null)">Pause</button> break;
+                                case "Pending": <button type="submit" name="command" value="cancel_pause" @disabled>Cancel pause</button> break;
+                                default: <button type="submit" name="command" value="unpause" class="primary" @disabled>Unpause</button> break;
+                            }
+                        </form>
+                    </div>
+                    <div class="row">
+                        <span class="label">Timeout <small>@(s.Rounds.TimeoutsByMatchZy ? "During a live MatchZy match, players call timeouts with .tac" : s.Rounds.CanTimeout ? "The team's timeout starts in freeze time" : "Not while paused, in warmup, or with a timeout waiting")</small></span>
+                        @if (!s.Rounds.TimeoutsByMatchZy)
+                        {
+                            @foreach (string team in new[] { "ct", "t" })
+                            {
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                                    <input type="hidden" name="team" value="@team">
+                                    <button type="submit" name="command" value="timeout" @(live && s.Rounds.CanTimeout ? "" : "disabled")>@(team == "ct" ? "CT" : "T")</button>
+                                </form>
+                            }
+                        }
+                    </div>
+                    @if (!s.Rounds.Enabled)
+                    {
+                        <p class="note">Replaying rounds is turned off in GameModeManager's config (Actions.Rounds).</p>
+                    }
+                    else
+                    {
+                    <div class="row">
+                        <span class="label">Replay <small>Round @s.Rounds.CurrentRound now. Scores and money go back too</small></span>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <button type="submit" name="command" value="replay_round" @(live && s.Rounds.Backups.Count >= 1 ? "" : "disabled")
+                                    data-confirm="The round starts again from its beginning." data-confirm-title="Replay this round?" data-confirm-yes="Replay">This round</button>
+                        </form>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <button type="submit" name="command" value="replay_last" @(live && s.Rounds.Backups.Count >= 2 ? "" : "disabled")
+                                    data-confirm="The match goes back to the start of the last round." data-confirm-title="Replay the last round?" data-confirm-yes="Replay">Last round</button>
+                        </form>
+                    </div>
+                    }
+                    @if (s.Rounds.Enabled && s.Rounds.Backups.Count > 0)
+                    {
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <div class="row stack">
+                                <span class="label">Go back to round</span>
+                                <select name="round" aria-label="Round" @disabled>
+                                    @foreach (int round in s.Rounds.Backups.OrderByDescending(r => r))
+                                    {
+                                        <option value="@round">Round @round</option>
+                                    }
+                                </select>
+                                <button type="submit" name="command" value="restore_round" @disabled
+                                        data-confirm="Scores and money go back to the start of that round." data-confirm-title="Go back to that round?" data-confirm-yes="Go back">Go back</button>
+                            </div>
+                        </form>
+                    }
+                    <div class="row">
+                        <span class="label">Freeze players <small>The round clock stands still while everyone is frozen</small></span>
+                        <span class="state @(s.Rounds.Frozen ? "on" : "")">@(s.Rounds.Frozen ? "On" : "Off")</span>
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <input type="hidden" name="on" value="@(s.Rounds.Frozen ? "false" : "true")">
+                            <button type="submit" name="command" value="freeze" class="switch @(s.Rounds.Frozen ? "on" : "")" @disabled
+                                    aria-label="@(s.Rounds.Frozen ? "Unfreeze" : "Freeze") players" aria-pressed="@(s.Rounds.Frozen ? "true" : "false")"></button>
+                        </form>
+                    </div>
+                    <p class="note">End round and Restart match are offered after a setting change that needs them, as in game.</p>
+                </section>
+                }
+
+                @* ---------- Actions ---------- *@
+                @if (Allowed("actions"))
+                {
+                <section class="pane" data-pane="actions">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Actions</h2></div>
+                    @if (s.Actions.Count == 0)
+                    {
+                        <div class="empty">No action cfgs on this server.</div>
+                    }
+                    @* Grouped by the cfg's "// group:" (an older GameModeManager sent "Bots: Add bot CT" as the name) *@
+                    @foreach (var group in s.Actions.Where(x => a.Has(x.Flag))
+                        .Select(x => (Action: x, Group: x.Group.Length > 0 ? x.Group : x.Label.Contains(": ") ? x.Label[..x.Label.IndexOf(": ")] : "",
+                                      Label: x.Group.Length == 0 && x.Label.Contains(": ") ? x.Label[(x.Label.IndexOf(": ") + 2)..] : x.Label))
+                        .GroupBy(x => x.Group).OrderBy(g => g.Key.Length == 0 ? 1 : 0).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+                    {
+                        @if (group.Key.Length > 0 || s.Actions.Any(x => x.Group.Length > 0 || x.Label.Contains(": "))) { <div class="group-title">@(group.Key.Length > 0 ? group.Key : "Other")</div> }
+                        @foreach (var item in group.OrderBy(x => x.Label, StringComparer.OrdinalIgnoreCase))
+                        {
+                            <div class="row">
+                                <span class="label">@item.Label</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                                    <input type="hidden" name="action" value="@item.Action.Name">
+                                    <button type="submit" name="command" value="run_action" @disabled>Run</button>
+                                </form>
+                            </div>
+                        }
+                    }
+                </section>
+                }
+
+                @* ---------- Warmup ---------- *@
+                @if (Allowed("warmup"))
+                {
+                <section class="pane" data-pane="warmup">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Warmup</h2></div>
+                    @if (!s.Warmup.Enabled)
+                    {
+                        <div class="empty">Warmup is turned off in GameModeManager's config.</div>
+                    }
+                    else
+                    {
+                        <div class="row"><span class="label">Now</span>
+                            @if (s.Warmup.Running) { <span class="ind warn">Running</span> }
+                            else if (s.Warmup.Scheduled) { <span class="ind warn">Scheduled</span> }
+                            else { <span class="ind off">Off</span> }
+                            @if (s.Warmup.Mode != null) { <span class="muted">@s.Warmup.Mode</span> }
+                        </div>
+                        @if (s.Warmup.Unavailable != null)
+                        {
+                            <p class="note">@s.Warmup.Unavailable</p>
+                        }
+                        string warmupOff = live && s.Warmup.Unavailable == null ? "" : "disabled";
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <div class="row stack">
+                                <span class="label">Warmup mode <small>Start it now, or at the start of the next map</small></span>
+                                <select name="mode" aria-label="Warmup mode" @warmupOff>
+                                    @foreach (string mode in s.Warmup.Modes)
+                                    {
+                                        <option value="@mode" selected="@(mode == s.Warmup.Mode)">@mode</option>
+                                    }
+                                </select>
+                                <button type="submit" name="command" value="start_warmup" class="primary" @(warmupOff == "" && !s.Warmup.Running ? "" : "disabled")>Start now</button>
+                                <button type="submit" name="command" value="schedule_warmup" @warmupOff>Schedule</button>
+                            </div>
+                        </form>
+                        @if (s.Warmup.Running)
+                        {
+                            <div class="row"><span class="label">End the warmup now</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                                    <button type="submit" name="command" value="end_warmup" class="primary" @warmupOff>End warmup</button>
+                                </form>
+                            </div>
+                        }
+                    }
+                </section>
+                }
+
+                @* ---------- Rotation ---------- *@
+                @if (Allowed("rotation"))
+                {
+                <section class="pane" data-pane="rotation">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Rotation</h2></div>
+                    <p class="note">Changes here last until the server restarts. GameModeManager.json keeps the defaults.</p>
+                    @{
+                        var toggles = new (string Key, string Label, string Hint, bool On)[]
+                        {
+                            ("maps", "Map rotation", "", s.Rotation.Maps),
+                            ("modes", "Mode rotation", $"{s.Rotation.MapsCounted} map(s) counted so far", s.Rotation.Modes),
+                            ("countSkipped", "Count skipped maps", "Maps changed by vote or admin count towards the next mode change", s.Rotation.CountSkipped),
+                            ("rtv", "RTV / Nominate", "Players' rock the vote and nominations", s.Rotation.Rtv),
+                            ("whenEmpty", "Rotate when empty", "Change map when the server has been empty a while", s.Rotation.WhenEmpty)
+                        };
+                    }
+                    @foreach (var t in toggles)
+                    {
+                        <div class="row">
+                            <span class="label">@t.Label @if (t.Hint.Length > 0) { <small>@t.Hint</small> }</span>
+                            <span class="state @(t.On ? "on" : "")">@(t.On ? "On" : "Off")</span>
+                            <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                                <input type="hidden" name="key" value="@t.Key">
+                                <input type="hidden" name="value" value="@(t.On ? "false" : "true")">
+                                <button type="submit" name="command" value="set_rotation" class="switch @(t.On ? "on" : "")" @disabled
+                                        aria-label="Turn @t.Label @(t.On ? "off" : "on")" aria-pressed="@(t.On ? "true" : "false")"></button>
+                            </form>
+                        </div>
+                    }
+                    <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend" hx-trigger="change">
+                        <input type="hidden" name="command" value="set_rotation">
+                        <input type="hidden" name="key" value="interval">
+                        <div class="row">
+                            <span class="label">Change mode every</span>
+                            <select name="value" aria-label="Change mode every" class="narrow-select" @disabled>
+                                @foreach (int n in s.Rotation.IntervalChoices)
+                                {
+                                    <option value="@n" selected="@(n == s.Rotation.Interval)">@n map@(n == 1 ? "" : "s")</option>
+                                }
+                            </select>
+                        </div>
+                    </form>
+                    <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend" hx-trigger="change">
+                        <input type="hidden" name="command" value="set_rotation">
+                        <input type="hidden" name="key" value="modeVote">
+                        <div class="row">
+                            <span class="label">Mode change <small>From the next map</small></span>
+                            <select name="value" aria-label="Mode change" class="narrow-select" @disabled>
+                                <option value="random" selected="@(s.Rotation.ModeVote == "random")">Random mode</option>
+                                <option value="vote" selected="@(s.Rotation.ModeVote == "vote")">Vote on modes</option>
+                            </select>
+                        </div>
+                    </form>
+                    <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend" hx-trigger="change">
+                        <input type="hidden" name="command" value="set_rotation">
+                        <input type="hidden" name="key" value="emptyMinutes">
+                        <div class="row">
+                            <span class="label">Empty server wait</span>
+                            <select name="value" aria-label="Empty server wait" class="narrow-select" @disabled>
+                                @foreach (int n in s.Rotation.EmptyChoices)
+                                {
+                                    <option value="@n" selected="@(n == s.Rotation.EmptyMinutes)">@n min</option>
+                                }
+                            </select>
+                        </div>
+                    </form>
+                    <div class="row"><span class="label">Schedules <small>Set in GameModeManager.json</small></span><span class="state @(s.Rotation.Schedules ? "on" : "")">@(s.Rotation.Schedules ? "On" : "Off")</span></div>
+                    <div class="row"><span class="label">This map ends with a mode change</span><span class="state @(s.Rotation.ModeChangeDue ? "on" : "")">@(s.Rotation.ModeChangeDue ? "Yes" : "No")</span></div>
+                </section>
+                }
+
+                @* ---------- MatchZy ---------- *@
+                @if (s.MatchZy is { } mz)
+                {
+                    @if (Allowed("matchzy"))
+                    {
+                    <section class="pane" data-pane="matchzy">
+                        <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>MatchZy</h2></div>
+                        <div class="ind-row">
+                            @if (mz.Live) { <span class="ind ok">Match live</span> }
+                            else if (mz.Practice) { <span class="ind warn">Practice</span> }
+                            else if (mz.Veto) { <span class="ind warn">Veto</span> }
+                            else if (mz.ReadyUp) { <span class="ind warn">Waiting for ready</span> }
+                            else { <span class="ind off">No match</span> }
+                            @if (mz.Paused) { <span class="ind bad">Paused</span> }
+                        </div>
+                        <div class="group-title">Match</div>
+                        <div class="row">
+                            <span class="label">Start the match <small>Starts without waiting for everyone to ready</small></span>
+                            <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="start">
+                                <button type="submit" name="command" value="matchzy" class="primary" @(live && !mz.Live ? "" : "disabled")
+                                        data-confirm="MatchZy starts the match now." data-confirm-title="Start the match?" data-confirm-yes="Start">Start</button></form>
+                        </div>
+                        @if (mz.Veto)
+                        {
+                            <div class="row"><span class="label">Skip the veto</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="skipveto">
+                                    <button type="submit" name="command" value="matchzy" @disabled>Skip veto</button></form></div>
+                        }
+                        <div class="row">
+                            <span class="label">Pause <small>A forced pause: only an admin can unpause</small></span>
+                            <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="@(mz.Paused ? "unpause" : "pause")">
+                                <button type="submit" name="command" value="matchzy" @(live && mz.Live ? "" : "disabled") class="@(mz.Paused ? "primary" : "")">@(mz.Paused ? "Unpause" : "Pause")</button></form>
+                        </div>
+                        @foreach (var t in new (string Action, string Label, string Hint, bool On)[]
+                        {
+                            ("knife", "Knife round", "Before the match starts", mz.KnifeRound),
+                            ("playout", "Play all rounds", "Don't stop when a team has won", mz.Playout),
+                            ("whitelist", "Whitelist", "Only players on MatchZy's whitelist can join", mz.Whitelist)
+                        })
+                        {
+                            <div class="row">
+                                <span class="label">@t.Label <small>@t.Hint</small></span>
+                                <span class="state @(t.On ? "on" : "")">@(t.On ? "On" : "Off")</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="@t.Action">
+                                    <button type="submit" name="command" value="matchzy" class="switch @(t.On ? "on" : "")" @disabled aria-label="Turn @t.Label @(t.On ? "off" : "on")" aria-pressed="@(t.On ? "true" : "false")"></button></form>
+                            </div>
+                        }
+                        <div class="group-title">Practice</div>
+                        <div class="row">
+                            <span class="label">Practice mode <small>Bots, smokes and spawns stay in game: they act on the player who uses them</small></span>
+                            <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="@(mz.Practice ? "exitpractice" : "practice")">
+                                <button type="submit" name="command" value="matchzy" @(live && !mz.Live ? "" : "disabled")>@(mz.Practice ? "Exit practice" : "Start practice")</button></form>
+                        </div>
+                        <div class="danger-zone">
+                            <div class="group-title">Interrupt the match</div>
+                            <div class="row">
+                                <span class="label">Restart the match</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="restart">
+                                    <button type="submit" name="command" value="matchzy" class="danger" @(live && mz.Live ? "" : "disabled")
+                                            data-confirm="MatchZy restarts the match from the start." data-confirm-title="Restart the match?" data-confirm-yes="Restart" data-confirm-danger="true">Restart</button></form>
+                            </div>
+                            <div class="row">
+                                <span class="label">End the match</span>
+                                <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend"><input type="hidden" name="action" value="end">
+                                    <button type="submit" name="command" value="matchzy" class="danger" @(live && mz.Live ? "" : "disabled")
+                                            data-confirm="MatchZy ends the match now. Nobody wins it." data-confirm-title="End the match?" data-confirm-yes="End match" data-confirm-danger="true">End match</button></form>
+                            </div>
+                        </div>
+                    </section>
+                    }
+                }
+
+                @* ---------- Events ---------- *@
+                @if (Allowed("events"))
+                {
+                <section class="pane" data-pane="events">
+                    <div class="pane-head"><span class="crumb">Manage game &rsaquo;</span><h2>Recent events</h2></div>
+                    @if (events.Count == 0)
+                    {
+                        <div class="empty">Nothing yet. Mode changes, votes, settings and warmups show here.</div>
+                    }
+                    else
+                    {
+                        <div class="table-wrap scroll"><table>
+                            @foreach (EventMessage item in events)
+                            {
+                                <tr><td class="time">@Format.Ago(item.At)</td><td>@item.Text</td></tr>
+                            }
+                        </table></div>
+                    }
+                </section>
+                }
+                }
+
+                @* ---------- Console (owner) ---------- *@
+                @if (Model.IsAdmin && Allowed("console"))
+                {
+                    <section class="pane" data-pane="console">
+                        <div class="pane-head"><span class="crumb">Server &rsaquo;</span><h2>Console</h2></div>
+                        @if (!s.Console.Available)
+                        {
+                            <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg><span>@(s.Console.Reason ?? "The console isn't available on this server.")</span></div>
+                        }
+                        <p class="note">Runs on the server as if typed in its console, through its own RCON on 127.0.0.1. Owner only; every line goes in the audit log. Commands that show or change the server's passwords aren't sent.</p>
+                        <div class="console">
+                            <div class="con-log" id="con-log-@view.Name" hx-preserve="true" aria-live="polite"></div>
+                            <form class="con-form" hx-post="/servers/@Uri.EscapeDataString(view.Name)?handler=Console" hx-target="#con-log-@view.Name" hx-swap="beforeend" hx-disabled-elt="find input">
+                                <span class="con-prompt">&gt;</span>
+                                <input id="con-input-@view.Name" hx-preserve="true" name="line" autocomplete="off" spellcheck="false" maxlength="512"
+                                       placeholder="@(s.Console.Available ? "status, css_plugins list, mp_restartgame 1 ..." : "Not available")" aria-label="Console command" @(live && s.Console.Available ? "" : "disabled")>
+                            </form>
+                        </div>
+                    </section>
+                }
+
+            </div>
+        </div>
+
+        <div class="foot">GameModeManager @s.GmmVersion · CounterStrikeSharp @s.CssVersion · last change @Format.Ago(view.ChangedAt)</div>
+    }
+</div>

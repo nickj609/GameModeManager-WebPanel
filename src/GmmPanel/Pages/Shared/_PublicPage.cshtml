@@ -1,0 +1,40 @@
+@model PublicListModel
+@* A public page: its lists as tabs (only those a server can fill), a search, and the table (refreshed by htmx when searching
+   or paging) *@
+@{
+    var stats = Model as StatsModel;
+    var shown = Model.Lists.Where(Model.Offered).ToList();
+}
+<div class="page-title">
+    <div class="eyebrow">@T(stats != null ? "Stats" : "Bans")</div>
+    <h1>@T(stats != null ? "Leaderboards" : "Bans and mutes")</h1>
+    <p>@T(stats != null ? stats.Note : "From CS2-SimpleAdmin, shared by every server. Think a ban is wrong? Ask an admin on the server's Discord.")</p>
+</div>
+@if (shown.Count > 1)
+{
+    <nav class="seg public-tabs" aria-label="Lists">
+        @foreach (var list in shown)
+        {
+            <a href="@Model.ListUrl(list.Id, 1, "")" class="@(list.Id == Model.Current.Id ? "on" : "")">@T(list.Label)</a>
+        }
+    </nav>
+}
+<form class="mod-tools" hx-get="@Model.Path?handler=List" hx-target="#public-list" hx-swap="innerHTML" hx-trigger="input delay:450ms, submit">
+    <input type="hidden" name="show" value="@Model.Current.Id">
+    <span class="mod-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" name="q" value="@Model.Search" maxlength="64" placeholder="@T("Name or SteamID64")" aria-label="@T("Search")"></span>
+</form>
+<div id="public-list">
+    <partial name="_PublicTable" model="Model" />
+</div>
+@* One record in full (Details on a row): filled by panel.js from the row's data-details *@
+<dialog class="dlg details-dlg" id="details-dlg" aria-labelledby="details-title">
+    <div class="dlg-head details-head"><span id="details-title"></span><small class="mono" id="details-sub"></small></div>
+    <dl class="details-list" id="details-list"></dl>
+    <div class="details-links">
+        <a class="button small" id="details-profile" href="#"><svg class="ic" aria-hidden="true"><use href="#i-teamplayer"/></svg>@T("Public profile")</a>
+        <a class="button small" id="details-steam" href="#" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>Steam</a>
+        <a class="button small" id="details-leetify" href="#" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-stats"/></svg>Leetify</a>
+        <button type="button" class="small danger" id="details-close">@T("Close")</button>
+    </div>
+</dialog>

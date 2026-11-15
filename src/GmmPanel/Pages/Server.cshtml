@@ -1,0 +1,6 @@
+@page "/servers/{name}/{section:regex(^admin$)?}"
+@model ServerModel
+@{
+    ViewData["Title"] = Model.IsAdmin ? $"{Model.View.Name} · Manage Server" : $"{Model.View.Name} · Manage Game";
+}
+<partial name="_ServerBody" model="Model" />

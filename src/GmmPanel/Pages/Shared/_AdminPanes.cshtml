@@ -1,0 +1,130 @@
+@model ServerModel
+@{
+    ServerView view = Model.View;
+    StatusSnapshot s = view.Status!;
+    bool live = view.Online;
+    bool owner = Model.Access.Has(PanelPermissions.Need("plugins"));   // Load, unload and reload: @css/root by default, as css_plugins wants
+    bool cvar = Model.Access.Has(PanelPermissions.Need("server"));
+    string post = $"/servers/{Uri.EscapeDataString(view.Name)}?handler=Command";
+    string disabled = live && s.Server != null && cvar ? "" : "disabled";
+    const string Outdated = "This server's GameModeManager is older than the panel: update it to see this.";
+}
+@* The Admin page: the server itself, as CS2-SimpleAdmin's Server section and plugin manager offer it *@
+
+@* ---------- Server ---------- *@
+<section class="pane on" data-pane="server">
+    <div class="pane-head"><span class="crumb">Server &rsaquo;</span><h2>Server</h2></div>
+    @if (s.Server == null)
+    {
+        <div class="empty">@Outdated</div>
+    }
+    else
+    {
+        <p class="note">Changes here last until the server restarts, or until a cfg sets them again. The panel doesn't write cfg files.</p>
+        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+            <div class="row stack">
+                <span class="label">Hostname <small>The name in the server browser</small></span>
+                <input type="text" name="value" value="@s.Server.Hostname" maxlength="64" required aria-label="Hostname" @disabled>
+                <button type="submit" name="command" value="set_hostname" @disabled>Set</button>
+            </div>
+        </form>
+        @foreach (var team in new[] { (Key: "ct", Label: "CT team name", Value: s.Server.TeamCt), (Key: "t", Label: "T team name", Value: s.Server.TeamT) })
+        {
+            <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                <input type="hidden" name="team" value="@team.Key">
+                <div class="row stack">
+                    <span class="label">@team.Label <small>@(team.Key == "ct" ? "mp_teamname_1" : "mp_teamname_2"). Empty shows the default</small></span>
+                    <input type="text" name="value" value="@team.Value" maxlength="32" aria-label="@team.Label" placeholder="@(team.Key == "ct" ? "Counter-Terrorists" : "Terrorists")" @disabled>
+                    <button type="submit" name="command" value="set_teamname" @disabled>Set</button>
+                </div>
+            </form>
+        }
+        <div class="row">
+            <span class="label">Connect address <small>@(view.ConnectAddress == null ? "Unknown: set Panel.PublicAddress in GameModeManager.json" : s.Server.Address == null ? "Worked out from where the server connects from; set Panel.PublicAddress if it's wrong" : "What players type after connect in the console")</small></span>
+            @if (view.ConnectAddress != null)
+            {
+                <code class="addr">@view.ConnectAddress</code>
+                <a class="button" href="steam://connect/@view.ConnectAddress"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Connect</a>
+            }
+        </div>
+    }
+</section>
+
+
+@* ---------- Plugins: CounterStrikeSharp's, like SimpleAdmin's plugin manager, with what GameModeManager does with each ---------- *@
+@{
+    // GameModeManager's integrations, matched to the plugin folder they belong to. The rest (not installed, or not a plugin
+    // like the Workshop addon) are listed under the plugins.
+    var folderOf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["PanoramaMenuManager"] = "MenuManagerCore" };
+    IntegrationInfo? IntegrationFor(PluginInfo plugin) => s.Integrations.FirstOrDefault(i =>
+        (folderOf.GetValueOrDefault(i.Name) ?? i.Name).Equals(plugin.Name, StringComparison.OrdinalIgnoreCase)
+        || i.Name.Equals(plugin.Module, StringComparison.OrdinalIgnoreCase));
+    var others = s.Integrations.Where(i => s.Plugins == null || !s.Plugins.Any(p => IntegrationFor(p) == i)).ToList();
+}
+<section class="pane" data-pane="plugins">
+    <div class="pane-head"><span class="crumb">Server &rsaquo;</span><h2>Plugins</h2></div>
+    @if (s.Plugins == null)
+    {
+        <div class="empty">@Outdated</div>
+    }
+    else
+    {
+        <p class="note">@(owner ? "Load, unload and reload run css_plugins on the server, until it restarts. Plugins that use Harmony (the PMM bridges) need a full server restart instead." : "Loading, unloading and reloading plugins needs @css/root.")</p>
+        <div class="scroll">
+        @foreach (PluginInfo plugin in s.Plugins.OrderBy(p => p.State switch { "loaded" => 0, "loading" => 1, "unloaded" => 2, "notloaded" => 3, _ => 4 })
+            .ThenBy(p => p.Module.Length > 0 ? p.Module : p.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            bool loaded = plugin.State == "loaded";
+            IntegrationInfo? integration = IntegrationFor(plugin);
+            <div class="row plugin-row">
+                <span class="label">@(plugin.Module.Length > 0 ? plugin.Module : plugin.Name)
+                    @if (plugin.Version.Length > 0) { <span class="ver">@plugin.Version</span> }
+                    <small>@(plugin.Author.Length > 0 ? $"by {plugin.Author}" : "")@(plugin.Author.Length > 0 && plugin.Description.Length > 0 ? " · " : "")@plugin.Description@(plugin.State == "disabled" ? $" · in plugins/disabled: doesn't load when the server starts" : plugin.Module.Length > 0 && plugin.Module != plugin.Name ? $" · plugins/{plugin.Name}" : "")</small>
+                    @if (integration != null)
+                    {
+                        <small class="gmm-uses @(loaded ? "" : "idle")"><svg class="ic" aria-hidden="true"><use href="#i-@(loaded ? "ok" : "no")"/></svg>@(loaded ? "GameModeManager uses it" + (integration.Detail.Length > 0 ? $": {integration.Detail}" : "") : "GameModeManager works with it once it's loaded")</small>
+                    }
+                </span>
+                @switch (plugin.State)
+                {
+                    case "loaded": <span class="ind ok">Loaded</span> break;
+                    case "loading": <span class="ind warn">Loading</span> break;
+                    case "unloaded": <span class="ind bad">Unloaded</span> break;
+                    case "disabled": <span class="ind off">Disabled</span> break;
+                    default: <span class="ind off">Not loaded</span> break;
+                }
+                @if (owner && !plugin.Protected)
+                {
+                    @* One form per button: a submit button named "action" sent its value twice *@
+                    foreach (var (verb, label, css, question) in loaded
+                        ? new[] { ("reload", "Reload", "small", $"CounterStrikeSharp unloads {plugin.Name} and loads it again. Its players' state may reset."),
+                                  ("unload", "Unload", "small danger", $"{plugin.Name} stops until it's loaded again or the server restarts.") }
+                        : plugin.State == "disabled"
+                        ? new[] { ("load", "Load", "small", $"{plugin.Name} runs from plugins/disabled until the server restarts. To load it on every start, move its folder out of disabled.") }
+                        : new[] { ("load", "Load", "small primary", "") })
+                    {
+                        <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
+                            <input type="hidden" name="command" value="plugin">
+                            <input type="hidden" name="plugin" value="@plugin.Name">
+                            <input type="hidden" name="action" value="@verb">
+                            <button type="submit" class="@css" @(live ? "" : "disabled")
+                                    data-confirm="@(question.Length > 0 ? question : null)" data-confirm-title="@label @plugin.Name?" data-confirm-yes="@label" data-confirm-danger="@(verb == "unload" ? "true" : null)">@label</button>
+                        </form>
+                    }
+                }
+            </div>
+        }
+        @if (others.Count > 0)
+        {
+            <div class="group-title">GameModeManager also works with</div>
+            @foreach (IntegrationInfo other in others)
+            {
+                <div class="row"><span class="label">@other.Name <small>@other.Detail</small></span>
+                    @if (other.Found) { <span class="found ok"><svg class="ic" aria-hidden="true"><use href="#i-ok"/></svg>Found</span> }
+                    else { <span class="found"><svg class="ic" aria-hidden="true"><use href="#i-no"/></svg>Not installed</span> }
+                </div>
+            }
+        }
+        </div>
+    }
+</section>
