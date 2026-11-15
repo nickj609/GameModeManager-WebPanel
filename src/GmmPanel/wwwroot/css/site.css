@@ -666,7 +666,9 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 .bg-credit { color: var(--muted); font-size: 11px; margin: 8px 4px 0; line-height: 1.35; }
 
 /* Toasts, like GameModeManager's notifications */
-#toasts { position: fixed; left: 16px; bottom: calc(var(--foot-height) + 14px); display: flex; flex-direction: column; gap: 8px; z-index: 10; max-width: calc(100vw - 32px); }
+/* Toasts: top right under the header (where the bell keeps them), newest first, floating over the page so nothing moves.
+   On phones, full width under the header. They slide in, stay 6 seconds and slide out; a tap closes one early. */
+#toasts { position: fixed; top: calc(var(--top-height) + 12px); right: 16px; display: flex; flex-direction: column-reverse; gap: 8px; z-index: 70; max-width: calc(100vw - 32px); }
 .toast {
 	display: flex;
 	align-items: flex-start;
@@ -675,18 +677,27 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 	max-width: 100%;
 	padding: 12px 14px;
 	border-radius: 4px;
-	/* Toasts arrive unasked, so they stand out from the themed page: solid charcoal with a faint edge, and
-	   the green or red stripe for done or failed (menus and dialogs follow the theme instead) */
-	background: var(--notify);
-	border: 1px solid rgb(var(--ink) / 0.102);
-	box-shadow: 0 14px 34px rgb(0 0 0 / calc(0.784 * var(--shadow)));
-	animation: toast-out 0.4s ease 6s forwards;
+	/* The same floating card as the header menus; the green or red stripe says done or failed */
+	background: var(--menu-card);
+	border: 1px solid rgb(var(--ink) / 0.12);
+	box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.55 * var(--shadow)));
+	cursor: pointer;
+	animation: toast-in 0.22s ease-out, toast-out 0.3s ease-in 6s forwards;
+}
+.toast.dismiss { animation: toast-out 0.2s ease-in forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-10px); } }
+@media (max-width: 640px) {
+	#toasts { left: 8px; right: 8px; top: calc(var(--top-height) + 8px); max-width: none; }
+	.toast { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+	@keyframes toast-in { from { opacity: 0; } }
 }
 .toast img { width: 16px; height: 16px; margin-top: 2px; flex: none; }
 /* A coloured stripe needs small corners, or it bends round them: 4px, like the notes and tiles */
 .toast.ok { border-left: 3px solid var(--ok); }
 .toast.err { border-left: 3px solid var(--bad); }
-@keyframes toast-out { to { opacity: 0; visibility: hidden; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-10px); visibility: hidden; } }
 
 .steam { display: inline-flex; align-items: center; gap: 10px; }
 .steam svg { width: 20px; height: 20px; }

@@ -983,6 +983,19 @@
     if (narrow.addEventListener) narrow.addEventListener("change", foldActions);
     document.addEventListener("htmx:afterSettle", foldActions);
 
+    // Toasts leave once they've slid out (so the ones after them move up), and a tap closes one early
+    (function () {
+        var toasts = document.getElementById("toasts");
+        if (!toasts) return;
+        toasts.addEventListener("animationend", function (event) {
+            if (event.animationName === "toast-out" && event.target.parentNode === toasts) toasts.removeChild(event.target);
+        });
+        toasts.addEventListener("click", function (event) {
+            var toast = event.target.closest && event.target.closest(".toast");
+            if (toast && !(event.target.closest("a, button"))) toast.classList.add("dismiss");
+        });
+    })();
+
     // ---------- Start, and after every refresh ----------
 
     document.addEventListener("htmx:afterSwap", function (event) {
