@@ -35,7 +35,7 @@
 	--field-line: rgb(var(--ink) / 0.1);
 	--option: #141417;          /* A dropdown's open list: solid */
 	--bar: rgb(10 10 12 / var(--bar-alpha));
-	--bar-menu: rgb(10 10 12 / max(var(--bar-alpha), 0.92));   /* Menus from the header: its colour, never too see-through to read */
+	--menu-card: rgb(30 30 34 / 0.98);   /* Menus from the header: a solid card a shade lighter than the header */
 	/* "A bit of the text's colour": faint tints, hovers and edges are rgb(var(--ink) / a), white here and black in light mode */
 	--ink: 255 255 255;
 	--shadow: 1;                /* How strong shadows are (lighter on a light page) */
@@ -103,7 +103,7 @@
 	--search: rgb(255 255 255 / 0.96);
 	--option: #fff;
 	--bar: rgb(250 250 251 / var(--bar-alpha));
-	--bar-menu: rgb(250 250 251 / max(var(--bar-alpha), 0.94));
+	--menu-card: rgb(255 255 255 / 0.99);
 	--ink: 0 0 0;
 	--shadow: 0.28;
 	--line: rgb(0 0 0 / 0.11);
@@ -1796,7 +1796,14 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 }
 /* A field the chosen action doesn't use (panel.js actLabels) */
 [data-field][hidden] { display: none !important; }
-/* Menus that drop from the header look like the header: its colour and blur (the bell's list stays a notification) */
+/* Menus from the header are floating cards, as on GitHub or Discord: a solid surface a shade lighter than the header, with an
+   edge and a shadow, opening 6px below the header's bottom edge (never over it). Each top is the gap from its button to
+   the header's edge (the header's height less the button's, halved) plus 6px. The bell's list stays a notification. */
 .nav-menu-list, .switcher-menu, .account-menu, .site-top .search-results {
-	background: var(--bar-menu); -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1); border: 1px solid var(--line);
+	background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.12); border-radius: var(--radius);
+	box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); -webkit-backdrop-filter: none; backdrop-filter: none;
 }
+.account-menu { top: calc(100% + (var(--top-height) - 38px) / 2 + 6px); }
+.switcher-menu { top: calc(100% + (var(--top-height) - 36px) / 2 + 6px); }
+.site-top .search-results { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); }
+.nav-menu-list { top: calc(100% + 7px); }
