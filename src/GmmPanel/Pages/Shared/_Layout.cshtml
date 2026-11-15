@@ -152,6 +152,22 @@
                 <a href="@link.Href" class="@(link.On ? "on" : "")">@T(link.Label)</a>
             }
         </nav>
+        @* The owner's links marked "Show in the header menu" (Site settings, Community links), in one menu after the pages *@
+        @{ var headerLinks = links.Select((l, i) => (Link: l, Index: i)).Where(x => x.Link.InHeader).ToList(); }
+        @if (headerLinks.Count > 0)
+        {
+            <details class="nav-menu bar-wide" id="nav-menu">
+                <summary>@(Store.Current.LinksMenu.Length > 0 ? Store.Current.LinksMenu : T("Community"))<svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg></summary>
+                <div class="nav-menu-list" role="menu">
+                    @foreach (var (link, i) in headerLinks)
+                    {
+                        <a role="menuitem" class="nav-menu-item" href="@link.Url" target="@(link.IsExternal ? "_blank" : null)" rel="@(link.IsExternal ? "noopener noreferrer" : null)">
+                            <svg class="ic link-@i" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@link.Label</span>@if (link.IsExternal) { <span class="nav-out" aria-label="@T("Opens in a new tab")">↗</span> }
+                        </a>
+                    }
+                </div>
+            </details>
+        }
         @* At the right: search (an icon that opens into a box; Ctrl+K), the bell, a faint divider, then the account. The
            community's links are in the footer *@
         <div class="head-tools bar-wide">
@@ -224,7 +240,7 @@
             @* The community's links (Panel page), as buttons *@
             @if (links.Count > 0)
             {
-                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
+                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="@(link.IsExternal ? "_blank" : null)" rel="@(link.IsExternal ? "noopener noreferrer" : null)" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
             }
             @if (staff && selected != null)
             {
@@ -300,7 +316,7 @@
                 @for (int i = 0; i < links.Count; i++)
                 {
                     var link = links[i];
-                    <a class="foot-icon link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span class="sr">@T(link.Label)</span></a>
+                    <a class="foot-icon link-@i" href="@link.Url" target="@(link.IsExternal ? "_blank" : null)" rel="@(link.IsExternal ? "noopener noreferrer" : null)" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span class="sr">@T(link.Label)</span></a>
                 }
             </nav>
         }

@@ -380,5 +380,6 @@
   "Join a server from here, or sign in with Steam.": "Dołącz do serwera stąd lub zaloguj się przez Steam.",
   "An offline server shows what it last reported.": "Serwer offline pokazuje ostatni zgłoszony stan.",
   "These apply on every server. See someone breaking them? Report it.": "Obowiązują na każdym serwerze. Widzisz łamanie zasad? Zgłoś to.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, wyciszenie i blokada czatu wymagają CS2-SimpleAdmin i odpowiedniej flagi admina."
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, wyciszenie i blokada czatu wymagają CS2-SimpleAdmin i odpowiedniej flagi admina.",
+  "Opens in a new tab": "Otwiera się w nowej karcie"
 }

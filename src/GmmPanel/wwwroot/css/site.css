@@ -807,6 +807,19 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 .switcher-item.on::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 5px 0 0 5px; background: var(--accent); }
 .switcher-item small { color: var(--muted); font-size: 12px; padding-left: 16px; }
 .top-nav { overflow: hidden; }
+/* The owner's links menu after the pages: styled like a page link, opening a list like the server switcher */
+.nav-menu { position: relative; align-self: stretch; display: flex; }
+.nav-menu summary { list-style: none; display: flex; align-items: center; gap: 6px; padding: 0 14px; color: var(--soft); text-transform: uppercase;
+	letter-spacing: 1.5px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.nav-menu summary::-webkit-details-marker { display: none; }
+.nav-menu summary:hover, .nav-menu[open] summary { color: var(--bright); background: rgb(var(--ink) / 0.039); }
+.nav-menu .caret { width: 14px; height: 14px; color: var(--muted); }
+.nav-menu-list { position: absolute; top: calc(100% + 1px); left: 0; min-width: 220px; padding: 8px; border-radius: 0 0 var(--radius) var(--radius);
+	background: var(--pop); box-shadow: 0 16px 40px rgb(0 0 0 / calc(0.69 * var(--shadow))); z-index: 8; display: flex; flex-direction: column; gap: 3px; }
+.nav-menu-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 5px; color: var(--text); white-space: nowrap; }
+.nav-menu-item:hover { background: var(--row-on); color: var(--bright); text-decoration: none; }
+.nav-menu-item .ic { width: 18px; height: 18px; color: var(--accent-text); flex: none; }
+.nav-menu-item .nav-out { margin-left: auto; padding-left: 12px; color: var(--muted); font-size: 13px; }
 
 /* Manage | Admin on a server page */
 .seg { display: inline-flex; margin-left: auto; background: rgb(var(--ink) / 0.051); border-radius: 6px; padding: 3px; gap: 3px; }
@@ -1557,7 +1570,7 @@ select option, select optgroup { background: var(--option); color: var(--text); 
 	select option { position: relative; padding: 7px 12px 7px 14px; border-radius: 4px; background: transparent; }
 	select option::checkmark { display: none; }
 	select option:hover, select option:focus-visible { background: rgb(var(--ink) / 0.07); outline: none; }
-	select option:hover::before, select option:focus-visible::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 2px; background: var(--accent); }
+	select option:hover::before, select option:focus-visible::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 4px 0 0 4px; background: var(--accent); }
 	select option:checked { color: var(--accent-text); font-weight: 600; }
 }
 

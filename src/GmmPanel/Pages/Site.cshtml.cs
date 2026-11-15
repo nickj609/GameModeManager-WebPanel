@@ -266,17 +266,20 @@ public partial class SiteModel : PanelPage
         url = (url ?? "").Trim();
         if (CommandCatalog.TextProblem(label, 24, "The label", allowEmpty: false) is string bad)
             return Fail(bad);
-        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme != "https" || url.Length > 300 || url.Contains('"'))
-            return Fail("The address starts with https://, like https://discord.gg/yourcode.");
+        // Another site (https://...) or one of the panel's own pages (/rules)
+        bool local = url.StartsWith('/') && !url.StartsWith("//") && !url.Contains('\\');
+        Uri? uri = null;
+        if (url.Length > 300 || url.Contains('"') || (!local && (!Uri.TryCreate(url, UriKind.Absolute, out uri) || uri.Scheme != "https")))
+            return Fail("The address starts with https://, like https://discord.gg/yourcode, or / for a panel page, like /rules.");
         PanelData data = _store.LoadForEdit();
         if (data.Links.Count >= 8)
             return Fail("Up to 8 links: remove one first.");
-        data.Links.Add(new LinkEntry { Label = label, Url = uri.ToString(), Icon = LinkEntry.Icons.Contains(icon ?? "") ? icon! : "link" });
+        data.Links.Add(new LinkEntry { Label = label, Url = local ? url : uri!.ToString(), Icon = LinkEntry.Icons.Contains(icon ?? "") ? icon! : "link" });
         return Saved(data, $"{label} is in the footer.", $"link add {label}", "links");
     }
 
     // A link icon's colour in the footer: one of the owner's own, or back to the site's accent
-    public IActionResult OnPostLinkColor(int index, string? color, string? accent)
+    public IActionResult OnPostLinkColor(int index, string? color, string? accent, bool inHeader)
     {
         if (!Owner)
             return LocalRedirect("/denied");
@@ -287,7 +290,21 @@ public partial class SiteModel : PanelPage
             return Fail("Pick a colour.");
         LinkEntry link = data.Links[index];
         link.Color = accent != null ? "" : color!.ToLowerInvariant();
-        return Saved(data, link.Color.Length == 0 ? $"{link.Label} uses the accent colour." : $"{link.Label}'s icon is {link.Color}.", $"link colour {link.Label}", "links");
+        link.InHeader = inHeader;
+        return Saved(data, $"{link.Label} is saved.", $"link edit {link.Label}", "links");
+    }
+
+    // The header menu's name, for the links shown there
+    public IActionResult OnPostLinksMenu(string? name)
+    {
+        if (!Owner)
+            return LocalRedirect("/denied");
+        name = (name ?? "").Trim();
+        if (name.Length > 0 && CommandCatalog.TextProblem(name, 20, "The menu name", allowEmpty: false) is string bad)
+            return Fail(bad);
+        PanelData data = _store.LoadForEdit();
+        data.LinksMenu = name;
+        return Saved(data, "Menu name saved.", $"links menu {name}", "links");
     }
 
     public IActionResult OnPostRemoveLink(int index)

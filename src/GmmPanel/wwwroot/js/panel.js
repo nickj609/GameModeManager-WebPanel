@@ -130,7 +130,7 @@
             if (rail) railOpen(rail, false);
         }
         // The header's server switcher and account menu close on a click anywhere else
-        ["switcher", "account"].forEach(function (id) {
+        ["switcher", "account", "nav-menu"].forEach(function (id) {
             var menu = document.getElementById(id);
             if (menu && menu.open && !event.target.closest("#" + id)) menu.open = false;
         });
@@ -143,7 +143,7 @@
             var button = rail.querySelector(":scope > .rail-toggle");
             if (button) button.focus();
         });
-        ["switcher", "account"].forEach(function (id) {
+        ["switcher", "account", "nav-menu"].forEach(function (id) {
             var menu = document.getElementById(id);
             if (menu && menu.open) menu.open = false;
         });

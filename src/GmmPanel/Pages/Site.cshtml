@@ -187,7 +187,12 @@
 
 </section>
 <section class="pane" data-pane="links"><div class="pane-head"><span class="crumb">Look</span><h2>Community links</h2></div>
-<p class="note">Icons in the footer and phone menu. Each uses the accent unless you pick a colour.</p>
+<p class="note">Icons in the footer and phone menu, and optionally in a header menu. Links to other sites open in a new tab.</p>
+<form method="post" asp-page-handler="LinksMenu" class="inline-form">
+    <input type="text" name="name" maxlength="20" value="@Model.Data.LinksMenu" placeholder="Community" aria-label="Header menu name">
+    <button type="submit" class="small primary">Save</button>
+</form>
+<p class="note">The header menu's name.</p>
 @for (int i = 0; i < Model.Links.Count; i++)
 {
     var link = Model.Links[i];
@@ -205,6 +210,7 @@
                     @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small">Use the accent</button> }
                 </form>
                 <p class="note">@(link.Color.Length > 0 ? "Its own colour." : "Uses the accent.")</p>
+                <label class="check"><input type="checkbox" name="inHeader" value="true" form="link-form-@i" checked="@link.InHeader"> Show in the header menu</label>
             </div>
             <div class="details-links">
                 <form method="post" asp-page-handler="RemoveLink">
@@ -219,7 +225,7 @@
 }
 <form method="post" asp-page-handler="AddLink" class="mod-form">
     <label>Label<input type="text" name="label" maxlength="24" required placeholder="Discord"></label>
-    <label>Address<input type="url" name="url" maxlength="300" required placeholder="https://discord.gg/..."></label>
+    <label>Address<input type="text" name="url" maxlength="300" required placeholder="https://discord.gg/... or /rules" spellcheck="false"></label>
     <label>Icon<select name="icon">@foreach (string icon in LinkEntry.Icons) { <option value="@icon">@(char.ToUpperInvariant(icon[0]) + icon[1..])</option> }</select></label>
     <button type="submit" class="primary">Add link</button>
 </form>

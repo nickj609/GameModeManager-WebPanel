@@ -380,5 +380,6 @@
   "Join a server from here, or sign in with Steam.": "Pievienojies serverim šeit vai pieslēdzies ar Steam.",
   "An offline server shows what it last reported.": "Bezsaistes serveris rāda pēdējo ziņoto stāvokli.",
   "These apply on every server. See someone breaking them? Report it.": "Tie attiecas uz visiem serveriem. Redzi pārkāpumu? Ziņo.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Bloķēšanai, apklusināšanai un tērzēšanas liegumam vajag CS2-SimpleAdmin un atbilstošo admina tiesību."
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Bloķēšanai, apklusināšanai un tērzēšanas liegumam vajag CS2-SimpleAdmin un atbilstošo admina tiesību.",
+  "Opens in a new tab": "Atveras jaunā cilnē"
 }

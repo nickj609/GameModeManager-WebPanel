@@ -380,5 +380,6 @@
   "Join a server from here, or sign in with Steam.": "Join a server from here, or sign in with Steam.",
   "An offline server shows what it last reported.": "An offline server shows what it last reported.",
   "These apply on every server. See someone breaking them? Report it.": "These apply on every server. See someone breaking them? Report it.",
-  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag."
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.",
+  "Opens in a new tab": "Opens in a new tab"
 }
