@@ -44,41 +44,36 @@
         <label>Site name <small>The tab title, and the logo when there's no picture</small><input type="text" name="name" maxlength="40" value="@look.Name" placeholder="GameModeManager Panel"></label>
         <label>Subtitle <small>Under the logo</small><input type="text" name="sub" maxlength="40" value="@look.Sub" placeholder="GameModeManager"></label>
         <label class="wide">Footer text<input type="text" name="footer" maxlength="120" value="@look.Footer" placeholder="© and the year, after your site name"></label>
-        <label>Logo picture <small>In the header, and the footer unless it has its own. PNG, JPEG, WebP or SVG, up to 512 KB; about 200 × 48 looks best. An SVG takes the theme's colours: <code>currentColor</code> is the text colour, <code>class="accent"</code> the accent</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
-        <div class="logo-now">
-            @if (Model.LogoUrl != null)
-            {
-                @if (Model.LogoSvg is { } svgNow) { <span class="logo-svg">@svgNow</span> } else { <img class="logo-img" src="@Model.LogoUrl" alt="Your logo"> }
-                <label class="check"><input type="checkbox" name="removeLogo" value="true"> Remove it</label>
-            }
-            else
-            {
-                <span class="note">No picture: the built-in logo@(look.Name.Length > 0 ? ", or your site name," : "") shows.</span>
-            }
-        </div>
-        <label>Footer logo <small>Optional: a smaller mark for the footer, about 160 × 20. PNG, JPEG, WebP or SVG, up to 512 KB</small><input type="file" name="footerLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
-        <div class="logo-now">
-            @if (Model.FooterLogoUrl != null)
-            {
-                @if (Model.FooterLogoSvg is { } footNow) { <span class="logo-svg foot-logo-svg">@footNow</span> } else { <img class="foot-logo" src="@Model.FooterLogoUrl" alt="Your footer logo"> }
-                <label class="check"><input type="checkbox" name="removeFooterLogo" value="true"> Remove it</label>
-            }
-            else
-            {
-                <span class="note">None: the footer uses the logo above@(Model.LogoUrl == null ? ", or your site name" : "").</span>
-            }
-        </div>
-        <label>Favicon <small>The browser tab's icon. A square PNG (at least 64 × 64), ICO or SVG, up to 512 KB</small><input type="file" name="favicon" accept="image/png,image/x-icon,.ico,image/svg+xml,.svg"></label>
-        <div class="logo-now">
-            @if (Model.FaviconUrl != null)
-            {
-                <img class="favicon-now" src="@Model.FaviconUrl" alt="Your favicon" width="32" height="32">
-                <label class="check"><input type="checkbox" name="removeFavicon" value="true"> Remove it</label>
-            }
-            else
-            {
-                <span class="note">None: the panel's crosshair shows.</span>
-            }
+        @* The three pictures side by side, each with what's there now under its picker *@
+        <div class="wide uploads">
+            <div class="upload">
+                <label>Header logo <small>PNG, JPEG, WebP or SVG, up to 512 KB. About 200 × 48</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
+                @if (Model.LogoUrl != null)
+                {
+                    <div class="logo-now">@if (Model.LogoSvg is { } svgNow) { <span class="logo-svg">@svgNow</span> } else { <img class="logo-img" src="@Model.LogoUrl" alt="Your logo"> }</div>
+                    <label class="check"><input type="checkbox" name="removeLogo" value="true"> Remove it</label>
+                }
+                else { <span class="note">None: @(look.Name.Length > 0 ? "your site name" : "the built-in logo")</span> }
+            </div>
+            <div class="upload">
+                <label>Footer logo <small>Optional, same types. About 160 × 20</small><input type="file" name="footerLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
+                @if (Model.FooterLogoUrl != null)
+                {
+                    <div class="logo-now">@if (Model.FooterLogoSvg is { } footNow) { <span class="logo-svg foot-logo-svg">@footNow</span> } else { <img class="foot-logo" src="@Model.FooterLogoUrl" alt="Your footer logo"> }</div>
+                    <label class="check"><input type="checkbox" name="removeFooterLogo" value="true"> Remove it</label>
+                }
+                else { <span class="note">None: the header logo</span> }
+            </div>
+            <div class="upload">
+                <label>Favicon <small>Square PNG, ICO or SVG, up to 512 KB</small><input type="file" name="favicon" accept="image/png,image/x-icon,.ico,image/svg+xml,.svg"></label>
+                @if (Model.FaviconUrl != null)
+                {
+                    <div class="logo-now"><img class="favicon-now" src="@Model.FaviconUrl" alt="Your favicon" width="32" height="32"></div>
+                    <label class="check"><input type="checkbox" name="removeFavicon" value="true"> Remove it</label>
+                }
+                else { <span class="note">None: a white crosshair</span> }
+            </div>
+            <p class="note wide-note">An SVG takes the theme's colours: <code>currentColor</code> is the text colour and <code>class="accent"</code> the accent.</p>
         </div>
     </div>
     <div class="site-grid colours">
@@ -309,7 +304,7 @@
         <span class="label">@server.Name <small>@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : "Hasn't connected since the panel started")</small>
             @if (versionProblem != null) { <small class="version-warn">@versionProblem</small> }</span>
         <span class="ind @(view?.Online == true ? "ok" : "bad")">@(view?.Online == true ? "Online" : "Offline")</span>
-        <button type="button" class="small" data-dlg="gmm-@server.Name">GameModeManager settings</button>
+        <button type="button" class="small" data-dlg="gmm-@server.Name">Settings</button>
         <dialog class="dlg details-dlg ticket-dlg" id="gmm-@server.Name" aria-labelledby="gmm-@server.Name-title">
             <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@server.Name</span></div>
             <div class="ticket-section">

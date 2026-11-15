@@ -1185,6 +1185,12 @@ img.avatar.huge { width: 96px; height: 96px; border-radius: 10px; box-shadow: 0 
 .site-grid label small { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
 .site-grid input, .site-grid select { text-transform: none; letter-spacing: 0; }
 .site-grid .wide { grid-column: 1 / -1; }
+/* Site look: the header logo, footer logo and favicon in three even columns, each with what's there now under it */
+.site-grid .uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 16px; align-items: start; }
+.uploads .upload { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.uploads .upload .note { margin: 0; }
+.uploads .logo-now { min-height: 0; }
+.uploads .wide-note { grid-column: 1 / -1; margin: 0; }
 .site-grid input[type="range"] { accent-color: var(--accent); }
 .site-grid input[type="file"] { color: var(--soft); font: 500 13px var(--font); }
 .colour span { display: flex; gap: 8px; align-items: center; }
