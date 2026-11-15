@@ -32,11 +32,6 @@ Please drop a ⭐ star in the repository
 | ![Player page](docs/images/player.png) | ![Stats page](docs/images/stats.png) |
 | Everything about one player for staff: their numbers, staff notes, sanctions, appeals and reports, and recent chat, with ban, mute, gag and warn in one place. | Leaderboards for everyone: most played, this week and newest players, with their countries. |
 
-| Light theme | On a phone |
-| :-: | :-: |
-| ![Light theme](docs/images/dashboard-light.png) | ![On a phone](docs/images/phone.png) |
-| Each viewer picks dark or light, their own colours and how see-through the panel is, on **Appearance**. | Every page works on a phone, with the menu in a drawer. |
-
 ![Site settings](docs/images/site-settings.png)
 
 **Site settings** holds your look, pictures, links, features, panel admins, permissions, servers, Discord, how long records are kept, and backups.
