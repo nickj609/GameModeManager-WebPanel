@@ -795,22 +795,29 @@
         };
     })();
 
-    // The header's search: Ctrl+K (or /) focuses it, Escape leaves it
+    // Search in the middle of the screen: the header's icon, Ctrl+K or / opens it; Escape or a click outside closes it
     (function () {
-        var box = document.querySelector("#search input");
-        if (!box) return;
-        // The icon opens the box
-        document.getElementById("search").addEventListener("click", function () { box.focus(); });
+        var dialog = document.getElementById("search-dlg");
+        var box = document.getElementById("palette-input");
+        if (!dialog || !box || !dialog.showModal) return;
+        function open() {
+            if (!dialog.open) dialog.showModal();
+            box.focus();
+            box.select();
+        }
+        var button = document.getElementById("search-open");
+        if (button) button.addEventListener("click", open);
+        dialog.addEventListener("click", function (event) { if (event.target === dialog) dialog.close(); });
         document.addEventListener("keydown", function (event) {
             var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((event.target && event.target.tagName) || "");
             if ((event.key === "k" && (event.ctrlKey || event.metaKey)) || (event.key === "/" && !typing)) {
                 event.preventDefault();
-                box.focus();
-                box.select();
+                open();
             }
         });
         box.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") box.blur();
+            // A search box's first Escape only clears its text: here it closes the pop-up straight away
+            if (event.key === "Escape") { event.preventDefault(); dialog.close(); return; }
             if (event.key === "Enter") {
                 var first = document.querySelector("#search-results .search-hit");
                 if (first) { event.preventDefault(); location.href = first.getAttribute("href"); }
