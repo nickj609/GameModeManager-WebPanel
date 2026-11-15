@@ -554,6 +554,13 @@
         if (event.target.matches && event.target.matches("dialog.ticket-dlg")) event.target.close();   // A click outside
     });
 
+    // A colour picker's hex code beside it (a community link's Edit pop-up)
+    document.addEventListener("input", function (event) {
+        var id = event.target.dataset && event.target.dataset.colourCode;
+        var code = id && document.getElementById(id);
+        if (code) code.textContent = event.target.value;
+    });
+
     // ---------- 3. Backdrop ----------
 
     var bg = document.getElementById("bg");

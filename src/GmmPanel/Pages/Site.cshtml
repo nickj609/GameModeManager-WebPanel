@@ -200,7 +200,8 @@
                 <div class="group-title">Colour</div>
                 <form method="post" asp-page-handler="LinkColor" class="inline-form">
                     <input type="hidden" name="index" value="@i">
-                    <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour">
+                    <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour" data-colour-code="link-code-@i">
+                    <span class="colour-code" id="link-code-@i">@(link.Color.Length > 0 ? link.Color : Model.AccentColour)</span>
                     @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small">Use the accent</button> }
                     <button type="submit" class="small primary">Save</button>
                 </form>

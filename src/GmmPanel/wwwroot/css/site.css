@@ -871,7 +871,8 @@ td.time { color: var(--muted); white-space: nowrap; }
 .inline-form, .row form.inline-form { display: flex; gap: 14px; align-items: center; margin: 0 0 8px; }   /* .row form is display: contents */
 .inline-form input[type="text"] { flex: 1 1 auto; width: auto; min-width: 0; }
 .inline-form button { flex: none; align-self: stretch; }   /* As tall as its field */
-.inline-form input[type="color"] { flex: 1 1 auto; min-width: 0; height: 34px; }
+.inline-form input[type="color"] { flex: none; width: 48px; height: 34px; padding: 3px; cursor: pointer; }
+.inline-form .colour-code { flex: 1 1 auto; color: var(--soft); font-family: var(--font-mono, monospace); font-size: 13px; text-transform: uppercase; }
 .rail-group { font-size: 11px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; margin: 12px 12px 4px; }
 .rail-group:first-child { margin-top: 2px; }
 .loading { color: var(--muted); font-size: 14px; padding: 10px 2px; }
