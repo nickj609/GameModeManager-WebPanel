@@ -7,7 +7,7 @@
 
     // The defaults are the site's look (this script runs after the stylesheets load, so theme.css is read here)
     // theme "" = the site's (Site settings: dark, light or auto, on <html data-site-theme>)
-    var defaults = { theme: "", accent: "#d4801a", warn: "#ef5350", glass: 0.86, blur: 16, bars: 0.80, dim: 0.05, pattern: "", pstrength: 6 };   // pattern "" = the site's (Site settings)
+    var defaults = { theme: "", accent: "#d4801a", warn: "#ef5350", glass: 0.88, blur: 16, bars: 0.94, dim: 0.05, pattern: "", pstrength: 6 };   // pattern "" = the site's (Site settings)
     try {
         var siteAccent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
         if (/^#[0-9a-fA-F]{6}$/.test(siteAccent)) defaults.accent = siteAccent;

@@ -16,9 +16,9 @@
 	--bg-low: #2a2016;
 	/* The Appearance page (appearance.js) changes these five per viewer; everything else follows from them */
 	--accent: #d4801a;          /* Orange, as deep as white button text needs */
-	--glass: 0.86;              /* Panel opacity */
+	--glass: 0.88;              /* Panel opacity */
 	--blur: 16px;               /* Blur behind the panel */
-	--bar-alpha: 0.80;          /* Header and footer opacity */
+	--bar-alpha: 0.94;          /* Header and footer opacity: more solid than the panel, as the frame around it */
 	--dim: 0.05;                /* How dark the backdrop is: 0 the scene as it is, 1 darkest (Appearance) */
 	--glass-top: rgb(18 18 20 / calc(var(--glass) - 0.08));
 	--glass-low: rgb(8 8 10 / var(--glass));
@@ -31,6 +31,7 @@
 	--notify: rgb(16 16 19);
 	/* Fields (typing boxes, dropdowns, searches): the header search's charcoal, a little see-through, with a faint edge */
 	--field: rgb(14 14 16 / 0.7);
+	--search: rgb(14 14 16 / 0.94);   /* The header's open search: nearly solid, so it shows on any header opacity */
 	--field-line: rgb(var(--ink) / 0.1);
 	--option: #141417;          /* A dropdown's open list: solid */
 	--bar: rgb(10 10 12 / var(--bar-alpha));
@@ -99,6 +100,7 @@
 	--pop-low: rgb(244 244 247 / 0.98);
 	--notify: rgb(255 255 255);
 	--field: rgb(255 255 255 / 0.78);
+	--search: rgb(255 255 255 / 0.96);
 	--option: #fff;
 	--bar: rgb(250 250 251 / var(--bar-alpha));
 	--bar-menu: rgb(250 250 251 / max(var(--bar-alpha), 0.94));
@@ -1186,7 +1188,8 @@ img.avatar.big { width: 56px; height: 56px; }
 .search:hover .ic { color: var(--accent-text); }
 .search input { width: 0; opacity: 0; }
 .search kbd { display: none; }
-.search:focus-within { width: 270px; padding: 0 8px 0 10px; justify-content: flex-start; cursor: text; border-radius: 6px; background: var(--field); border-color: var(--field-line); }
+.search:focus-within { width: 270px; padding: 0 8px 0 10px; justify-content: flex-start; cursor: text; border-radius: 6px; background: var(--search);
+	border-color: rgb(var(--ink) / 0.2); box-shadow: 0 2px 10px rgb(0 0 0 / calc(0.35 * var(--shadow))); }
 .search:focus-within .ic { width: 16px; height: 16px; color: var(--muted); }
 .search:focus-within input { width: 100%; opacity: 1; }
 .search:focus-within kbd { display: inline; }

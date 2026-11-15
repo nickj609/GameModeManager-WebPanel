@@ -120,9 +120,9 @@ public partial class SiteModel : PanelPage
         site.Background = OwnBackgrounds.Any(b => b.Id == background) ? background : "";
         site.Motion = Request.Form["motion"] == "true";
         site.Dim = int.TryParse(Request.Form["dim"], out int dim) ? Math.Clamp(dim, 0, 100) : 5;
-        site.PanelOpacity = int.TryParse(Request.Form["panelOpacity"], out int panelOpacity) ? Math.Clamp(panelOpacity, 40, 100) : 86;
+        site.PanelOpacity = int.TryParse(Request.Form["panelOpacity"], out int panelOpacity) ? Math.Clamp(panelOpacity, 40, 100) : 88;
         site.PanelBlur = int.TryParse(Request.Form["panelBlur"], out int panelBlur) ? Math.Clamp(panelBlur, 0, 32) : 16;
-        site.BarOpacity = int.TryParse(Request.Form["barOpacity"], out int barOpacity) ? Math.Clamp(barOpacity, 40, 100) : 80;
+        site.BarOpacity = int.TryParse(Request.Form["barOpacity"], out int barOpacity) ? Math.Clamp(barOpacity, 40, 100) : 94;
         string language = Request.Form["language"].ToString();
         site.Language = Lang.Languages.Any(l => l.Code == language) ? language : "";
 
