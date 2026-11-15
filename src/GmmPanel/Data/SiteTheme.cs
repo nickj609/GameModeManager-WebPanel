@@ -91,10 +91,14 @@ public sealed class SiteTheme
             css.Append($"\t--radius: {radius}px;\n");
         // The backdrop's darkness to start with; appearance.js reads it as the default for each viewer's slider
         css.Append($"\t--dim: {(Math.Clamp(look.Dim, 0, 100) / 100.0).ToString("0.00", CultureInfo.InvariantCulture)};\n");
+        // The see-through look everyone starts with; appearance.js reads these as each viewer's defaults
+        css.Append($"\t--glass: {(Math.Clamp(look.PanelOpacity, 40, 100) / 100.0).ToString("0.00", CultureInfo.InvariantCulture)};\n");
+        css.Append($"\t--blur: {Math.Clamp(look.PanelBlur, 0, 32)}px;\n");
+        css.Append($"\t--bar-alpha: {(Math.Clamp(look.BarOpacity, 40, 100) / 100.0).ToString("0.00", CultureInfo.InvariantCulture)};\n");
         // The surfaces are for the dark look only: light mode keeps its own palette (site.css), so its dark text stays readable
         css.Append("}\n:root:not([data-theme=\"light\"]) {\n");
         if (Use("bars", look.Bars))
-            css.Append($"\t--bar: rgb({Rgb(look.Bars)} / var(--bar-alpha));\n");
+            css.Append($"\t--bar: rgb({Rgb(look.Bars)} / var(--bar-alpha));\n\t--bar-menu: rgb({Rgb(look.Bars)} / max(var(--bar-alpha), 0.92));\n");
         if (Use("panel", look.Panel))
             css.Append($"\t--glass-top: rgb({Rgb(look.Panel, 1.0)} / calc(var(--glass) - 0.08));\n\t--glass-low: rgb({Rgb(look.Panel, 0.55)} / var(--glass));\n"
                 // Menus, the drawer, toasts and dialogs: nearly solid, so the colour is toned down towards a neutral dark grey

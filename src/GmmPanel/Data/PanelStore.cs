@@ -53,6 +53,9 @@ public sealed class SiteLook
     public int Radius { get; set; } = 8;            // Corner rounding, 0 to 16 px
     public string Background { get; set; } = "";   // The default background: "" = Auto (the map being played, else Dust II), or "own:<file>"; each person can pick another
     public bool Motion { get; set; } = true;        // The backdrop's slow drift and dust, on or off to start with; each person can switch it
+    public int PanelOpacity { get; set; } = 86;     // Defaults for everyone, 40 to 100 percent; each person can change them on Appearance
+    public int PanelBlur { get; set; } = 16;        // px, 0 to 32
+    public int BarOpacity { get; set; } = 80;       // Header and footer, 40 to 100 percent
     public int Dim { get; set; } = 5;               // How dark the backdrop starts, 0 to 100 percent; each person can change it on Appearance
     public string Language { get; set; } = "";      // The default language (lang/<code>.json); "" = each browser's own
     public string Theme { get; set; } = "dark";     // dark, light, or auto (each visitor's device); a viewer can pick their own on Appearance
@@ -115,6 +118,9 @@ public sealed class MenuLink
     public string Label { get; set; } = "";
     public string Url { get; set; } = "";
     public bool NewTab { get; set; } = true;
+    public string Icon { get; set; } = "link";    // Beside it in the phone menu; the header shows text only
+
+    public static readonly string[] Icons = { "link", "crosshair", "star", "store", "trophy", "heart", "shield", "chat", "globe", "players", "stats" };
 }
 
 public sealed class ServerEntry

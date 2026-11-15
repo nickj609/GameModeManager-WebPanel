@@ -13,8 +13,15 @@
         if (/^#[0-9a-fA-F]{6}$/.test(siteAccent)) defaults.accent = siteAccent;
         var siteWarn = getComputedStyle(document.documentElement).getPropertyValue("--warn").trim();
         if (/^#[0-9a-fA-F]{6}$/.test(siteWarn)) defaults.warn = siteWarn;
-        var siteDim = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dim"));   // Site settings' darkness
+        var css = getComputedStyle(document.documentElement);   // Site settings' starting look
+        var siteDim = parseFloat(css.getPropertyValue("--dim"));
         if (siteDim >= 0 && siteDim <= 1) defaults.dim = siteDim;
+        var siteGlass = parseFloat(css.getPropertyValue("--glass"));
+        if (siteGlass >= 0.4 && siteGlass <= 1) defaults.glass = siteGlass;
+        var siteBlur = parseFloat(css.getPropertyValue("--blur"));
+        if (siteBlur >= 0 && siteBlur <= 32) defaults.blur = siteBlur;
+        var siteBars = parseFloat(css.getPropertyValue("--bar-alpha"));
+        if (siteBars >= 0.4 && siteBars <= 1) defaults.bars = siteBars;
     } catch (e) { }
     var key = "gmm.look";
 

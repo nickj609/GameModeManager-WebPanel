@@ -101,6 +101,9 @@
             @foreach (var b in Model.OwnBackgrounds) { <option value="@b.Id" selected="@(look.Background == b.Id)">@b.Name@(b.Scene ? "" : " (yours)")</option> }
         </select></label>
         <label>Darken the background <small>0% shows the scene as it is</small><span class="range-row"><input type="range" name="dim" min="0" max="100" step="5" value="@look.Dim" data-percent="dim-out"><output id="dim-out">@look.Dim%</output></span></label>
+        <label>Panel opacity <small>Lower shows more of the background</small><span class="range-row"><input type="range" name="panelOpacity" min="40" max="100" step="2" value="@look.PanelOpacity" data-percent="glass-out"><output id="glass-out">@look.PanelOpacity%</output></span></label>
+        <label>Blur behind the panel<span class="range-row"><input type="range" name="panelBlur" min="0" max="32" step="1" value="@look.PanelBlur" data-unit="px" data-percent="blur-out"><output id="blur-out">@(look.PanelBlur)px</output></span></label>
+        <label>Header and footer opacity<span class="range-row"><input type="range" name="barOpacity" min="40" max="100" step="2" value="@look.BarOpacity" data-percent="bars-out"><output id="bars-out">@look.BarOpacity%</output></span></label>
         <label class="check"><input type="checkbox" name="motion" value="true" checked="@look.Motion"> Background motion</label>
     </div>
     <div class="site-grid">
@@ -240,6 +243,7 @@
                 <input type="hidden" name="index" value="@m">
                 <label>Label<input type="text" name="label" maxlength="20" required value="@item.Label"></label>
                 <label>Address<input type="text" name="url" maxlength="300" required value="@item.Url" spellcheck="false"></label>
+                <label>Icon <small>In the phone menu</small><select name="icon">@foreach (string ic in MenuLink.Icons) { <option value="@ic" selected="@(item.Icon == ic)">@(char.ToUpperInvariant(ic[0]) + ic[1..])</option> }</select></label>
                 <label class="check wide"><input type="checkbox" name="newTab" value="true" checked="@item.NewTab"> Open in a new tab</label>
             </form>
             <div class="details-links">
@@ -259,6 +263,7 @@
         <input type="hidden" name="index" value="-1">
         <label>Label<input type="text" name="label" maxlength="20" required placeholder="Skins"></label>
         <label>Address<input type="text" name="url" maxlength="300" required placeholder="https://skins.example.gg" spellcheck="false"></label>
+        <label>Icon<select name="icon">@foreach (string ic in MenuLink.Icons) { <option value="@ic">@(char.ToUpperInvariant(ic[0]) + ic[1..])</option> }</select></label>
         <label class="check"><input type="checkbox" name="newTab" value="true" checked> Open in a new tab</label>
         <button type="submit" class="primary">Add link</button>
     </form>

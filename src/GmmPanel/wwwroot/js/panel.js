@@ -836,7 +836,7 @@
         // A slider that shows its value as a percentage beside it (Site settings: Darken the background)
         document.querySelectorAll("input[type='range'][data-percent]").forEach(function (range) {
             var out = document.getElementById(range.dataset.percent);
-            if (out) range.addEventListener("input", function () { out.textContent = range.value + "%"; });
+            if (out) range.addEventListener("input", function () { out.textContent = range.value + (range.dataset.unit || "%"); });
         });
         document.querySelectorAll("[data-fill-map]").forEach(function (chip) {
             chip.addEventListener("click", function () {

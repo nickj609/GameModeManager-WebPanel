@@ -6,9 +6,9 @@ Site settings has one section at a time, picked in the menu on the left. A link 
 
 | Group | Section | What it sets |
 | --- | --- | --- |
-| Look | **Site look** | The site's name, a logo (PNG, JPEG, WebP or SVG, up to 512 KB; see [SVG logos](#svg-logos)), an optional smaller logo for the footer, a favicon (the browser tab's icon: PNG, ICO or SVG; the default is a white crosshair), the line under it, the footer text, the colours (accent, notifications, header and footer, panel, page), a pattern, the corner rounding, the default language, and the background everyone starts with. |
+| Look | **Site look** | The site's name, a logo (PNG, JPEG, WebP or SVG, up to 512 KB; see [SVG logos](#svg-logos)), an optional smaller logo for the footer, a favicon (the browser tab's icon: PNG, ICO or SVG; the default is a white crosshair), the line under it, the footer text, the colours (accent, notifications, header and footer, panel, page), a pattern, the corner rounding, the panel's and header's opacity and blur everyone starts with, the default language, and the background everyone starts with. |
 | Look | **Social links** | Icons in the footer and at the top of the phone menu (Discord, YouTube, Twitch ...). They open in a new tab and use the accent colour unless you give one its own. |
-| Look | **Menu links** | Up to 6 text links in the header, like Skins or VIP for other plugins' web panels, or a panel page like `/rules`. One or two show beside the pages; three or more, or a narrower window, go in one menu you name ("Community" by default). Each can open in a new tab. |
+| Look | **Menu links** | Up to 6 text links in the header, like Skins or VIP for other plugins' web panels, or a panel page like `/rules`. One or two show beside the pages; three or more, or a narrower window, go in one menu you name ("Community" by default). Each can open in a new tab and has an icon for the phone menu. |
 | Pictures | **Backgrounds** | Upload pictures or short WebM/MP4 videos (up to 25 MB), give each a display name, and choose whether visitors see your own backgrounds too. |
 | Pictures | **Map pictures** | The squares on the server cards: one picture per map (up to 2 MB), named after the map. |
 | Features | **Features** | Switch off parts of the panel you don't want. See [Features](#features). |

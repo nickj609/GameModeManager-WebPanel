@@ -273,7 +273,7 @@
                 @if (!(community.Count > 0 && menuName == T("Community"))) { <div class="drawer-group">@menuName</div> }
                 @foreach (var item in menuLinks)
                 {
-                    <a class="drawer-link" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)">@item.Label</a>
+                    <a class="drawer-link" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)"><svg class="ic" aria-hidden="true"><use href="#i-@item.Icon"/></svg>@item.Label</a>
                 }
             }
             <div class="drawer-group">@T(me == null ? "Panel" : "You")</div>
