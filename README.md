@@ -50,7 +50,7 @@ The pictures in this README come from the panel's demo servers, so the players a
 - Optional: [CS2-SimpleAdmin](https://github.com/daffyyyy/CS2-SimpleAdmin) for bans, mutes and warnings, and [MatchZy](https://github.com/shobhit-pathak/MatchZy) for match controls
 
 # Getting Started
-1. Create a Cloudflare Tunnel with two hostnames: `panel.` for people and `agent.` for game servers.
+1. In Cloudflare, create a tunnel and give the panel an address on your domain, like `panel.example.com`.
 2. Download the panel from [Releases](https://github.com/nickj609/GameModeManager-WebPanel/releases), run it, and open the setup page with the code it prints.
 3. Sign in through Steam, add your first server, and paste the settings it gives you into `GameModeManager.json`.
 

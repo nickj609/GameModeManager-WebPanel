@@ -9,7 +9,7 @@ To get started, make sure all of the following prerequisites are met:
 - You have a computer that's always on to run the panel: a Windows PC, or a Raspberry Pi 4 or 5 with a 64-bit OS.
 
 ## Installation
-1. Create a Cloudflare Tunnel with two hostnames, one for people (`panel.`) and one for game servers (`agent.`).
+1. In Cloudflare, create a tunnel and give the panel an address on your domain, like `panel.example.com`. People open it in their browser, and your game servers connect to it too.
 2. Download the panel from [Releases](https://github.com/nickj609/GameModeManager-WebPanel/releases), run it, and open the setup page with the code it prints.
 3. Sign in through Steam, add your first server, and paste the settings it gives you into `GameModeManager.json`.
 

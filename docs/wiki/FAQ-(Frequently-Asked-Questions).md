@@ -5,9 +5,9 @@
 Work from the game server towards the panel:
 
 1. **GameModeManager's log** (`/csgo/addons/counterstrikesharp/logs/`): lines starting `[Panel]` say whether it's connecting and why it can't.
-2. **`Panel.Enabled`** is `true`, and **`Panel.Url`** is `wss://agent.<your domain>/agent`, with `/agent` at the end.
-3. **`panel-secrets.json`** is next to `GameModeManager.json`, with the server's `Token` and the Cloudflare service token's `AccessClientId` and `AccessClientSecret`.
-4. **cloudflared** is running next to the panel, and the `agent.` hostname points at the panel.
+2. **`Panel.Enabled`** is `true`, and **`Panel.Url`** is your panel's address with `wss://` in front and `/agent` at the end, like `wss://panel.example.com/agent`.
+3. **`panel-secrets.json`** is next to `GameModeManager.json`, with the server's `Token` (and, if Cloudflare Access is in front of the address, the service token's `AccessClientId` and `AccessClientSecret`).
+4. **cloudflared** is running next to the panel, and the tunnel's public hostname points at the panel.
 5. **The token** is still the server's: making a new one under **Site settings → Servers** replaces the old one.
 
 GameModeManager reads its config on a map change, so change map or restart the server after editing it.

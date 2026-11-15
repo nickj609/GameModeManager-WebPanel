@@ -96,7 +96,7 @@ public class SetupModel : PanelPage
         if (!PanelStore.IsServerName(name))
             Problem = "Server names use letters, digits, - and _ (up to 40), like Production or Test.";
         else if (!Uri.TryCreate(AgentUrl, UriKind.Absolute, out Uri? url) || url.Scheme is not ("wss" or "ws") || AgentUrl.Contains('"'))
-            Problem = "The agent address starts with wss://, like wss://agent.example.com/agent.";
+            Problem = "The agent address starts with wss://, like wss://panel.example.com/agent.";
         if (Problem != null)
             return Page();
 
@@ -119,14 +119,12 @@ public class SetupModel : PanelPage
             : "<span class=\"ind warn\">Waiting for the server to connect</span>", "text/html");
     }
 
-    // The tunnel usually gives the agent its own hostname (agent.example.com) next to the panel's; this is only a starting point
+    // Game servers connect to /agent on the panel's own address; an owner with a separate, locked agent address changes it
     private string GuessAgentUrl()
     {
         string host = Request.Host.Host;
         if (host is "localhost" or "127.0.0.1")
             return $"ws://127.0.0.1:{Request.Host.Port ?? 5080}/agent";
-        string[] parts = host.Split('.');
-        string agentHost = parts.Length > 2 ? "agent." + string.Join('.', parts[1..]) : "agent." + host;
-        return $"wss://{agentHost}/agent";
+        return $"wss://{host}/agent";
     }
 }

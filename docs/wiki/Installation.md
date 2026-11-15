@@ -8,20 +8,33 @@
 
 The panel is one self-contained program: no .NET to install, no database and no Node.
 
-# 1. Cloudflare: one tunnel, two hostnames
-In Cloudflare Zero Trust:
+# 1. Cloudflare: a tunnel and an address
+A **tunnel** lets people reach the panel on your computer without opening any ports: `cloudflared`, a small Cloudflare program next to the panel, connects out to Cloudflare, and Cloudflare passes visitors down that connection. The panel needs one address on your domain, for example `panel.example.com`. People open it in their browser, and your game servers connect to `/agent` on the same address.
 
-1. **Networks > Tunnels > Create a tunnel** (cloudflared). Keep the tunnel token for step 2.
-2. Add two **public hostnames** to it, both pointing at the panel:
+In the Cloudflare dashboard, under **Zero Trust**:
 
-   | Hostname | Service (Windows / Pi without Docker) | Service (Docker) |
-   | --- | --- | --- |
-   | `panel.<your domain>` | `http://127.0.0.1:5080` | `http://panel:8080` |
-   | `agent.<your domain>` | `http://127.0.0.1:5080` | `http://panel:8080` |
+1. **Networks > Tunnels > Create a tunnel** (cloudflared) and give it a name. Keep the tunnel token for step 2.
+2. Add a **public hostname** to it: your address (for example `panel` on `example.com`), with the service:
 
-3. **Access > Service auth > Service tokens > Create**. Name it after the game server. Keep the Client ID and Secret for step 4; Cloudflare shows the secret once.
-4. **Access > Applications > Add > Self-hosted** for `agent.<your domain>`, with one policy: action **Service Auth**, include **Service Token** = the token from step 3. Browsers can't reach this hostname at all.
-5. Optional, recommended while you try it: a second Access application for `panel.<your domain>` with an **Allow** policy for your email (one-time PIN). Steam sign-in still applies behind it.
+   | Panel runs on | Service |
+   | --- | --- |
+   | Windows, or a Pi without Docker | `http://127.0.0.1:5080` |
+   | Docker | `http://panel:8080` |
+
+3. Optional, recommended while you try it: an **Access > Applications > Add > Self-hosted** application for the address, with an **Allow** policy for your email (one-time PIN). Steam sign-in still applies behind it. If you do this, game servers need the service token below to get through.
+
+That's all the panel needs: each game server proves who it is with its own token (step 3).
+
+<details>
+<summary>Optional: a separate, locked address for game servers</summary>
+
+For an extra lock, give game servers their own address that only they can reach. Cloudflare then turns away anything without your service token before it gets to your computer.
+
+1. Add a second public hostname to the same tunnel, for example `agent` on `example.com`, with the same service as above.
+2. **Access > Service auth > Service tokens > Create**. Keep the Client ID and Secret; Cloudflare shows the secret once.
+3. **Access > Applications > Add > Self-hosted** for the new address, with one policy: action **Service Auth**, include **Service Token** = the token you just made. Browsers can't reach this address at all.
+4. In step 4 below, use `wss://agent.example.com/agent` as the `Url`, and put the service token's Client ID and Secret in `panel-secrets.json`.
+</details>
 
 # 2. Run the panel
 <details>
@@ -73,7 +86,7 @@ In `addons/counterstrikesharp/configs/plugins/GameModeManager/GameModeManager.js
 ```json
 "Panel": {
   "Enabled": true,
-  "Url": "wss://agent.<your domain>/agent",
+  "Url": "wss://panel.<your domain>/agent",
   "ServerName": "Production",
   "SecretsFile": "panel-secrets.json"
 }
@@ -83,11 +96,11 @@ Next to it, `panel-secrets.json`:
 
 ```json
 {
-  "Token": "<the server's token>",
-  "AccessClientId": "<Cloudflare service token Client ID>",
-  "AccessClientSecret": "<Cloudflare service token Client Secret>"
+  "Token": "<the server's token>"
 }
 ```
+
+With Cloudflare Access in front of the address (step 1), add the service token too: `"AccessClientId"` and `"AccessClientSecret"`.
 
 > [!CAUTION]
 > **Never put `panel-secrets.json` in git.** Upload it once per server through your host's file manager.
