@@ -85,7 +85,14 @@ Paste a channel's webhook address (channel settings, Integrations, Webhooks) and
 - New ban appeals and player reports, and players' replies to them.
 - Optionally, everything staff do through the panel.
 
-CS2-SimpleAdmin posts its own bans and mutes with its own webhook settings.
+Posts use your site name, accent colour and logo (PNG, JPEG or WebP; Discord can't show an SVG). A map change shows the
+map's picture, and a server's posts have **Connect** and **View server** buttons. CS2-SimpleAdmin posts its own bans and
+mutes with its own webhook settings.
+
+> [!NOTE]
+> Pictures, the logo and the buttons need the panel's public address. The panel learns it when a panel admin opens it
+> from that address (like `https://panel.example.gg`), and follows a new domain the same way. Discord fetches pictures
+> itself, so a panel only ever opened from `localhost` or a private address posts without them.
 
 > [!CAUTION]
 > A webhook address is a secret: anyone with it can post to your channel.

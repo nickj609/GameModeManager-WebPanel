@@ -130,6 +130,7 @@ public partial class SiteModel
         settings.Tickets = tickets;
         settings.Actions = actions;
         _discord.Save(settings);
+        _discord.Learn(Request.Host.Value ?? "");   // For links and map pictures in posts
         _audit.Write(Admin.Audit, "discord settings", null, true, settings.Url.Length == 0 ? "off" : $"servers={servers} tickets={tickets} actions={actions}");
         if (test != null && settings.Url.Length > 0)
             _discord.Test();
@@ -203,8 +204,8 @@ public partial class SiteModel
         _audit.Write(Admin.Audit, existed ? $"new token for {server}" : $"add server {server}", server, true, "from the Panel page");
         string shown = GmmPanel.Data.ServerNames.Label(server);
         bool shared = add && _store.Current.Servers.Count(s => GmmPanel.Data.ServerNames.Label(s.Name).Equals(shown, StringComparison.OrdinalIgnoreCase)) > 1;
-        return Done(existed ? $"{server} has a new token. Put it in its panel-secrets.json; the old one stops working."
-            : $"{shown} is added (ID {server}). Put its token in its panel-secrets.json." + (shared ? $" Another server is also shown as {shown}." : ""));
+        return Done(existed ? "New token. The old one stops working."
+            : $"Added. Its ID is {server}." + (shared ? $" Another server is also shown as {shown}." : ""));
     }
 
     // A server's display name: what people read on its tab, card and pages. Its ID (token, history, links) stays the same

@@ -90,7 +90,7 @@ public sealed class AgentHub
         {
             // Back after a short drop (a map change, a restart) says nothing; back after an "offline" post says so
             if (_reportedOffline.TryRemove(server.Name, out _))
-                _discord.Server($"**{server.Name}** is back online.", true);
+                _discord.Server(server.Name, true);
             await connection.SendAsync(new WelcomeMessage { Server = server.Name }, stopping);
             await ReadLoopAsync(socket, connection, view, server.Name, stopping);
         }
@@ -136,7 +136,7 @@ public sealed class AgentHub
     {
         await Task.Delay(TimeSpan.FromMinutes(2));
         if (_registry.Find(server)?.Online != true && _reportedOffline.TryAdd(server, true))
-            _discord.Server($"**{server}** has been offline for 2 minutes.", false);
+            _discord.Server(server, false);
     }
 
     private async Task ReadLoopAsync(WebSocket socket, AgentConnection connection, ServerView view, string server, CancellationToken stopping)

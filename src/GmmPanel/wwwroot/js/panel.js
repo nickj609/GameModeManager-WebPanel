@@ -568,6 +568,11 @@
         if (event.target.matches && event.target.matches("dialog.ticket-dlg")) event.target.close();   // A click outside
     });
 
+    // A pop-up the page wants open as it loads (a new server's token, shown once)
+    Array.prototype.forEach.call(document.querySelectorAll("dialog[data-dlg-open]"), function (dialog) {
+        if (dialog.showModal) dialog.showModal();
+    });
+
     // A colour picker's hex code beside it (a community link's Edit pop-up)
     document.addEventListener("input", function (event) {
         var id = event.target.dataset && event.target.dataset.colourCode;
@@ -766,6 +771,7 @@
                 context.arc(m.x, m.y, m.r, 0, Math.PI * 2);
                 context.fill();
             }
+            drawTiles(dt);
             window.requestAnimationFrame(frame);
         }
 
@@ -789,9 +795,62 @@
             document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); else start(); });
         }
 
+        // The same dust in the map tiles without a picture: a canvas in each, motes like the backdrop's at the tile's scale
+        var tiles = [];
+        function tileMotes(w, h) {
+            var list = [];
+            for (var i = 0; i < 14; i++) {
+                list.push({ x: Math.random() * w, y: Math.random() * h, r: 0.4 + Math.random() * 1.1, vx: 1.5 + Math.random() * 4,
+                    vy: -1 + Math.random() * 2, a: 0.12 + Math.random() * 0.4, t: Math.random() * Math.PI * 2 });
+            }
+            return list;
+        }
+        function findTiles() {
+            Array.prototype.forEach.call(document.querySelectorAll(".spot-thumb.empty"), function (tile) {
+                if (tile.querySelector(".thumb-dust")) return;
+                var c = document.createElement("canvas");
+                c.className = "thumb-dust";
+                c.setAttribute("aria-hidden", "true");
+                tile.insertBefore(c, tile.firstChild);
+            });
+            tiles = Array.prototype.slice.call(document.querySelectorAll(".thumb-dust")).map(function (c) {
+                var ratio = Math.min(window.devicePixelRatio || 1, 2), w = c.clientWidth || 132, h = c.clientHeight || 132;
+                if (!c.motes) {
+                    c.width = Math.floor(w * ratio);
+                    c.height = Math.floor(h * ratio);
+                    c.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+                    c.motes = tileMotes(w, h);
+                }
+                return { canvas: c, w: w, h: h };
+            });
+            drawTiles(0);   // Drawn once, so the dust shows (still) when motion is off
+        }
+        function drawTiles(dt) {
+            for (var i = 0; i < tiles.length; i++) {
+                var tile = tiles[i], ctx = tile.canvas.getContext("2d");
+                ctx.clearRect(0, 0, tile.w, tile.h);
+                for (var j = 0; j < tile.canvas.motes.length; j++) {
+                    var m = tile.canvas.motes[j];
+                    m.t += dt * 0.6;
+                    m.x += (m.vx + Math.sin(m.t) * 1.5) * dt;
+                    m.y += (m.vy + Math.cos(m.t * 0.8)) * dt;
+                    if (m.x > tile.w + 4) m.x = -4;
+                    if (m.y < -4) m.y = tile.h + 4;
+                    if (m.y > tile.h + 4) m.y = -4;
+                    ctx.beginPath();
+                    ctx.fillStyle = "rgba(255, 214, 160, " + (m.a * (0.75 + Math.sin(m.t * 1.7) * 0.25)).toFixed(3) + ")";
+                    ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        findTiles();
+        document.addEventListener("htmx:afterSettle", findTiles);
+
         return {
             start: start,
-            toggle: function () { if (motion) start(); else stop(); }
+            toggle: function () { if (motion) start(); else stop(); },
+            tiles: drawTiles
         };
     })();
 

@@ -55,7 +55,7 @@ builder.Services.AddSingleton<MapPictures>();
 builder.Services.AddSingleton<UserPrefs>();
 builder.Services.AddSingleton<SiteTheme>();
 builder.Services.AddHttpClient("discord", client => client.Timeout = TimeSpan.FromSeconds(10));
-builder.Services.AddSingleton(services => new Discord(store, services.GetRequiredService<IHttpClientFactory>().CreateClient("discord"), services.GetRequiredService<ILogger<Discord>>()));
+builder.Services.AddSingleton(services => new Discord(store, services.GetRequiredService<IHttpClientFactory>().CreateClient("discord"), services.GetRequiredService<ILogger<Discord>>(), services));
 PanelPermissions.Store = store;
 
 // cloudflared runs on this machine (or next to the panel in Docker); only it may say who the visitor is
@@ -131,6 +131,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             if (entry != null)
                 audit.Write($"{name} ({steamId})", "sign in", null, true, $"panel admin, from {from}");
             context.Principal = PanelUser.Principal(steamId, name, entry != null ? Roles.Admin : Roles.Player, CookieAuthenticationDefaults.AuthenticationScheme);
+            // A panel admin's sign-in while no server is added yet (the admin came from "admin add", so the setup code was
+            // never asked for): the setup page, for the first server and its token
+            if (entry != null && store.Current.Servers.Count == 0)
+                context.ReturnUri = "/setup";
         };
         options.Events.OnRemoteFailure = context =>
         {
@@ -253,6 +257,15 @@ app.Use((context, next) =>
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// The address panel admins use is the panel's public one: Discord posts link to it (Discord.Learn skips local addresses)
+app.Use((context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true && context.Request.Method == "GET" && !Path.HasExtension(context.Request.Path.Value)
+        && PanelUser.From(context.User, store)?.IsPanelAdmin == true)
+        context.RequestServices.GetRequiredService<Discord>().Learn(context.Request.Host.Value ?? "");
+    return next();
+});
 app.UseWebSockets();
 
 app.Map("/agent", (HttpContext context, AgentHub hub) => hub.HandleAsync(context))
@@ -309,6 +322,10 @@ app.MapGet("/branding/{name}", (string name, SiteTheme theme, HttpContext contex
 }).AllowAnonymous();
 
 // Map pictures (data/maps), for everyone: Workshop previews, public anyway
+// Connect from a link (Discord's Connect button can't open steam:// itself): straight to the game
+app.MapGet("/connect/{name}", (string name, GmmPanel.Agents.AgentRegistry registry) =>
+    registry.Find(name)?.ConnectAddress is { } address ? Results.Redirect($"steam://connect/{address}") : Results.Redirect($"/server/{Uri.EscapeDataString(name)}")).AllowAnonymous();
+
 app.MapGet("/maps/{name}", (string name, MapPictures maps, HttpContext context) =>
 {
     var file = maps.Find(name);

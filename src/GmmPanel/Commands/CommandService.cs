@@ -307,7 +307,7 @@ public sealed class CommandService
             _audit.Write(user.Audit, what, server, result.Ok, result.Message);
         if (name != "query" && result.Ok)
         {
-            _discord.Action(user.Name, server, what);
+            _discord.Action(user.Name, server, name, args);
             // A kick through the panel: the player hears about it in their bell (a kick in game leaves no record to read)
             if (name == "moderate" && args.GetValueOrDefault("action") == "kick" && args.GetValueOrDefault("steamid") is { } kicked)
                 _notices.Add(kicked, "kick", "You were kicked from {0}.", server, "/profile");
