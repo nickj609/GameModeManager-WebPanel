@@ -124,20 +124,33 @@
     <label>Display name <small>Shown in the picker</small><input type="text" name="title" maxlength="40" placeholder="Dust II at night"></label>
     <button type="submit" class="primary">Upload</button>
 </form>
+@{ int bgIndex = 0; }
 @foreach (var b in Model.OwnBackgrounds)
 {
     string file = b.Id[4..];
+    string bgDialog = "bg-dlg-" + bgIndex++;
     <div class="row bg-row">
         <span class="label">@b.Name <small>@file · @(b.Scene ? "CS2 menu scenery" : b.Kind == "video" ? "video" : "picture")</small></span>
-        <form method="post" asp-page-handler="RenameBackground" class="bg-rename">
-            <input type="hidden" name="name" value="@file">
-            <input type="text" name="title" maxlength="40" value="@Model.DisplayName(file)" placeholder="@b.Name" aria-label="Display name for @file">
-            <button type="submit" class="small">Rename</button>
-        </form>
-        <form method="post" asp-page-handler="DeleteFile">
-            <input type="hidden" name="kind" value="background"><input type="hidden" name="name" value="@file">
-            <button type="submit" class="small danger" data-confirm="@file is deleted from the panel's data folder." data-confirm-title="Delete @file?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
-        </form>
+        <button type="button" class="small" data-dlg="@bgDialog">Edit</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="@bgDialog" aria-labelledby="@bgDialog-title">
+            <div class="dlg-head details-head"><span id="@bgDialog-title">@b.Name</span><small class="mono">@file</small></div>
+            <div class="ticket-section">
+                <div class="group-title">Display name</div>
+                <form method="post" asp-page-handler="RenameBackground" class="inline-form">
+                    <input type="hidden" name="name" value="@file">
+                    <input type="text" name="title" maxlength="40" value="@Model.DisplayName(file)" placeholder="@b.Name" aria-label="Display name">
+                    <button type="submit" class="small primary">Save</button>
+                </form>
+                <p class="note">Shown in the background picker.</p>
+            </div>
+            <div class="details-links">
+                <form method="post" asp-page-handler="DeleteFile">
+                    <input type="hidden" name="kind" value="background"><input type="hidden" name="name" value="@file">
+                    <button type="submit" class="small danger" data-confirm="@file is deleted from the panel's data folder." data-confirm-title="Delete @file?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
+                </form>
+                <button type="button" class="small dlg-close" data-dlg-close>Close</button>
+            </div>
+        </dialog>
     </div>
 }
 </section>
@@ -180,16 +193,27 @@
     var link = Model.Links[i];
     <div class="row">
         <span class="label"><svg class="ic link-@i" aria-hidden="true"><use href="#i-@link.Icon"/></svg> @link.Label <small>@link.Url</small></span>
-        <form method="post" asp-page-handler="LinkColor" class="link-color">
-            <input type="hidden" name="index" value="@i">
-            <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour for @link.Label">
-            <button type="submit" class="small">Set</button>
-            @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small quiet">Accent</button> }
-        </form>
-        <form method="post" asp-page-handler="RemoveLink">
-            <input type="hidden" name="index" value="@i">
-            <button type="submit" class="small danger">Remove</button>
-        </form>
+        <button type="button" class="small" data-dlg="link-dlg-@i">Edit</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="link-dlg-@i" aria-labelledby="link-dlg-@i-title">
+            <div class="dlg-head details-head"><span id="link-dlg-@i-title">@link.Label</span></div>
+            <div class="ticket-section">
+                <div class="group-title">Colour</div>
+                <form method="post" asp-page-handler="LinkColor" class="inline-form">
+                    <input type="hidden" name="index" value="@i">
+                    <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour">
+                    @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small">Use the accent</button> }
+                    <button type="submit" class="small primary">Save</button>
+                </form>
+                <p class="note">@(link.Color.Length > 0 ? "Its own colour." : "Uses the accent.")</p>
+            </div>
+            <div class="details-links">
+                <form method="post" asp-page-handler="RemoveLink">
+                    <input type="hidden" name="index" value="@i">
+                    <button type="submit" class="small danger" data-confirm="@link.Label is removed from the footer and menu." data-confirm-title="Remove @link.Label?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                </form>
+                <button type="button" class="small dlg-close" data-dlg-close>Close</button>
+            </div>
+        </dialog>
     </div>
 }
 <form method="post" asp-page-handler="AddLink" class="mod-form">
@@ -267,7 +291,7 @@
         {
             <form method="post" asp-page-handler="RemoveAdmin">
                 <input type="hidden" name="steamId" value="@admin.SteamId">
-                <button type="submit" class="small danger" data-confirm="@admin.Name stops being a panel admin. Their admin flags on the servers still count." data-confirm-title="Remove @admin.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                <button type="submit" class="small" data-confirm="@admin.Name stops being a panel admin. Their admin flags on the servers still count." data-confirm-title="Remove @admin.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
             </form>
         }
     </div>
