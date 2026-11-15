@@ -12,7 +12,7 @@ name: gmm-panel
 
 services:
   panel:
-    image: ghcr.io/nickj609/gmm-webpanel:0
+    image: ghcr.io/nickj609/gmm-webpanel:1
     restart: unless-stopped
     environment:
       # Only cloudflared, on this network, may say who the visitor is

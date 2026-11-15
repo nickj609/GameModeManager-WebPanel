@@ -25,6 +25,7 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      major: ${{ steps.version.outputs.major }}
       runtime: ${{ steps.version.outputs.runtime }}
     steps:
       - uses: actions/checkout@v7
@@ -50,6 +51,7 @@ jobs:
           if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "Bad version: $version"; exit 1; fi
           runtime=$(dotnet --list-runtimes | grep Microsoft.AspNetCore.App | awk '{print $2}' | sort -V | tail -1)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "major=${version%%.*}" >> "$GITHUB_OUTPUT"
           echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
           echo "Panel $version on ASP.NET Core $runtime"
 
@@ -104,7 +106,7 @@ jobs:
           build-args: VERSION=${{ needs.build.outputs.version }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/gmm-webpanel:${{ needs.build.outputs.version }}
-            ghcr.io/${{ github.repository_owner }}/gmm-webpanel:0
+            ghcr.io/${{ github.repository_owner }}/gmm-webpanel:${{ needs.build.outputs.major }}
             ghcr.io/${{ github.repository_owner }}/gmm-webpanel:latest
 
       - name: Release
