@@ -1806,8 +1806,8 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 .account-menu { top: calc(100% + (var(--top-height) - 38px) / 2 + 6px); }
 .switcher-menu { top: calc(100% + (var(--top-height) - 36px) / 2 + 6px); }
 .nav-menu-list { top: calc(100% + 7px); }
-/* The bell's list keeps its notification colour, but opens and floats like the other header menus */
-.bell-list { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); border: 1px solid rgb(var(--ink) / 0.12); box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); }
+/* The bell's list opens and looks like the other header menus (toasts keep the notification colour) */
+.bell-list { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.12); box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); }
 /* Search in the middle of the screen, over the blurred page (a "command palette", as GitHub and Discord do) */
 .search-dlg { position: fixed; inset: 14vh 0 auto; margin: 0 auto; width: min(620px, calc(100vw - 24px)); padding: 0; border-radius: var(--radius);
 	background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.14); box-shadow: 0 24px 60px rgb(0 0 0 / calc(0.6 * var(--shadow))); color: var(--text); overflow: hidden; }
