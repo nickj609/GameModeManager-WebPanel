@@ -18,7 +18,9 @@ GameModeManager reads its config on a map change, so change map or restart the s
 <summary>Why does http://127.0.0.1:5080 say "400 Bad Request"?</summary>
 <br>
 
-On purpose. Outside Development the panel only answers through the tunnel's https address, so sign-in cookies are never sent without encryption. Open `https://panel.<your domain>` instead. Only `/healthz` answers on 127.0.0.1, for health checks.
+On purpose. Outside Development the panel only answers through its https address, so sign-in cookies are never sent without encryption. Open `https://panel.<your domain>` instead. Only `/healthz` answers on 127.0.0.1, for health checks.
+
+If you get it through your https address too, the panel doesn't trust the proxy in front of it: add the proxy's address to `Panel:TrustedProxies`. See [Other ways to host](https://github.com/nickj609/GameModeManager-WebPanel/wiki/Installation#other-ways-to-host).
 
 </details>
 

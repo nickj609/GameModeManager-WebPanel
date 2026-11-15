@@ -3,8 +3,8 @@
 
 # Requirements
 - [GameModeManager](https://github.com/nickj609/GameModeManager) **2.4.0 or newer** on each game server.
-- A domain on [Cloudflare](https://www.cloudflare.com/) (the free plan is enough).
-- A computer that's always on: a Windows PC (x64), or a Raspberry Pi 4 or 5 with a 64-bit OS (with or without Docker).
+- A domain for the panel's https address. These steps use [Cloudflare](https://www.cloudflare.com/) (the free plan is enough), but any https setup works: see [Other ways to host](#other-ways-to-host).
+- A computer that's always on: a Windows PC (x64), or a Raspberry Pi 4 or 5 with a 64-bit OS (with or without Docker). Or a server or Docker host on the internet.
 
 The panel is one self-contained program: no .NET to install, no database and no Node.
 
@@ -106,6 +106,39 @@ With Cloudflare Access in front of the address (step 1), add the service token t
 > **Never put `panel-secrets.json` in git.** Upload it once per server through your host's file manager.
 
 Change map or restart the server: the panel shows it **Online** within a minute. The other `Panel` settings (`Console`, `PublicAddress`) are in GameModeManager's [Configuration](https://github.com/nickj609/GameModeManager/wiki/Configuration#panel-settings).
+
+# Other Ways to Host
+Cloudflare Tunnel is the easiest way to run the panel at home, but it isn't required. The panel runs anywhere that gives it:
+
+1. **An https address**, with WebSockets passed through: game servers connect to `wss://<address>/agent`.
+2. **A folder or volume that stays** for its `data` (settings, sign-in keys, records). In Docker that's `/data`.
+3. **A proxy it trusts.** Whatever handles https in front of the panel has to tell it the visit was https (the usual `X-Forwarded-Proto` header). The panel trusts a proxy on the same machine; for any other, add its address or range to `Panel:TrustedProxies` (in Docker, `Panel__TrustedProxies__0=10.0.0.0/8`). Without this, the panel answers "400 Bad Request" on purpose, so sign-in cookies never travel unencrypted.
+
+<details>
+<summary>A server with Caddy</summary>
+
+On any Linux server with your domain pointing at it, [Caddy](https://caddyserver.com) gets the https certificate by itself. Run the panel (the `linux-x64` or `linux-arm64` zip, or Docker on port 8080), then in the `Caddyfile`:
+
+```
+panel.example.com {
+    reverse_proxy 127.0.0.1:5080
+}
+```
+
+Caddy passes WebSockets through and sends `X-Forwarded-Proto` on its own, and a proxy on the same machine is trusted already. With nginx, add the `Upgrade` and `Connection` headers for WebSockets and `proxy_set_header X-Forwarded-Proto $scheme;`.
+</details>
+
+<details>
+<summary>A Docker host (Railway, Fly.io, Render ...)</summary>
+
+Use the image `ghcr.io/nickj609/gmm-webpanel`, with:
+
+- Port **8080**, served over https by the host, with WebSockets on (most have them on already).
+- A persistent volume mounted at **`/data`**.
+- `Panel__TrustedProxies__0` set to the host's proxy range (their docs list it).
+
+The setup code is in the container's log.
+</details>
 
 # Admins
 Panel admins (everything, including Site settings and the audit log) are added under **Site settings → Panel admins**, or from the command line:

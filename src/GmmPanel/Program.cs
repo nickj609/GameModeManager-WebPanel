@@ -193,7 +193,7 @@ if (!app.Environment.IsDevelopment())
         if (context.Request.IsHttps || context.Request.Path == "/healthz")
             return next();
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        return context.Response.WriteAsync("Open the panel through its https address (the Cloudflare Tunnel hostname).");
+        return context.Response.WriteAsync("Open the panel through its https address. Behind a proxy, add it to Panel:TrustedProxies (see Installation, Other ways to host).");
     });
 }
 

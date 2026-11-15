@@ -14,7 +14,7 @@ The GameModeManager Panel gives your community a home page and your staff the in
 - **A home page for your community:** every server with its map, players and a Connect button, the last 24 hours of players, where your players come from, leaderboards, bans, rules and each player's public profile.
 - **Moderation with [CS2-SimpleAdmin](https://github.com/daffyyyy/CS2-SimpleAdmin):** bans, mutes, gags and warnings, the chat log, player history, staff notes, and ban appeals and player reports with replies.
 - **Steam sign-in and your own admin flags:** staff get exactly what their flags give them in game, on each server. Panel admins get everything.
-- **No open ports and no RCON over the internet:** GameModeManager connects *out* to the panel through Cloudflare, so it works on hosts that only give you game ports.
+- **No open ports and no RCON over the internet:** GameModeManager connects *out* to the panel, so it works on hosts that only give you game ports, and with a Cloudflare Tunnel your home network opens no ports either.
 - **Your look:** your name, logo, colours, links and backgrounds, and each person can pick their own theme. Dark and light, desktop and phone, in 13 languages.
 - **One small program:** for Windows or a Raspberry Pi, or a Docker image. No database, no Node, and an audit log of everything.
 
@@ -45,8 +45,8 @@ The pictures in this README come from the panel's demo servers, so the players a
 
 ## Requirements
 - [GameModeManager](https://github.com/nickj609/GameModeManager) **2.4.0 or newer** on each game server
-- A domain on [Cloudflare](https://www.cloudflare.com/) (the free plan is enough)
-- A computer that's always on: Windows (x64), or a Raspberry Pi 4 or 5 with a 64-bit OS
+- A domain for its https address: [Cloudflare](https://www.cloudflare.com/)'s free plan is the easiest, but [any https setup works](https://github.com/nickj609/GameModeManager-WebPanel/wiki/Installation#other-ways-to-host)
+- Somewhere that's always on: Windows (x64), a Raspberry Pi 4 or 5 with a 64-bit OS, or a server or Docker host
 - Optional: [CS2-SimpleAdmin](https://github.com/daffyyyy/CS2-SimpleAdmin) for bans, mutes and warnings, and [MatchZy](https://github.com/shobhit-pathak/MatchZy) for match controls
 
 # Getting Started

@@ -5,8 +5,8 @@
 To get started, make sure all of the following prerequisites are met:
 
 - [GameModeManager](https://github.com/nickj609/GameModeManager) **2.4.0 or newer** is running on each game server.
-- You have a domain on [Cloudflare](https://www.cloudflare.com/) (the free plan is enough).
-- You have a computer that's always on to run the panel: a Windows PC, or a Raspberry Pi 4 or 5 with a 64-bit OS.
+- You have a domain for the panel's https address. The guide uses [Cloudflare](https://www.cloudflare.com/)'s free plan, but [any https setup works](https://github.com/nickj609/GameModeManager-WebPanel/wiki/Installation#other-ways-to-host).
+- You have somewhere to run it that's always on: a Windows PC, a Raspberry Pi 4 or 5 with a 64-bit OS, or a server or Docker host.
 
 ## Installation
 1. In Cloudflare, create a tunnel and give the panel an address on your domain, like `panel.example.com`. People open it in their browser, and your game servers connect to it too.
