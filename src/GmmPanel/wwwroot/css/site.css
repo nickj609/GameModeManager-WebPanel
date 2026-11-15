@@ -16,9 +16,9 @@
 	--bg-low: #2a2016;
 	/* The Appearance page (appearance.js) changes these five per viewer; everything else follows from them */
 	--accent: #d4801a;          /* Orange, as deep as white button text needs */
-	--glass: 0.86;              /* Panel opacity */
+	--glass: 0.88;              /* Panel opacity */
 	--blur: 16px;               /* Blur behind the panel */
-	--bar-alpha: 0.80;          /* Header and footer opacity */
+	--bar-alpha: 0.94;          /* Header and footer opacity: more solid than the panel, as the frame around it */
 	--dim: 0.05;                /* How dark the backdrop is: 0 the scene as it is, 1 darkest (Appearance) */
 	--glass-top: rgb(18 18 20 / calc(var(--glass) - 0.08));
 	--glass-low: rgb(8 8 10 / var(--glass));
@@ -31,9 +31,11 @@
 	--notify: rgb(16 16 19);
 	/* Fields (typing boxes, dropdowns, searches): the header search's charcoal, a little see-through, with a faint edge */
 	--field: rgb(14 14 16 / 0.7);
+	--search: rgb(14 14 16 / 0.94);   /* The header's open search: nearly solid, so it shows on any header opacity */
 	--field-line: rgb(var(--ink) / 0.1);
 	--option: #141417;          /* A dropdown's open list: solid */
 	--bar: rgb(10 10 12 / var(--bar-alpha));
+	--menu-card: rgb(30 30 34 / 0.98);   /* Menus from the header: a solid card a shade lighter than the header */
 	/* "A bit of the text's colour": faint tints, hovers and edges are rgb(var(--ink) / a), white here and black in light mode */
 	--ink: 255 255 255;
 	--shadow: 1;                /* How strong shadows are (lighter on a light page) */
@@ -98,8 +100,10 @@
 	--pop-low: rgb(244 244 247 / 0.98);
 	--notify: rgb(255 255 255);
 	--field: rgb(255 255 255 / 0.78);
+	--search: rgb(255 255 255 / 0.96);
 	--option: #fff;
 	--bar: rgb(250 250 251 / var(--bar-alpha));
+	--menu-card: rgb(255 255 255 / 0.99);
 	--ink: 0 0 0;
 	--shadow: 0.28;
 	--line: rgb(0 0 0 / 0.11);
@@ -464,7 +468,7 @@ button, .button {
 }
 button:hover, .button:hover { background: var(--button-hover); text-decoration: none; }
 /* A faint top highlight, so grey buttons stand off the glass without an outline */
-button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button),
+button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button):not(.head-link),
 a.button:not(.primary):not(.danger) { box-shadow: inset 0 1px 0 rgb(var(--ink) / 0.102), 0 1px 2px rgb(0 0 0 / calc(0.4 * var(--shadow))); }
 button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 button.primary { background: var(--accent); color: #fff; }
@@ -587,6 +591,12 @@ td.time { color: var(--muted); white-space: nowrap; }
 .dlg-text { margin: 0; padding: 16px 20px 6px; color: var(--warm); font-size: 15px; }
 .dlg-text:empty { display: none; }
 .dlg-choices { display: flex; flex-direction: column; gap: 5px; padding: 12px 14px 14px; }
+.dlg-choices[hidden], .dlg-actions[hidden] { display: none; }
+.dlg-actions { justify-content: flex-end; }
+.dlg-actions .dlg-cancel { margin-left: 0; }
+/* A confirm's destructive answer: solid red, the only red in the pop-up */
+button.danger-solid { background: var(--bad); color: #fff; box-shadow: none; }
+button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff); }
 .dlg-choice {
 	position: relative;
 	justify-content: flex-start;
@@ -656,7 +666,9 @@ td.time { color: var(--muted); white-space: nowrap; }
 .bg-credit { color: var(--muted); font-size: 11px; margin: 8px 4px 0; line-height: 1.35; }
 
 /* Toasts, like GameModeManager's notifications */
-#toasts { position: fixed; left: 16px; bottom: calc(var(--foot-height) + 14px); display: flex; flex-direction: column; gap: 8px; z-index: 10; max-width: calc(100vw - 32px); }
+/* Toasts: top right under the header (where the bell keeps them), newest first, floating over the page so nothing moves.
+   On phones, full width under the header. They slide in, stay 6 seconds and slide out; a tap closes one early. */
+#toasts { position: fixed; top: calc(var(--top-height) + 12px); right: 16px; display: flex; flex-direction: column-reverse; gap: 8px; z-index: 70; max-width: calc(100vw - 32px); }
 .toast {
 	display: flex;
 	align-items: flex-start;
@@ -665,18 +677,27 @@ td.time { color: var(--muted); white-space: nowrap; }
 	max-width: 100%;
 	padding: 12px 14px;
 	border-radius: 4px;
-	/* Toasts arrive unasked, so they stand out from the themed page: solid charcoal with a faint edge, and
-	   the green or red stripe for done or failed (menus and dialogs follow the theme instead) */
-	background: var(--notify);
-	border: 1px solid rgb(var(--ink) / 0.102);
-	box-shadow: 0 14px 34px rgb(0 0 0 / calc(0.784 * var(--shadow)));
-	animation: toast-out 0.4s ease 6s forwards;
+	/* The same floating card as the header menus; the green or red stripe says done or failed */
+	background: var(--menu-card);
+	border: 1px solid rgb(var(--ink) / 0.12);
+	box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.55 * var(--shadow)));
+	cursor: pointer;
+	animation: toast-in 0.22s ease-out, toast-out 0.3s ease-in 6s forwards;
+}
+.toast.dismiss { animation: toast-out 0.2s ease-in forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-10px); } }
+@media (max-width: 640px) {
+	#toasts { left: 8px; right: 8px; top: calc(var(--top-height) + 8px); max-width: none; }
+	.toast { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+	@keyframes toast-in { from { opacity: 0; } }
 }
 .toast img { width: 16px; height: 16px; margin-top: 2px; flex: none; }
 /* A coloured stripe needs small corners, or it bends round them: 4px, like the notes and tiles */
 .toast.ok { border-left: 3px solid var(--ok); }
 .toast.err { border-left: 3px solid var(--bad); }
-@keyframes toast-out { to { opacity: 0; visibility: hidden; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-10px); visibility: hidden; } }
 
 .steam { display: inline-flex; align-items: center; gap: 10px; }
 .steam svg { width: 20px; height: 20px; }
@@ -801,6 +822,24 @@ td.time { color: var(--muted); white-space: nowrap; }
 .switcher-item.on::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 5px 0 0 5px; background: var(--accent); }
 .switcher-item small { color: var(--muted); font-size: 12px; padding-left: 16px; }
 .top-nav { overflow: hidden; }
+/* The owner's menu links: one or two as page links (.nav-extra); three or more, or a narrower window, in one menu */
+.nav-menu { position: relative; align-self: stretch; display: flex; }
+.nav-menu.fold-only { display: none; }
+@media (max-width: 1400px) {
+	.site-top nav a.nav-extra { display: none; }
+	.nav-menu.fold-only { display: flex; }
+}
+.nav-menu summary { list-style: none; display: flex; align-items: center; gap: 6px; padding: 0 14px; color: var(--soft); text-transform: uppercase;
+	letter-spacing: 1.5px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.nav-menu summary::-webkit-details-marker { display: none; }
+.nav-menu summary:hover, .nav-menu[open] summary { color: var(--bright); background: rgb(var(--ink) / 0.039); }
+.nav-menu .caret { width: 14px; height: 14px; color: var(--muted); }
+.nav-menu-list { position: absolute; top: calc(100% + 1px); left: 0; min-width: 200px; padding: 6px; border-radius: 0 0 var(--radius) var(--radius);
+	box-shadow: 0 16px 40px rgb(0 0 0 / calc(0.5 * var(--shadow))); z-index: 8; display: flex; flex-direction: column; gap: 2px; }
+.nav-menu-item { position: relative; display: block; padding: 10px 14px; border-radius: 4px; color: var(--soft); text-transform: uppercase;
+	letter-spacing: 1.5px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.nav-menu-item:hover { color: var(--bright); background: rgb(var(--ink) / 0.051); text-decoration: none; }
+.nav-menu-item:hover::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 4px 0 0 4px; background: var(--accent); }
 
 /* Manage | Admin on a server page */
 .seg { display: inline-flex; margin-left: auto; background: rgb(var(--ink) / 0.051); border-radius: 6px; padding: 3px; gap: 3px; }
@@ -867,6 +906,14 @@ td.time { color: var(--muted); white-space: nowrap; }
 .mod-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; padding: 12px 14px; border-radius: var(--radius); background: var(--row); margin-bottom: 14px; }
 .mod-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: 1.2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; }
 .mod-form label input, .mod-form label select { text-transform: none; letter-spacing: 0; }
+/* A field and its button on one line (a server's display name in its Settings pop-up) */
+.inline-form, .row form.inline-form { display: flex; gap: 14px; align-items: center; margin: 0 0 8px; }   /* .row form is display: contents */
+.inline-form input[type="text"] { flex: 1 1 auto; width: auto; min-width: 0; }
+.inline-form button { flex: none; align-self: stretch; }   /* As tall as its field */
+/* An edit pop-up's footer: Remove or Delete on the left, Cancel and Save on the right */
+.details-links .dlg-cancel { margin-left: auto; }
+.inline-form input[type="color"] { flex: none; width: 48px; height: 34px; padding: 3px; cursor: pointer; }
+.inline-form .colour-code { flex: 1 1 auto; color: var(--soft); font-family: var(--font-mono, monospace); font-size: 13px; text-transform: uppercase; }
 .rail-group { font-size: 11px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; margin: 12px 12px 4px; }
 .rail-group:first-child { margin-top: 2px; }
 .loading { color: var(--muted); font-size: 14px; padding: 10px 2px; }
@@ -1152,7 +1199,8 @@ img.avatar.big { width: 56px; height: 56px; }
 .search:hover .ic { color: var(--accent-text); }
 .search input { width: 0; opacity: 0; }
 .search kbd { display: none; }
-.search:focus-within { width: 270px; padding: 0 8px 0 10px; justify-content: flex-start; cursor: text; border-radius: 6px; background: var(--field); border-color: var(--field-line); }
+.search:focus-within { width: 270px; padding: 0 8px 0 10px; justify-content: flex-start; cursor: text; border-radius: 6px; background: var(--search);
+	border-color: rgb(var(--ink) / 0.2); box-shadow: 0 2px 10px rgb(0 0 0 / calc(0.35 * var(--shadow))); }
 .search:focus-within .ic { width: 16px; height: 16px; color: var(--muted); }
 .search:focus-within input { width: 100%; opacity: 1; }
 .search:focus-within kbd { display: inline; }
@@ -1185,6 +1233,12 @@ img.avatar.huge { width: 96px; height: 96px; border-radius: 10px; box-shadow: 0 
 .site-grid label small { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
 .site-grid input, .site-grid select { text-transform: none; letter-spacing: 0; }
 .site-grid .wide { grid-column: 1 / -1; }
+/* Site look: the header logo, footer logo and favicon in three even columns, each with what's there now under it */
+.site-grid .uploads { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 16px; align-items: start; }
+.uploads .upload { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.uploads .upload .note { margin: 0; }
+.uploads .logo-now { min-height: 0; }
+.uploads .wide-note { grid-column: 1 / -1; margin: 0; }
 .site-grid input[type="range"] { accent-color: var(--accent); }
 .site-grid input[type="file"] { color: var(--soft); font: 500 13px var(--font); }
 .colour span { display: flex; gap: 8px; align-items: center; }
@@ -1199,6 +1253,7 @@ img.logo-img { max-height: 40px; max-width: 220px; object-fit: contain; display:
 .logo-svg .accent { fill: var(--accent); }
 .logo-svg .accent-stroke { stroke: var(--accent); }
 .foot-logo-svg svg { height: 20px; max-width: 160px; }
+.favicon-now { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; display: block; }
 .site-form .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 14px; }
 .site-grid label.check { flex-direction: row; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 14px; color: var(--soft); align-self: center; }
@@ -1449,8 +1504,7 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 .ticket-reply-form textarea { width: 100%; min-height: 0; resize: vertical; }
 .ticket-reply-form small { color: var(--muted); }
 .details-list dd small { margin-left: 6px; }
-.details-links .dlg-close { margin-left: auto; background: var(--bad); color: #fff; box-shadow: none; }
-.details-links .dlg-close:hover { background: color-mix(in srgb, var(--bad) 85%, #fff); }
+.details-links .dlg-close { margin-left: auto; }   /* Close and Cancel: the normal button colour, at the right */
 /* The status on the orange head: the head's own colour, dot included, so every status reads */
 .dlg-head .ind, .dlg-head .ind.off { color: inherit; font-size: 13px; letter-spacing: 1.2px; }
 .dlg-head .ind::before { background: currentColor; box-shadow: none; }
@@ -1537,7 +1591,7 @@ select option, select optgroup { background: var(--option); color: var(--text); 
 	select option { position: relative; padding: 7px 12px 7px 14px; border-radius: 4px; background: transparent; }
 	select option::checkmark { display: none; }
 	select option:hover, select option:focus-visible { background: rgb(var(--ink) / 0.07); outline: none; }
-	select option:hover::before, select option:focus-visible::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 3px; border-radius: 2px; background: var(--accent); }
+	select option:hover::before, select option:focus-visible::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 4px 0 0 4px; background: var(--accent); }
 	select option:checked { color: var(--accent-text); font-weight: 600; }
 }
 
@@ -1585,7 +1639,7 @@ a.live-name { color: inherit; text-decoration: none; } a.live-name:hover { color
 .console { color-scheme: dark; }
 :root[data-theme="light"] .console { background: #17171a; }
 /* Grey buttons: a soft shadow instead of the dark look's top highlight */
-:root[data-theme="light"] button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button),
+:root[data-theme="light"] button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button):not(.head-link),
 :root[data-theme="light"] a.button:not(.primary):not(.danger),
 :root[data-theme="light"] button.danger { box-shadow: 0 1px 2px rgb(0 0 0 / 0.16), inset 0 0 0 1px rgb(0 0 0 / 0.08); }
 :root[data-theme="light"] .switch:not(.on)::after { box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); }
@@ -1726,8 +1780,7 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 .range-row { display: flex; align-items: center; gap: 10px; }
 .range-row input[type="range"] { flex: 1; min-width: 0; }
 .range-row output { min-width: 40px; text-align: right; color: var(--title); font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
-.details-links #details-close { margin-left: auto; background: var(--bad); color: #fff; box-shadow: none; }
-.details-links #details-close:hover { background: color-mix(in srgb, var(--bad) 85%, #fff); }
+
 .details-list { display: grid; grid-template-columns: auto minmax(0, 1fr); margin: 0; padding: 8px 20px 4px; }
 .details-list dt, .details-list dd { padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
 .details-list dt:nth-last-of-type(1), .details-list dd:last-child { border-bottom: 0; }
@@ -1754,3 +1807,40 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 }
 /* A field the chosen action doesn't use (panel.js actLabels) */
 [data-field][hidden] { display: none !important; }
+/* Menus from the header are floating cards, as on GitHub or Discord: a solid surface a shade lighter than the header, with an
+   edge and a shadow, opening 6px below the header's bottom edge (never over it). Each top is the gap from its button to
+   the header's edge (the header's height less the button's, halved) plus 6px. The bell's list stays a notification. */
+.nav-menu-list, .switcher-menu, .account-menu {
+	background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.12); border-radius: var(--radius);
+	box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.account-menu { top: calc(100% + (var(--top-height) - 38px) / 2 + 6px); }
+.switcher-menu { top: calc(100% + (var(--top-height) - 36px) / 2 + 6px); }
+.nav-menu-list { top: calc(100% + 7px); }
+/* The bell's list opens and looks like the other header menus (toasts keep the notification colour) */
+.bell-list { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.12); box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); }
+/* Search in the middle of the screen, over the blurred page (a "command palette", as GitHub and Discord do) */
+.search-dlg { position: fixed; inset: 14vh 0 auto; margin: 0 auto; width: min(620px, calc(100vw - 24px)); padding: 0; border-radius: var(--radius);
+	background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.14); box-shadow: 0 24px 60px rgb(0 0 0 / calc(0.6 * var(--shadow))); color: var(--text); overflow: hidden; }
+.search-dlg::backdrop { background: rgba(8, 8, 10, 0.35); -webkit-backdrop-filter: blur(6px) saturate(0.9); backdrop-filter: blur(6px) saturate(0.9); }
+.palette-box { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; }
+.palette-box .ic { width: 20px; height: 20px; color: var(--muted); flex: none; }
+.palette-box input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--bright); font: 500 17px var(--font); outline: none; padding: 0; }
+.palette-box input::-webkit-search-cancel-button { display: none; }
+.palette-box kbd { font: 600 10px var(--font); letter-spacing: 0.5px; color: var(--muted); border: 1px solid rgb(var(--ink) / 0.15); border-radius: 4px; padding: 2px 6px; }
+.palette-results { max-height: min(60vh, 480px); overflow: auto; padding: 6px; border-top: 1px solid rgb(var(--ink) / 0.1); }
+.palette-results:empty { display: none; }
+/* Search results: the orange bar on the hovered or picked one, as on rows and menus; no link underline */
+.search-hit { position: relative; text-decoration: none; border-radius: 4px; }   /* 4px, so the bar follows the corner */
+.search-hit:hover, .search-hit:hover span, .search-hit:hover small { text-decoration: none; }
+.palette-results .search-hit.on { background: var(--row-on); }
+.search-hit:hover::before, .search-hit.on::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 4px 0 0 4px; background: var(--accent); }
+/* The keys, as GitHub and Linear show them: one quiet line at the bottom */
+.palette-keys { display: flex; align-items: center; gap: 16px; padding: 9px 16px; border-top: 1px solid rgb(var(--ink) / 0.1); color: var(--muted); font-size: 12px; }
+.palette-keys span { display: inline-flex; align-items: center; gap: 4px; }
+.palette-keys .palette-open { margin-left: auto; }
+.palette-keys kbd { font: 600 10px var(--font); letter-spacing: 0.5px; color: var(--soft); border: 1px solid rgb(var(--ink) / 0.15); border-radius: 4px; padding: 2px 5px; min-width: 18px; text-align: center; }
+@media (max-width: 640px) { .palette-keys { display: none; } }
+button.head-link { padding: 0; letter-spacing: 0; background: transparent; }   /* An icon in the header, like the bell: no button bubble */
+button.head-link:hover, button.head-link:focus-visible { background: rgb(var(--ink) / 0.063); }
+.search-open .ic { width: 20px; height: 20px; }

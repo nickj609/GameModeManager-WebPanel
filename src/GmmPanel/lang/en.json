@@ -34,8 +34,6 @@
   "Visitor": "Visitor",
   "Player": "Player",
   "Moderator": "Moderator",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.",
   "{0} playing now": "{0} playing now",
   "{0} different players this week": "{0} different players this week",
   "Peak hours {0}": "Peak hours {0}",
@@ -173,7 +171,6 @@
   "Rules": "Rules",
   "Server rules": "Server rules",
   "The panel notes each map change from now on.": "The panel notes each map change from now on.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.",
   "{0} playing now on {1} servers.": "{0} playing now on {1} servers.",
   "Leaderboards": "Leaderboards",
   "Most played": "Most played",
@@ -229,7 +226,6 @@
   "the player": "the player",
   "Do it": "Do it",
   "Do it?": "Do it?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.",
   "Comments": "Comments",
   "only staff see these, unless shown": "only staff see these, unless shown",
   "No comments yet.": "No comments yet.",
@@ -380,5 +376,10 @@
   "No replies yet. Staff answer here.": "No replies yet. Staff answer here.",
   "No replies.": "No replies.",
   "Not yet": "Not yet",
-  "Report details": "Report details"
+  "Report details": "Report details",
+  "Join a server from here, or sign in with Steam.": "Join a server from here, or sign in with Steam.",
+  "An offline server shows what it last reported.": "An offline server shows what it last reported.",
+  "These apply on every server. See someone breaking them? Report it.": "These apply on every server. See someone breaking them? Report it.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.",
+  "Move": "Move"
 }

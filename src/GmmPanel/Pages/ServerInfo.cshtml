@@ -3,7 +3,7 @@
 @{
     ServerView view = Model.View;
     StatusSnapshot? s = view.Status;
-    ViewData["Title"] = view.Name;
+    ViewData["Title"] = Label(view.Name);
     // The link preview: what it's playing and who's on, with the map's picture
     if (s != null) ViewData["Description"] = $"{s.Mode.Label} · {s.Map.Label} · {s.Players}/{s.MaxPlayers}";
     if (s != null && Model.ArtFor(s.Map.Name) is string preview) ViewData["Image"] = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}{preview}";
@@ -22,7 +22,7 @@
     <partial name="_MapSquare" model="@((art, s?.Map.Label ?? ""))" />
     <div class="spot-title">
         <small><span class="ind @(view.Online ? "ok" : "bad")">@(view.Online ? F("Online for {0}", Format.Span(now - (view.OnlineSince ?? now))) : T("Offline"))</span></small>
-        <h1>@view.Name</h1>
+        <h1>@Label(view.Name)</h1>
         @if (s?.Server?.Hostname is { Length: > 0 } host) { <div class="info-host">@host</div> }
         @if (s != null)
         {

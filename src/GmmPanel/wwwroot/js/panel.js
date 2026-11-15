@@ -130,7 +130,7 @@
             if (rail) railOpen(rail, false);
         }
         // The header's server switcher and account menu close on a click anywhere else
-        ["switcher", "account"].forEach(function (id) {
+        ["switcher", "account", "nav-menu"].forEach(function (id) {
             var menu = document.getElementById(id);
             if (menu && menu.open && !event.target.closest("#" + id)) menu.open = false;
         });
@@ -143,7 +143,7 @@
             var button = rail.querySelector(":scope > .rail-toggle");
             if (button) button.focus();
         });
-        ["switcher", "account"].forEach(function (id) {
+        ["switcher", "account", "nav-menu"].forEach(function (id) {
             var menu = document.getElementById(id);
             if (menu && menu.open) menu.open = false;
         });
@@ -247,25 +247,39 @@
     var dialog = document.getElementById("dlg");
 
     // choices: [{ label, kind: "go" | "danger" | "cancel", run }]. Escape or a click outside is the last (cancel) choice.
+    // One answer and Cancel: both as buttons at the bottom right, like any pop-up. Several answers (a setting's follow-up
+    // question): a list of them, as in game, and Cancel at the bottom right.
     function ask(title, text, choices) {
         if (!dialog || !dialog.showModal) return;
         document.getElementById("dlg-title").textContent = title;
         document.getElementById("dlg-text").textContent = text || "";
         var list = document.getElementById("dlg-choices");
+        var actions = document.getElementById("dlg-actions");
         list.textContent = "";
-        choices.forEach(function (choice) {
+        actions.textContent = "";
+        var answers = choices.filter(function (c) { return c.kind !== "cancel"; });
+        var cancels = choices.filter(function (c) { return c.kind === "cancel"; });
+        function make(choice, className) {
             var button = document.createElement("button");
             button.type = "button";
-            button.className = "dlg-choice " + (choice.kind || "go");
+            button.className = className;
             button.textContent = choice.label;
             button.addEventListener("click", function () {
                 dialog.close();
                 if (choice.run) choice.run();
             });
-            list.appendChild(button);
-        });
+            return button;
+        }
+        var single = answers.length === 1;
+        cancels.forEach(function (c) { actions.appendChild(make(c, "small dlg-cancel")); });
+        if (single)
+            actions.appendChild(make(answers[0], "small " + (answers[0].kind === "danger" ? "danger-solid" : "primary")));
+        else
+            answers.forEach(function (c) { list.appendChild(make(c, "dlg-choice " + (c.kind || "go"))); });
+        list.hidden = single;
+        actions.hidden = actions.children.length === 0;
         dialog.showModal();
-        var first = list.querySelector("button");
+        var first = (single ? actions.lastElementChild : list.querySelector("button"));
         if (first) first.focus();
     }
 
@@ -554,6 +568,13 @@
         if (event.target.matches && event.target.matches("dialog.ticket-dlg")) event.target.close();   // A click outside
     });
 
+    // A colour picker's hex code beside it (a community link's Edit pop-up)
+    document.addEventListener("input", function (event) {
+        var id = event.target.dataset && event.target.dataset.colourCode;
+        var code = id && document.getElementById(id);
+        if (code) code.textContent = event.target.value;
+    });
+
     // ---------- 3. Backdrop ----------
 
     var bg = document.getElementById("bg");
@@ -774,26 +795,48 @@
         };
     })();
 
-    // The header's search: Ctrl+K (or /) focuses it, Escape leaves it
+    // Search in the middle of the screen: the header's icon, Ctrl+K or / opens it; Escape or a click outside closes it
     (function () {
-        var box = document.querySelector("#search input");
-        if (!box) return;
-        // The icon opens the box
-        document.getElementById("search").addEventListener("click", function () { box.focus(); });
+        var dialog = document.getElementById("search-dlg");
+        var box = document.getElementById("palette-input");
+        if (!dialog || !box || !dialog.showModal) return;
+        function open() {
+            if (!dialog.open) dialog.showModal();
+            box.focus();
+            box.select();
+        }
+        var button = document.getElementById("search-open");
+        if (button) button.addEventListener("click", open);
+        dialog.addEventListener("click", function (event) { if (event.target === dialog) dialog.close(); });
         document.addEventListener("keydown", function (event) {
             var typing = /^(INPUT|TEXTAREA|SELECT)$/.test((event.target && event.target.tagName) || "");
             if ((event.key === "k" && (event.ctrlKey || event.metaKey)) || (event.key === "/" && !typing)) {
                 event.preventDefault();
-                box.focus();
-                box.select();
+                open();
             }
         });
         box.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") box.blur();
-            if (event.key === "Enter") {
-                var first = document.querySelector("#search-results .search-hit");
-                if (first) { event.preventDefault(); location.href = first.getAttribute("href"); }
+            // A search box's first Escape only clears its text: here it closes the pop-up straight away
+            if (event.key === "Escape") { event.preventDefault(); dialog.close(); return; }
+            // Up and Down pick a result (the first is picked as results arrive); Enter opens the picked one
+            var hits = [].slice.call(document.querySelectorAll("#search-results .search-hit"));
+            var at = hits.findIndex(function (h) { return h.classList.contains("on"); });
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                if (!hits.length) return;
+                event.preventDefault();
+                at = event.key === "ArrowDown" ? Math.min(hits.length - 1, at + 1) : Math.max(0, at - 1);
+                hits.forEach(function (h, i) { h.classList.toggle("on", i === at); });
+                hits[at].scrollIntoView({ block: "nearest" });
             }
+            if (event.key === "Enter") {
+                var pick = hits[at >= 0 ? at : 0];
+                if (pick) { event.preventDefault(); location.href = pick.getAttribute("href"); }
+            }
+        });
+        document.addEventListener("htmx:afterSwap", function (event) {
+            if (event.target.id !== "search-results") return;
+            var first = event.target.querySelector(".search-hit");
+            if (first) first.classList.add("on");
         });
     })();
 
@@ -815,7 +858,7 @@
         // A slider that shows its value as a percentage beside it (Site settings: Darken the background)
         document.querySelectorAll("input[type='range'][data-percent]").forEach(function (range) {
             var out = document.getElementById(range.dataset.percent);
-            if (out) range.addEventListener("input", function () { out.textContent = range.value + "%"; });
+            if (out) range.addEventListener("input", function () { out.textContent = range.value + (range.dataset.unit || "%"); });
         });
         document.querySelectorAll("[data-fill-map]").forEach(function (chip) {
             chip.addEventListener("click", function () {
@@ -954,6 +997,19 @@
     }
     if (narrow.addEventListener) narrow.addEventListener("change", foldActions);
     document.addEventListener("htmx:afterSettle", foldActions);
+
+    // Toasts leave once they've slid out (so the ones after them move up), and a tap closes one early
+    (function () {
+        var toasts = document.getElementById("toasts");
+        if (!toasts) return;
+        toasts.addEventListener("animationend", function (event) {
+            if (event.animationName === "toast-out" && event.target.parentNode === toasts) toasts.removeChild(event.target);
+        });
+        toasts.addEventListener("click", function (event) {
+            var toast = event.target.closest && event.target.closest(".toast");
+            if (toast && !(event.target.closest("a, button"))) toast.classList.add("dismiss");
+        });
+    })();
 
     // ---------- Start, and after every refresh ----------
 

@@ -9,9 +9,7 @@
 <div class="page-title">
     <div class="eyebrow">Panel</div>
     <h1>Site settings</h1>
-    <p>What every visitor and player gets (your look, pictures, links and features), and the running of the panel: its admins,
-        the flags each part needs, the servers, Discord, how long records are kept and backups. Each person can still change
-        their own colours and theme on <a href="/appearance">Appearance</a>.</p>
+    <p>What everyone sees, and how the panel runs. Your own look is on <a href="/appearance">Appearance</a>.</p>
 </div>
 @if (Model.Message != null)
 {
@@ -20,8 +18,7 @@
 @if (Model.NewToken != null)
 {
     <div class="snippet"><pre id="new-token">@Model.NewToken</pre><button type="button" class="small" data-copy="new-token">Copy</button></div>
-    <p class="note">The token for @Model.NewTokenServer, shown once. It goes in <code>panel-secrets.json</code> as <code>"Token"</code>;
-        the <a href="/setup">setup page</a> shows the whole GameModeManager config.</p>
+    <p class="note">The token for @Model.NewTokenServer, shown once. Put it in <code>panel-secrets.json</code> as <code>"Token"</code>.</p>
 }
 
 @* One section at a time, picked in the rail (panel.js remembers it; a #section link opens it) *@
@@ -44,17 +41,36 @@
         <label>Site name <small>The tab title, and the logo when there's no picture</small><input type="text" name="name" maxlength="40" value="@look.Name" placeholder="GameModeManager Panel"></label>
         <label>Subtitle <small>Under the logo</small><input type="text" name="sub" maxlength="40" value="@look.Sub" placeholder="GameModeManager"></label>
         <label class="wide">Footer text<input type="text" name="footer" maxlength="120" value="@look.Footer" placeholder="© and the year, after your site name"></label>
-        <label>Logo picture <small>In the header and, smaller, the footer. PNG, JPEG, WebP or SVG, up to 512 KB; about 200 × 48 looks best. An SVG takes the theme's colours: <code>currentColor</code> is the text colour, <code>class="accent"</code> the accent</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
-        <div class="logo-now">
-            @if (Model.LogoUrl != null)
-            {
-                @if (Model.LogoSvg is { } svgNow) { <span class="logo-svg">@svgNow</span> } else { <img class="logo-img" src="@Model.LogoUrl" alt="Your logo"> }
-                <label class="check"><input type="checkbox" name="removeLogo" value="true"> Remove it</label>
-            }
-            else
-            {
-                <span class="note">No picture: the built-in logo@(look.Name.Length > 0 ? ", or your site name," : "") shows.</span>
-            }
+        @* The three pictures side by side, each with what's there now under its picker *@
+        <div class="wide uploads">
+            <div class="upload">
+                <label>Header logo <small>PNG, JPEG, WebP or SVG, up to 512 KB. About 200 × 48</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
+                @if (Model.LogoUrl != null)
+                {
+                    <div class="logo-now">@if (Model.LogoSvg is { } svgNow) { <span class="logo-svg">@svgNow</span> } else { <img class="logo-img" src="@Model.LogoUrl" alt="Your logo"> }</div>
+                    <label class="check"><input type="checkbox" name="removeLogo" value="true"> Remove it</label>
+                }
+                else { <span class="note">None: @(look.Name.Length > 0 ? "your site name" : "the built-in logo")</span> }
+            </div>
+            <div class="upload">
+                <label>Footer logo <small>Optional, same types. About 160 × 20</small><input type="file" name="footerLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
+                @if (Model.FooterLogoUrl != null)
+                {
+                    <div class="logo-now">@if (Model.FooterLogoSvg is { } footNow) { <span class="logo-svg foot-logo-svg">@footNow</span> } else { <img class="foot-logo" src="@Model.FooterLogoUrl" alt="Your footer logo"> }</div>
+                    <label class="check"><input type="checkbox" name="removeFooterLogo" value="true"> Remove it</label>
+                }
+                else { <span class="note">None: the header logo</span> }
+            </div>
+            <div class="upload">
+                <label>Favicon <small>Square PNG, ICO or SVG, up to 512 KB</small><input type="file" name="favicon" accept="image/png,image/x-icon,.ico,image/svg+xml,.svg"></label>
+                @if (Model.FaviconUrl != null)
+                {
+                    <div class="logo-now"><img class="favicon-now" src="@Model.FaviconUrl" alt="Your favicon" width="32" height="32"></div>
+                    <label class="check"><input type="checkbox" name="removeFavicon" value="true"> Remove it</label>
+                }
+                else { <span class="note">None: a white crosshair</span> }
+            </div>
+            <p class="note wide-note">An SVG takes the theme's colours: <code>currentColor</code> is the text colour and <code>class="accent"</code> the accent.</p>
         </div>
     </div>
     <div class="site-grid colours">
@@ -69,9 +85,9 @@
                 <input type="text" name="@field" value="@value" maxlength="7" placeholder="@fallback" title="Empty: @fallback, the panel's own" spellcheck="false" pattern="#[0-9a-fA-F]{6}"></span></label>
         }
     </div>
-    <p class="note">The header and footer, panel, page and pop-up colours are for the dark look, so they must be dark; light mode keeps its own light surfaces and uses only your accent and notifications colour. The accent must be deep enough for white text on buttons, and the notifications colour readable on both. Colours that would make text hard to read aren't saved.</p>
+    <p class="note">These colours are for the dark theme, so keep them dark; light mode uses only the accent and notifications colours. Unreadable colours aren't saved.</p>
     <div class="site-grid">
-        <label>Theme <small>Each person can still pick their own on Appearance</small><select name="theme">
+        <label>Theme <small>Each person can pick their own</small><select name="theme">
             @foreach (var (value, text) in new[] { ("dark", "Dark"), ("light", "Light"), ("auto", "Follow each visitor's device") })
             { <option value="@value" selected="@(SiteLook.ThemeOf(look.Theme) == value)">@text</option> }
         </select></label>
@@ -85,10 +101,13 @@
             @foreach (var b in Model.OwnBackgrounds) { <option value="@b.Id" selected="@(look.Background == b.Id)">@b.Name@(b.Scene ? "" : " (yours)")</option> }
         </select></label>
         <label>Darken the background <small>0% shows the scene as it is</small><span class="range-row"><input type="range" name="dim" min="0" max="100" step="5" value="@look.Dim" data-percent="dim-out"><output id="dim-out">@look.Dim%</output></span></label>
+        <label>Panel opacity <small>Lower shows more of the background</small><span class="range-row"><input type="range" name="panelOpacity" min="40" max="100" step="2" value="@look.PanelOpacity" data-percent="glass-out"><output id="glass-out">@look.PanelOpacity%</output></span></label>
+        <label>Blur behind the panel<span class="range-row"><input type="range" name="panelBlur" min="0" max="32" step="1" value="@look.PanelBlur" data-unit="px" data-percent="blur-out"><output id="blur-out">@(look.PanelBlur)px</output></span></label>
+        <label>Header and footer opacity<span class="range-row"><input type="range" name="barOpacity" min="40" max="100" step="2" value="@look.BarOpacity" data-percent="bars-out"><output id="bars-out">@look.BarOpacity%</output></span></label>
         <label class="check"><input type="checkbox" name="motion" value="true" checked="@look.Motion"> Background motion</label>
     </div>
     <div class="site-grid">
-        <label>Default language <small>For people who haven't picked one in the footer. Their browser's language, or one for everyone.</small><select name="language">
+        <label>Default language <small>For anyone who hasn't picked one</small><select name="language">
             <option value="" selected="@(look.Language.Length == 0)">Auto</option>
             @foreach (var (code, langName) in Lang.Languages) { <option value="@code" selected="@(look.Language == code)">@langName</option> }
         </select></label>
@@ -101,35 +120,45 @@
 
 </section>
 <section class="pane" data-pane="backgrounds"><div class="pane-head"><span class="crumb">Pictures</span><h2>Backgrounds</h2></div>
-<p class="note">Pictures or short videos (WebM, MP4) behind every page, for everyone, up to 25 MB. Name the file after a map
-    (de_dust2.jpg) and Auto shows it on that map; the display name is what the background picker shows. tools/GameArt adds
-    CS2's own menu scenery. Only use pictures you made or may use: your own CS2 screenshots and clips are fine.</p>
+<p class="note">Pictures or short videos (WebM, MP4), up to 25 MB. Name one after a map (de_dust2.jpg) to show it on that map. Use only pictures you may use.</p>
 <form method="post" asp-page-handler="Upload" enctype="multipart/form-data" class="mod-form">
     <input type="hidden" name="kind" value="background">
     <label>Background <small>1920 × 1080 or larger, up to 25 MB</small><input type="file" name="file" required accept="image/png,image/jpeg,image/webp,video/webm,video/mp4"></label>
-    <label>Display name <small>Optional: shown in the picker instead of the file's name</small><input type="text" name="title" maxlength="40" placeholder="Dust II at night"></label>
+    <label>Display name <small>Shown in the picker</small><input type="text" name="title" maxlength="40" placeholder="Dust II at night"></label>
     <button type="submit" class="primary">Upload</button>
 </form>
+@{ int bgIndex = 0; }
 @foreach (var b in Model.OwnBackgrounds)
 {
     string file = b.Id[4..];
+    string bgDialog = "bg-dlg-" + bgIndex++;
     <div class="row bg-row">
         <span class="label">@b.Name <small>@file · @(b.Scene ? "CS2 menu scenery" : b.Kind == "video" ? "video" : "picture")</small></span>
-        <form method="post" asp-page-handler="RenameBackground" class="bg-rename">
-            <input type="hidden" name="name" value="@file">
-            <input type="text" name="title" maxlength="40" value="@Model.DisplayName(file)" placeholder="@b.Name" aria-label="Display name for @file">
-            <button type="submit" class="small">Rename</button>
-        </form>
-        <form method="post" asp-page-handler="DeleteFile">
-            <input type="hidden" name="kind" value="background"><input type="hidden" name="name" value="@file">
-            <button type="submit" class="small danger" data-confirm="@file is deleted from the panel's data folder." data-confirm-title="Delete @file?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
-        </form>
+        <button type="button" class="small" data-dlg="@bgDialog">Edit</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="@bgDialog" aria-labelledby="@bgDialog-title">
+            <div class="dlg-head details-head"><span id="@bgDialog-title">@b.Name</span><small class="mono">@file</small></div>
+            <div class="ticket-section">
+                <div class="group-title">Display name</div>
+                <form method="post" asp-page-handler="RenameBackground" class="inline-form" id="@bgDialog-form">
+                    <input type="hidden" name="name" value="@file">
+                    <input type="text" name="title" maxlength="40" value="@Model.DisplayName(file)" placeholder="@b.Name" aria-label="Display name">
+                </form>
+                <p class="note">Shown in the background picker.</p>
+            </div>
+            <div class="details-links">
+                <form method="post" asp-page-handler="DeleteFile">
+                    <input type="hidden" name="kind" value="background"><input type="hidden" name="name" value="@file">
+                    <button type="submit" class="small danger" data-confirm="@file is deleted from the panel's data folder." data-confirm-title="Delete @file?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
+                </form>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="@bgDialog-form">Save</button>
+            </div>
+        </dialog>
     </div>
 }
 </section>
 <section class="pane" data-pane="maps"><div class="pane-head"><span class="crumb">Pictures</span><h2>Map pictures</h2></div>
-<p class="note">The square picture on the server cards and pages, named after the map, up to 2 MB. tools/GameArt adds CS2's own
-    map screenshots.</p>
+<p class="note">Square pictures for the server cards, named after the map, up to 2 MB.</p>
 <form method="post" asp-page-handler="Upload" enctype="multipart/form-data" class="mod-form">
     <input type="hidden" name="kind" value="map">
     <label>Map<input type="text" name="map" required maxlength="80" placeholder="de_dust2" spellcheck="false"></label>
@@ -160,23 +189,35 @@
 </div>
 
 </section>
-<section class="pane" data-pane="links"><div class="pane-head"><span class="crumb">Look</span><h2>Community links</h2></div>
-<p class="note">Icons in the footer (and the menu on phones) for everyone: your Discord server, website, YouTube, Twitch, store ... They open in a new tab. Each is in the accent colour unless you give it its own.</p>
+<section class="pane" data-pane="links"><div class="pane-head"><span class="crumb">Look</span><h2>Social links</h2></div>
+<p class="note">Icons in the footer and at the top of the phone menu. They open in a new tab.</p>
 @for (int i = 0; i < Model.Links.Count; i++)
 {
     var link = Model.Links[i];
     <div class="row">
         <span class="label"><svg class="ic link-@i" aria-hidden="true"><use href="#i-@link.Icon"/></svg> @link.Label <small>@link.Url</small></span>
-        <form method="post" asp-page-handler="LinkColor" class="link-color">
-            <input type="hidden" name="index" value="@i">
-            <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour for @link.Label">
-            <button type="submit" class="small">Set</button>
-            @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small quiet">Accent</button> }
-        </form>
-        <form method="post" asp-page-handler="RemoveLink">
-            <input type="hidden" name="index" value="@i">
-            <button type="submit" class="small danger">Remove</button>
-        </form>
+        <button type="button" class="small" data-dlg="link-dlg-@i">Edit</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="link-dlg-@i" aria-labelledby="link-dlg-@i-title">
+            <div class="dlg-head details-head"><span id="link-dlg-@i-title">@link.Label</span></div>
+            <div class="ticket-section">
+                <div class="group-title">Colour</div>
+                <form method="post" asp-page-handler="LinkColor" class="inline-form" id="link-form-@i">
+                    <input type="hidden" name="index" value="@i">
+                    <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour" data-colour-code="link-code-@i">
+                    <span class="colour-code" id="link-code-@i">@(link.Color.Length > 0 ? link.Color : Model.AccentColour)</span>
+                    @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small">Use the accent</button> }
+                </form>
+                <p class="note">@(link.Color.Length > 0 ? "Its own colour." : "Uses the accent.")</p>
+            </div>
+            <div class="details-links">
+                <form method="post" asp-page-handler="RemoveLink">
+                    <input type="hidden" name="index" value="@i">
+                    <button type="submit" class="small danger" data-confirm="@link.Label is removed from the footer and menu." data-confirm-title="Remove @link.Label?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                </form>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="link-form-@i">Save</button>
+            </div>
+        </dialog>
     </div>
 }
 <form method="post" asp-page-handler="AddLink" class="mod-form">
@@ -188,9 +229,54 @@
 
 @* The status widget and the JSON, for the community's website or a Discord bot *@
 </section>
+<section class="pane" data-pane="menu"><div class="pane-head"><span class="crumb">Look</span><h2>Menu links</h2></div>
+<p class="note">Text links in the header, like Skins or VIP. One or two show beside the pages; three or more go in one menu.</p>
+@for (int m = 0; m < Model.Data.MenuLinks.Count; m++)
+{
+    var item = Model.Data.MenuLinks[m];
+    <div class="row">
+        <span class="label">@item.Label <small>@item.Url@(item.NewTab ? " · new tab" : "")</small></span>
+        <button type="button" class="small" data-dlg="menu-dlg-@m">Edit</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="menu-dlg-@m" aria-labelledby="menu-dlg-@m-title">
+            <div class="dlg-head details-head"><span id="menu-dlg-@m-title">@item.Label</span></div>
+            <form method="post" asp-page-handler="MenuLink" class="ticket-section site-grid menu-link-form" id="menu-form-@m">
+                <input type="hidden" name="index" value="@m">
+                <label>Label<input type="text" name="label" maxlength="20" required value="@item.Label"></label>
+                <label>Address<input type="text" name="url" maxlength="300" required value="@item.Url" spellcheck="false"></label>
+                <label>Icon <small>In the phone menu</small><select name="icon">@foreach (string ic in MenuLink.Icons) { <option value="@ic" selected="@(item.Icon == ic)">@(char.ToUpperInvariant(ic[0]) + ic[1..])</option> }</select></label>
+                <label class="check wide"><input type="checkbox" name="newTab" value="true" checked="@item.NewTab"> Open in a new tab</label>
+            </form>
+            <div class="details-links">
+                <form method="post" asp-page-handler="RemoveMenuLink">
+                    <input type="hidden" name="index" value="@m">
+                    <button type="submit" class="small danger" data-confirm="@item.Label is removed from the header." data-confirm-title="Remove @item.Label?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                </form>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="menu-form-@m">Save</button>
+            </div>
+        </dialog>
+    </div>
+}
+@if (Model.Data.MenuLinks.Count < MenuLink.Max)
+{
+    <form method="post" asp-page-handler="MenuLink" class="mod-form">
+        <input type="hidden" name="index" value="-1">
+        <label>Label<input type="text" name="label" maxlength="20" required placeholder="Skins"></label>
+        <label>Address<input type="text" name="url" maxlength="300" required placeholder="https://skins.example.gg" spellcheck="false"></label>
+        <label>Icon<select name="icon">@foreach (string ic in MenuLink.Icons) { <option value="@ic">@(char.ToUpperInvariant(ic[0]) + ic[1..])</option> }</select></label>
+        <label class="check"><input type="checkbox" name="newTab" value="true" checked> Open in a new tab</label>
+        <button type="submit" class="primary">Add link</button>
+    </form>
+}
+<div class="group-title">Menu name</div>
+<form method="post" asp-page-handler="MenuName" class="inline-form">
+    <input type="text" name="name" maxlength="20" value="@Model.Data.MenuName" placeholder="Community" aria-label="Menu name">
+    <button type="submit" class="small primary">Save</button>
+</form>
+<p class="note">Used when there are three or more links, on narrow screens, and in the phone menu.</p>
+</section>
 <section class="pane" data-pane="rules"><div class="pane-head"><span class="crumb">Features</span><h2>Rules</h2></div>
-<p class="note">Your server rules, shown on the <a href="/rules">Rules</a> page and linked in the footer and on the report form. One rule
-    per line; a line starting with <code>## </code> starts a section (## Chat). A little Markdown works in a rule: <code>**bold**</code>, <code>*italic*</code>, <code>~~struck~~</code>, <code>`code`</code>, <code>[text](https://link)</code>, and bare https:// links. Empty hides the page.</p>
+<p class="note">One rule per line; <code>## </code> starts a section. Markdown works: <code>**bold**</code>, <code>*italic*</code>, <code>[text](https://link)</code>. Leave it empty to hide the <a href="/rules">Rules</a> page.</p>
 <form method="post" asp-page-handler="Rules" class="site-form">
     <div class="site-grid"><label class="wide">Rules <small>Up to @SiteModel.MaxRules.ToString("N0") characters</small>
         <textarea name="rules" rows="14" maxlength="@SiteModel.MaxRules" spellcheck="true" placeholder="## General&#10;Be respectful to other players.&#10;No cheats, scripts or exploits.&#10;## Chat&#10;No spam or advertising.">@Model.Store.Rules</textarea></label></div>
@@ -198,8 +284,7 @@
 </form>
 </section>
 <section class="pane" data-pane="widget"><div class="pane-head"><span class="crumb">Features</span><h2>Status widget</h2></div>
-<p class="note">A small card with a server's players, map and Connect, for your website. It refreshes every minute. Paste one of
-    these where it should show. <code>/status.json</code> has every server's status for a Discord bot or anything else.</p>
+<p class="note">A server card for your website, updated every minute. <code>/status.json</code> has every server's status for bots.</p>
 @{ string origin = $"{Request.Scheme}://{Request.Host}"; }
 @{ int n = 0; }
 @foreach (var server in Model.ServerNames)
@@ -230,8 +315,7 @@
 @* Features: the panel's own pages and parts; off hides them everywhere *@
 </section>
 <section class="pane" data-pane="integrations"><div class="pane-head"><span class="crumb">Features</span><h2>Features</h2></div>
-<p class="note">What the panel offers. Switch something off and its pages, links and buttons disappear for everyone; what's
-    saved (old reports, your rules) is kept.</p>
+<p class="note">Turn off what you don't use: its pages and buttons disappear, and its data is kept.</p>
 <form method="post" asp-page-handler="Integrations" class="site-form">
     <div class="site-grid">
         @foreach (var (id, label, what) in Features.All)
@@ -244,8 +328,7 @@
 
 </section>
 <section class="pane" data-pane="admins"><div class="pane-head"><span class="crumb">People</span><h2>Panel admins</h2></div>
-<p class="note">Panel admins can do everything, even while the servers are offline. Everyone else signs in with Steam and gets what their
-    admin flags on each server allow, as in game: add them as admins on the servers (CS2-SimpleAdmin's Admins tab, or admins.json).</p>
+<p class="note">Panel admins can do everything. Everyone else gets what their admin flags allow on each server.</p>
 @foreach (AdminEntry admin in Model.Data.Admins.OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase))
 {
     <div class="row">
@@ -258,7 +341,7 @@
         {
             <form method="post" asp-page-handler="RemoveAdmin">
                 <input type="hidden" name="steamId" value="@admin.SteamId">
-                <button type="submit" class="small danger" data-confirm="@admin.Name stops being a panel admin. Their admin flags on the servers still count." data-confirm-title="Remove @admin.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                <button type="submit" class="small" data-confirm="@admin.Name stops being a panel admin. Their admin flags on the servers still count." data-confirm-title="Remove @admin.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
             </form>
         }
     </div>
@@ -282,30 +365,56 @@
     ServerView? view = Model.Find(server.Name);
     string? versionProblem = AgentVersion.Problem(view);
     <div class="row">
-        <span class="label">@server.Name <small>@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : "Hasn't connected since the panel started")</small>
+        @* The status dot with the name (as on the server tabs); everything else is in its Settings pop-up *@
+        <span class="label"><span class="ind @(view?.Online == true ? "ok" : "bad")" title="@(view?.Online == true ? "Online" : "Offline")">@GmmPanel.Data.ServerNames.Label(server.Name)</span>
+            <small>@(server.DisplayName.Length > 0 ? $"ID {server.Name} · " : "")@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : view?.Online == true ? "Online" : "Not connected yet")</small>
             @if (versionProblem != null) { <small class="version-warn">@versionProblem</small> }</span>
-        <span class="ind @(view?.Online == true ? "ok" : "bad")">@(view?.Online == true ? "Online" : "Offline")</span>
-        <form method="post" asp-page-handler="Token">
-            <input type="hidden" name="server" value="@server.Name">
-            <button type="submit" class="small" data-confirm="@server.Name gets a new token and the old one stops working: it has to be put in its panel-secrets.json again." data-confirm-title="New token for @server.Name?" data-confirm-yes="New token">New token</button>
-        </form>
-        <form method="post" asp-page-handler="RemoveServer">
-            <input type="hidden" name="server" value="@server.Name">
-            <button type="submit" class="small danger" data-confirm="@server.Name can no longer connect to the panel." data-confirm-title="Remove @server.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
-        </form>
+        <button type="button" class="small" data-dlg="gmm-@server.Name">Settings</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="gmm-@server.Name" aria-labelledby="gmm-@server.Name-title">
+            <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@GmmPanel.Data.ServerNames.Label(server.Name)</span><small class="mono">@server.Name</small></div>
+            <div class="ticket-section">
+                <div class="group-title">Display name</div>
+                <form method="post" asp-page-handler="ServerLabel" class="inline-form" id="srv-form-@server.Name">
+                    <input type="hidden" name="server" value="@server.Name">
+                    <input type="text" name="label" maxlength="@GmmPanel.Data.ServerNames.MaxLabel" value="@server.DisplayName" placeholder="@server.Name" aria-label="Display name">
+                </form>
+                <p class="note">Shown on its tab, card and pages. Its ID, token and history stay the same.</p>
+                <div class="group-title">GameModeManager.json</div>
+                <p class="note">Replace the <code>Panel</code> block in its <code>GameModeManager.json</code>, then change the map. Its token stays the same.</p>
+                <div class="snippet"><pre id="gmm-block-@server.Name">@GmmSettings.PanelBlock(Model.AgentUrl, server.Name)</pre><button type="button" class="small" data-copy="gmm-block-@server.Name">Copy</button></div>
+            </div>
+            <div class="details-links">
+                <form method="post" asp-page-handler="Token">
+                    <input type="hidden" name="server" value="@server.Name">
+                    <button type="submit" class="small" data-confirm="@server.Name gets a new token and the old one stops working: it has to be put in its panel-secrets.json again." data-confirm-title="New token for @server.Name?" data-confirm-yes="New token">New token</button>
+                </form>
+                <form method="post" asp-page-handler="RemoveServer">
+                    <input type="hidden" name="server" value="@server.Name">
+                    <button type="submit" class="small danger" data-confirm="@server.Name can no longer connect to the panel." data-confirm-title="Remove @server.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                </form>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="srv-form-@server.Name">Save</button>
+            </div>
+        </dialog>
     </div>
 }
 <form method="post" asp-page-handler="Token" class="mod-form">
-    <label>New server<input type="text" name="server" maxlength="40" pattern="[A-Za-z0-9_\-]+" required placeholder="Test"></label>
+    <input type="hidden" name="add" value="true">
+    <label>New server <small>Its display name, like Deathmatch #2</small><input type="text" name="label" maxlength="@GmmPanel.Data.ServerNames.MaxLabel" required placeholder="Deathmatch #2"></label>
+    <label>ID <small>Optional. Can't be changed later</small><input type="text" name="server" maxlength="40" pattern="[A-Za-z0-9_\-]+" placeholder="Deathmatch-2"></label>
     <button type="submit" class="primary">Add server</button>
 </form>
 <p class="note">The <a href="/setup">setup page</a> walks through adding a server, with the GameModeManager settings to paste.</p>
+<div class="group-title">Agent address</div>
+<form method="post" asp-page-handler="AgentUrl" class="mod-form">
+    <label>Where game servers connect <small>Moved domains? Change it, then paste each server's new Settings</small>
+        <input type="text" name="url" maxlength="200" value="@Model.Data.AgentUrl" placeholder="@Model.AgentUrl"></label>
+    <button type="submit" class="primary">Save</button>
+</form>
 
 </section>
 <section class="pane" data-pane="permissions"><div class="pane-head"><span class="crumb">People</span><h2>Permissions</h2></div>
-<p class="note">The admin flag each part of the panel needs, on top of the server's own admin groups. The defaults are what the game asks
-    for; give a moderator group more by choosing a flag it has (for example <code>@@css/generic</code> for hostname changes). Settings,
-    actions and the plugins' lists keep their own flags.</p>
+<p class="note">The admin flag each part needs. Settings, actions and plugin lists keep their own.</p>
 <form method="post" asp-page-handler="Permissions" class="perm-form">
     @foreach (var area in PanelPermissions.Areas)
     {
@@ -326,8 +435,7 @@
 </section>
 <section class="pane" data-pane="discord"><div class="pane-head"><span class="crumb">Servers</span><h2>Discord</h2></div>
 @{ var discord = Model.DiscordSettings; }
-<p class="note">Posts to one Discord channel through a webhook (channel settings, Integrations, Webhooks). CS2-SimpleAdmin posts its own
-    bans and mutes with its own webhook settings. @(discord.Url.Length > 0 ? "A webhook is set; it isn't shown again." : "No webhook yet.")</p>
+<p class="note">Posts to a Discord channel through its webhook (channel settings, Integrations, Webhooks). @(discord.Url.Length > 0 ? "A webhook is set; it isn't shown again." : "No webhook yet.")</p>
 <form method="post" asp-page-handler="Discord" class="discord-form">
     <label>Webhook address<input type="url" name="url" maxlength="300" autocomplete="off" spellcheck="false" placeholder="@(discord.Url.Length > 0 ? "Set: type a new one to replace it" : "https://discord.com/api/webhooks/...")"></label>
     <label class="check"><input type="checkbox" name="servers" value="true" checked="@discord.Servers"> Server status: offline for 2 minutes, back online</label>
@@ -352,8 +460,7 @@
     static string Size(long bytes) => bytes < 1024 * 1024 ? $"{Math.Max(1, bytes / 1024)} KB" : $"{bytes / 1024.0 / 1024:0.#} MB";
     static string Days(int d) => d == 0 ? "Keep it all" : d % 365 == 0 ? $"{d / 365} year{(d == 365 ? "" : "s")}" : $"{d} days";
 }
-<p class="note">How long the panel keeps what it records itself. Older records are deleted by a cleanup every 6 hours, and the
-    Privacy page tells players these numbers. Bans, ranks and the like belong to the plugins and aren't touched.</p>
+<p class="note">How long the panel keeps its own records. Plugins' data isn't touched.</p>
 <form method="post" asp-page-handler="Retention" class="site-form">
     <div class="site-grid">
         @foreach (var (field, label, help, value, path) in new[]
@@ -379,9 +486,7 @@
 @* Backup: settings and records as one zip, and back (for a new machine, or the Pi) *@
 </section>
 <section class="pane" data-pane="backup"><div class="pane-head"><span class="crumb">Data</span><h2>Backup</h2></div>
-<p class="note">Your servers, admins, permissions, site look, links, reports, notes, tasks and audit log as one zip. Sign-in keys
-    aren't in it (they only work on this machine), so everyone signs in again after a move. The Discord webhook is left out unless
-    you tick it, since anyone with its address can post to your channel.</p>
+<p class="note">Settings and records in one zip. Sign-in keys aren't included, and the Discord webhook only if you tick it.</p>
 <form method="get" action="/site" class="audit-export">
     <input type="hidden" name="handler" value="Backup">
     <label class="check"><input type="checkbox" name="history" value="true" checked> Player history and chat</label>

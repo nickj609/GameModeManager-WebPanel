@@ -15,7 +15,7 @@
         </div>
         @if (Model.View != null)
         {
-            <span class="ind @(Model.View.Online ? "ok" : "bad")">Read through @server</span>
+            <span class="ind @(Model.View.Online ? "ok" : "bad")" title="Bans, mutes and warnings come from this server's CS2-SimpleAdmin database">From @Label(server)</span>
         }
     </div>
 
@@ -26,15 +26,15 @@
     else if (!Model.View.Online || s == null)
     {
         <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg>
-            <span>@server isn't connected. The lists are read through a connected server: pick another in the header.</span></div>
+            <span>@Label(server) isn't connected. The lists come from a connected server: pick another in the header.</span></div>
     }
     else if (s.Data == null)
     {
-        <p class="note">@server's GameModeManager is older than the panel: update it to read the plugins' data.</p>
+        <p class="note">@Label(server)'s GameModeManager is too old for this panel: update it.</p>
     }
     else
     {
-        <p class="note">Plugins' lists are read through @server's GameModeManager from each plugin's own database; changes go through the plugins' own commands. Appeals, reports, the chat log and player history are kept by the panel. Everything you change is in the audit log.</p>
+        <p class="note">The lists come from each plugin's own database, and changes use its own commands. Every change is in the audit log.</p>
         <div class="manage">
             <nav class="rail" aria-label="Sections">
                 @foreach (var group in Model.Shown.GroupBy(tab => tab.Group))
@@ -100,7 +100,7 @@
                                         }
                                     }
                                     @{ string verb = choice ? "Apply" : action.Label; }
-                                    <button type="submit" class="primary" data-confirm="@(choice ? string.Join(", ", same.Select(a => a.Label)) : action.Label): @f.Source.Name runs it on @server, and its database is shared by its servers." data-confirm-title="@verb?" data-confirm-yes="@verb">@verb</button>
+                                    <button type="submit" class="primary" data-confirm="@(choice ? string.Join(", ", same.Select(a => a.Label)) : action.Label): @f.Source.Name runs it on @Label(server), and its database is shared by its servers." data-confirm-title="@verb?" data-confirm-yes="@verb">@verb</button>
                                 </form>
                             }
                             <form class="mod-tools" hx-get="@listUrl" hx-target="#@target" hx-swap="innerHTML" hx-trigger="input delay:450ms, submit">

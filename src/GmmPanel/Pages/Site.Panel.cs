@@ -76,7 +76,7 @@ public partial class SiteModel
             if (problem != null)
                 return Done(problem, failed: true);
             _audit.Write(Admin.Audit, $"backup restored ({restored} files)", null, true, "");
-            return Done($"Restored {restored} files. Settings, servers and admins apply now; restart the panel for reports, notes, tasks and the Discord settings. What was there before is in data\before-restore-*.zip.");
+            return Done($"Restored {restored} files. Restart the panel to finish. The old data is in data\before-restore-*.zip.");
         }
         finally
         {
@@ -173,18 +173,78 @@ public partial class SiteModel
         return Done($"{entry.Name} is no longer a panel admin. Their servers' admin flags still count.");
     }
 
-    // A new server, or a new token for one (the old token stops working at its next connect)
-    public IActionResult OnPostToken(string? server)
+    // A new server (add), or a new token for one already on the list (the old token stops working at its next connect)
+    public IActionResult OnPostToken(string? server, bool add, string? label)
     {
+        label = (label ?? "").Trim();
+        if (add && label.Length > 0 && LabelProblem(label) is string badLabel)
+            return Done(badLabel, failed: true);
+        // A new server's ID comes from its display name unless one is given
         server = (server ?? "").Trim();
+        if (add && server.Length == 0)
+            server = GmmPanel.Data.ServerNames.NewId(label, Data.Servers.Select(s => s.Name));
         if (!PanelStore.IsServerName(server))
-            return Done("Server names use letters, digits, - and _ (up to 40), like Production or Test.", failed: true);
+            return Done("Server names use letters, digits, - and _ (up to 40), like Production or Deathmatch-2.", failed: true);
         bool existed = Data.Servers.Any(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase));
+        // Adding a name that's taken would replace that server's token and cut it off: each server needs its own name
+        if (add && existed)
+            return Done($"{server} is taken. Try {server}-2 or {server}-EU.", failed: true);
         NewToken = _store.NewServerToken(server);
         NewTokenServer = server;
+        if (add && label.Length > 0 && label != server)
+        {
+            PanelData named = _store.LoadForEdit();
+            if (named.Servers.FirstOrDefault(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase)) is { } entry)
+            {
+                entry.DisplayName = label;
+                _store.Save(named);
+            }
+        }
         _audit.Write(Admin.Audit, existed ? $"new token for {server}" : $"add server {server}", server, true, "from the Panel page");
-        return Done(existed ? $"{server} has a new token. Put it in its panel-secrets.json; the old one stops working." : $"{server} is added. Put its token in its panel-secrets.json.");
+        string shown = GmmPanel.Data.ServerNames.Label(server);
+        bool shared = add && _store.Current.Servers.Count(s => GmmPanel.Data.ServerNames.Label(s.Name).Equals(shown, StringComparison.OrdinalIgnoreCase)) > 1;
+        return Done(existed ? $"{server} has a new token. Put it in its panel-secrets.json; the old one stops working."
+            : $"{shown} is added (ID {server}). Put its token in its panel-secrets.json." + (shared ? $" Another server is also shown as {shown}." : ""));
     }
+
+    // A server's display name: what people read on its tab, card and pages. Its ID (token, history, links) stays the same
+    public IActionResult OnPostServerLabel(string? server, string? label)
+    {
+        label = (label ?? "").Trim();
+        if (label.Length > 0 && LabelProblem(label) is string bad)
+            return Done(bad, failed: true);
+        PanelData data = _store.LoadForEdit();
+        if (data.Servers.FirstOrDefault(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase)) is not { } entry)
+            return Done("That server isn't on the list.", failed: true);
+        entry.DisplayName = label == entry.Name ? "" : label;
+        _store.Save(data);
+        _audit.Write(Admin.Audit, $"server {entry.Name} display name {(label.Length > 0 ? label : "cleared")}", entry.Name, true, "");
+        string shown = label.Length > 0 ? label : entry.Name;
+        // Two servers may share a name if the owner wants; say so, as visitors can't tell them apart
+        bool shared = data.Servers.Count(s => (s.DisplayName.Length > 0 ? s.DisplayName : s.Name).Equals(shown, StringComparison.OrdinalIgnoreCase)) > 1;
+        return Done(shared ? $"Saved. Another server is also shown as {shown}, so people can't tell them apart." : $"{entry.Name} is shown as {shown}.");
+    }
+
+    private static string? LabelProblem(string label) =>
+        label.Length > GmmPanel.Data.ServerNames.MaxLabel ? $"Display names can be up to {GmmPanel.Data.ServerNames.MaxLabel} characters."
+        : CommandCatalog.TextProblem(label, GmmPanel.Data.ServerNames.MaxLabel, "The display name", allowEmpty: false);
+
+    // Where game servers connect: only GameModeManager.json changes when it does (their tokens stay the same)
+    public IActionResult OnPostAgentUrl(string? url)
+    {
+        url = (url ?? "").Trim();
+        if (url.Length > 0 && GmmSettings.AgentUrlProblem(url) is string problem)
+            return Done(problem, failed: true);
+        PanelData data = _store.LoadForEdit();
+        data.AgentUrl = url;
+        _store.Save(data);
+        _audit.Write(Admin.Audit, $"agent address {(url.Length > 0 ? url : "the panel's own")}", null, true, "");
+        return Done(url.Length > 0
+            ? "Saved. Paste each server's new Settings into its GameModeManager.json."
+            : "Saved. Servers connect to the panel's own address.");
+    }
+
+    public string AgentUrl => GmmSettings.AgentUrl(Data, Request);
 
     public IActionResult OnPostRemoveServer(string? server)
     {

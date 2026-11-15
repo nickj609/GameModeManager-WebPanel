@@ -34,8 +34,6 @@
   "Visitor": "Ziyaretçi",
   "Player": "Oyuncu",
   "Moderator": "Moderatör",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "Bir sunucuya doğrudan buradan katıl. Profilini ya da admin yetkilerinin izin verdiklerini görmek için Steam ile giriş yap.",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "Her sunucu panele kendisi bağlanır. Bağlı olmayan bir sunucu son bildirdiğini gösterir.",
   "{0} playing now": "Şu an {0} kişi oynuyor",
   "{0} different players this week": "Bu hafta {0} farklı oyuncu",
   "Peak hours {0}": "Yoğun saatler {0}",
@@ -173,7 +171,6 @@
   "Rules": "Kurallar",
   "Server rules": "Sunucu kuralları",
   "The panel notes each map change from now on.": "Panel bundan sonra her harita değişikliğini not eder.",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "Tüm sunucularımızda geçerlidir. Ekip her ihlalde işlem yapabilir; kuralları çiğneyen birini mi gördün? Şikâyet et.",
   "{0} playing now on {1} servers.": "Şu an {1} sunucuda {0} kişi oynuyor.",
   "Leaderboards": "Liderlik tabloları",
   "Most played": "En çok oynayan",
@@ -229,7 +226,6 @@
   "the player": "oyuncu",
   "Do it": "Uygula",
   "Do it?": "Uygulansın mı?",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "Yasaklama, susturma ve gag için yukarıda seçilen sunucuda CS2-SimpleAdmin ve her biri için admin yetkisi gerekir.",
   "Comments": "Yorumlar",
   "only staff see these, unless shown": "gösterilmedikçe yalnızca ekip görür",
   "No comments yet.": "Henüz yorum yok.",
@@ -380,5 +376,10 @@
   "No replies yet. Staff answer here.": "Henüz yanıt yok. Ekip burada yanıtlar.",
   "No replies.": "Yanıt yok.",
   "Not yet": "Henüz değil",
-  "Report details": "Şikâyet ayrıntıları"
+  "Report details": "Şikâyet ayrıntıları",
+  "Join a server from here, or sign in with Steam.": "Buradan bir sunucuya katıl ya da Steam ile giriş yap.",
+  "An offline server shows what it last reported.": "Çevrimdışı sunucu son bildirdiği durumu gösterir.",
+  "These apply on every server. See someone breaking them? Report it.": "Her sunucuda geçerlidir. Kuralları çiğneyen birini mi gördün? Şikâyet et.",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "Ban, susturma ve sohbet engeli için CS2-SimpleAdmin ve ilgili yönetici yetkisi gerekir.",
+  "Move": "Gez"
 }

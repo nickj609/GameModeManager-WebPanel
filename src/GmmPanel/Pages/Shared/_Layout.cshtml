@@ -71,6 +71,8 @@
     string? avatar = me == null ? null : await Steam.AvatarAsync(me.SteamId);
     string? discord = me == null ? null : Prefs.Discord(me.SteamId);
     var links = Store.Current.Links;
+    var menuLinks = Store.Current.MenuLinks;
+    string menuName = Store.Current.MenuName.Length > 0 ? Store.Current.MenuName : T("Community");
 }
 <!doctype html>
 @{ string siteTheme = SiteLook.ThemeOf(Store.Current.Site.Theme); }
@@ -102,7 +104,8 @@
     <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"selfRequestsOnly":true,"historyCacheSize":0}'>
     <meta name="robots" content="noindex, nofollow">
     <title>@T(title) · @Theme.Name</title>
-    <link rel="icon" href="/img/favicon.svg?v=@Build" type="image/svg+xml">
+    @if (Theme.FaviconUrl is { } favicon) { <link rel="icon" href="@favicon" type="@GmmPanel.Data.SiteTheme.ContentType(Theme.Look.Favicon)"> }
+    else { <link rel="icon" href="/img/favicon.svg?v=@Build" type="image/svg+xml"> }
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="preload" href="/fonts/barlow-500.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
@@ -133,7 +136,7 @@
             bool selectedOnline = Registry.Find(selected)?.Online == true;
             <details class="switcher bar-wide" id="switcher">
                 <summary title="The server Manage, Admin and Moderate work on">
-                    <span class="ind @(selectedOnline ? "ok" : "bad")"><span class="switcher-name">@selected</span></span>
+                    <span class="ind @(selectedOnline ? "ok" : "bad")"><span class="switcher-name">@Label(selected)</span></span>
                     @if (mine.Count > 1) { <svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg> }
                 </summary>
                 @if (mine.Count > 1)
@@ -150,17 +153,32 @@
             {
                 <a href="@link.Href" class="@(link.On ? "on" : "")">@T(link.Label)</a>
             }
+            @if (menuLinks.Count is > 0 and <= 2)
+            {
+                @foreach (var item in menuLinks)
+                {
+                    <a class="nav-extra" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)">@item.Label</a>
+                }
+            }
         </nav>
+        @* The owner's menu links (Site settings, Menu links): one or two beside the pages on wide screens; three or more, or a
+           narrower window, in one menu named by the owner *@
+        @if (menuLinks.Count > 0)
+        {
+            <details class="nav-menu bar-wide @(menuLinks.Count <= 2 ? "fold-only" : "")" id="nav-menu">
+                <summary>@menuName<svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg></summary>
+                <div class="nav-menu-list" role="menu">
+                    @foreach (var item in menuLinks)
+                    {
+                        <a role="menuitem" class="nav-menu-item" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)">@item.Label</a>
+                    }
+                </div>
+            </details>
+        }
         @* At the right: search (an icon that opens into a box; Ctrl+K), the bell, a faint divider, then the account. The
            community's links are in the footer *@
         <div class="head-tools bar-wide">
-        <div class="search" id="search">
-            <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
-            <input type="search" name="q" placeholder="@T("Search")" autocomplete="off" spellcheck="false" maxlength="64" aria-label="@T("Search pages, servers and players")"
-                   hx-get="/search" hx-trigger="input changed delay:250ms, focus" hx-target="#search-results" hx-swap="innerHTML">
-            <kbd>Ctrl K</kbd>
-            <div class="search-results" id="search-results" role="listbox"></div>
-        </div>
+        <button type="button" class="head-link search-open" id="search-open" title="@T("Search") (Ctrl K)" aria-label="@T("Search")"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
         </div>
         @* The bell (Bell.cshtml): beside search, before the divider and the account *@
         @if (me != null) { <div class="bell-slot" hx-get="/bell" hx-trigger="load, every 60s" hx-swap="innerHTML"></div> }
@@ -243,6 +261,15 @@
                     <a class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
                 }
             }
+            @if (menuLinks.Count > 0)
+            {
+                @* Under the same heading when the menu keeps the panel's own "Community" name *@
+                @if (!(community.Count > 0 && menuName == T("Community"))) { <div class="drawer-group">@menuName</div> }
+                @foreach (var item in menuLinks)
+                {
+                    <a class="drawer-link" href="@item.Url" target="@(item.NewTab ? "_blank" : null)" rel="@(item.NewTab ? "noopener noreferrer" : null)"><svg class="ic" aria-hidden="true"><use href="#i-@item.Icon"/></svg>@item.Label</a>
+                }
+            }
             <div class="drawer-group">@T(me == null ? "Panel" : "You")</div>
             @foreach (var link in account)
             {
@@ -292,7 +319,7 @@
        site's pages, then the language *@
     <footer class="site-foot">
         @* The mark follows the header's logo: the owner's picture, else the built-in crosshair (a site name alone has no mark) *@
-        <span class="foot-text foot-brand">@if (Theme.LogoSvg("foot") is { } footSvg) { <span class="logo-svg foot-logo-svg" aria-label="@Theme.Brand">@footSvg</span> } else if (Theme.LogoUrl is { } footLogo) { <img class="foot-logo" src="@footLogo" alt="@Theme.Name"> } else { @if (Theme.Look.Name.Length == 0) { <svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg> }var (footName, footEnding) = GmmPanel.Data.SiteTheme.Domain(Theme.Brand); if (footEnding != null) { <b>@footName<span class="logo-io">@footEnding</span></b> } else { <b>@footName</b> } }@if (Theme.Look.Footer.Length > 0) { <small>@Theme.Look.Footer</small> } else { <small>© @DateTime.Now.Year</small> }</span>
+        <span class="foot-text foot-brand">@if ((Theme.FooterLogoSvg("foot") ?? (Theme.FooterLogoUrl == null ? Theme.LogoSvg("foot") : null)) is { } footSvg) { <span class="logo-svg foot-logo-svg" aria-label="@Theme.Brand">@footSvg</span> } else if ((Theme.FooterLogoUrl ?? Theme.LogoUrl) is { } footLogo) { <img class="foot-logo" src="@footLogo" alt="@Theme.Name"> } else { @if (Theme.Look.Name.Length == 0) { <svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg> }var (footName, footEnding) = GmmPanel.Data.SiteTheme.Domain(Theme.Brand); if (footEnding != null) { <b>@footName<span class="logo-io">@footEnding</span></b> } else { <b>@footName</b> } }@if (Theme.Look.Footer.Length > 0) { <small>@Theme.Look.Footer</small> } else { <small>© @DateTime.Now.Year</small> }</span>
         @if (links.Count > 0)
         {
             <nav class="foot-icons" aria-label="@T("Community")">
@@ -318,11 +345,26 @@
         </form>
     </footer>
 
+    @* Search, in the middle of the screen over the blurred page (the header's icon, Ctrl+K or /), as GitHub and Discord do *@
+    <dialog class="search-dlg" id="search-dlg" aria-label="@T("Search")">
+        <div class="palette-box">
+            <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" name="q" id="palette-input" placeholder="@T("Search pages, servers, players")" autocomplete="off" spellcheck="false" maxlength="64" aria-label="@T("Search pages, servers and players")"
+                   hx-get="/search" hx-trigger="input changed delay:250ms, focus" hx-target="#search-results" hx-swap="innerHTML">
+        </div>
+        <div class="palette-results" id="search-results" role="listbox"></div>
+        <div class="palette-keys" aria-hidden="true">
+            <span><kbd>↑</kbd><kbd>↓</kbd> @T("Move")</span><span><kbd>Enter</kbd> @T("Open")</span><span><kbd>Esc</kbd> @T("Close")</span>
+            <span class="palette-open"><kbd>Ctrl</kbd><kbd>K</kbd> @T("Search")</span>
+        </div>
+    </dialog>
+
     @* The choice dialog, styled like GameModeManager's in-game questions ("Changes need a match restart") *@
     <dialog class="dlg" id="dlg" aria-labelledby="dlg-title">
         <div class="dlg-head" id="dlg-title"></div>
         <p class="dlg-text" id="dlg-text"></p>
         <div class="dlg-choices" id="dlg-choices"></div>
+        <div class="details-links dlg-actions" id="dlg-actions"></div>
     </dialog>
 
     <div id="toasts" aria-live="polite"></div>

@@ -296,7 +296,7 @@ app.MapGet("/theme.css", (SiteTheme theme, HttpContext context) =>
 }).AllowAnonymous();
 app.MapGet("/branding/{name}", (string name, SiteTheme theme, HttpContext context) =>
 {
-    if (name != theme.Look.Logo || name.Length == 0)
+    if (!theme.Serves(name))
         return Results.NotFound();
     string path = Path.Combine(theme.Folder, name);
     if (!File.Exists(path))

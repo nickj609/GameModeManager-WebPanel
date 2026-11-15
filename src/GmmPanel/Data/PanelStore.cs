@@ -10,8 +10,11 @@ public sealed class PanelData
 {
     public List<AdminEntry> Admins { get; set; } = new();
     public List<ServerEntry> Servers { get; set; } = new();
+    public string AgentUrl { get; set; } = "";           // Where game servers connect (wss://.../agent), for GameModeManager.json; "" = the panel's own address
     public Dictionary<string, string> Permissions { get; set; } = new();   // Panel area -> admin flag, where it differs from the default (Auth/PanelPermissions.cs)
-    public List<LinkEntry> Links { get; set; } = new();   // Icons in the header: the community's Discord, website, store ...
+    public List<LinkEntry> Links { get; set; } = new();
+    public List<MenuLink> MenuLinks { get; set; } = new();   // Text links in the header: other web panels (skins, VIP, store) or pages
+    public string MenuName { get; set; } = "";           // The header menu holding them when there are 3 or more; "" = "Community"   // Icons in the header: the community's Discord, website, store ...
     public SiteLook Site { get; set; } = new();          // How the panel looks for everyone (Site settings, panel admins)
     public Retention Retention { get; set; } = new();    // How long the panel keeps its own records (Panel page)
     public Dictionary<string, string> BackgroundNames { get; set; } = new();   // Site settings: a background file's display name in the picker
@@ -37,6 +40,8 @@ public sealed class SiteLook
     public string Sub { get; set; } = "";           // The small line under the logo ("GameModeManager")
     public string Footer { get; set; } = "";        // The footer's left side
     public string Logo { get; set; } = "";          // data/branding/<file>, or "" for the built-in logo
+    public string FooterLogo { get; set; } = "";    // data/branding/<file>: the footer's own logo, or "" for the logo above
+    public string Favicon { get; set; } = "";       // data/branding/<file>: the browser tab's icon, or "" for the panel's crosshair
     public string Accent { get; set; } = "";        // #rrggbb
     public string Warn { get; set; } = "";          // #rrggbb: heads-up states (reports, notes, pauses); "" = orange
     public string Bars { get; set; } = "";          // Header and footer
@@ -48,6 +53,9 @@ public sealed class SiteLook
     public int Radius { get; set; } = 8;            // Corner rounding, 0 to 16 px
     public string Background { get; set; } = "";   // The default background: "" = Auto (the map being played, else Dust II), or "own:<file>"; each person can pick another
     public bool Motion { get; set; } = true;        // The backdrop's slow drift and dust, on or off to start with; each person can switch it
+    public int PanelOpacity { get; set; } = 88;     // Defaults for everyone, 40 to 100 percent; each person can change them on Appearance
+    public int PanelBlur { get; set; } = 16;        // px, 0 to 32
+    public int BarOpacity { get; set; } = 94;       // Header and footer, 40 to 100 percent
     public int Dim { get; set; } = 5;               // How dark the backdrop starts, 0 to 100 percent; each person can change it on Appearance
     public string Language { get; set; } = "";      // The default language (lang/<code>.json); "" = each browser's own
     public string Theme { get; set; } = "dark";     // dark, light, or auto (each visitor's device); a viewer can pick their own on Appearance
@@ -103,9 +111,22 @@ public sealed class LinkEntry
     public static readonly string[] Icons = { "discord", "globe", "steam", "youtube", "twitch", "store", "heart", "chat", "link" };
 }
 
+// A link in the header's menu (Site settings, Menu links): another site (https://...) or one of the panel's pages (/rules)
+public sealed class MenuLink
+{
+    public const int Max = 6;
+    public string Label { get; set; } = "";
+    public string Url { get; set; } = "";
+    public bool NewTab { get; set; } = true;
+    public string Icon { get; set; } = "link";    // Beside it in the phone menu; the header shows text only
+
+    public static readonly string[] Icons = { "link", "crosshair", "star", "store", "trophy", "heart", "shield", "chat", "globe", "players", "stats" };
+}
+
 public sealed class ServerEntry
 {
-    public string Name { get; set; } = "";
+    public string Name { get; set; } = "";          // The ID: its token, history, links and logs go by it, so it never changes
+    public string DisplayName { get; set; } = "";   // What people read (tabs, cards, titles); "" = the ID. Changed any time
     public string TokenHash { get; set; } = "";   // SHA-256 of the server's token, hex. The token itself is never stored
 }
 
@@ -132,6 +153,7 @@ public sealed class PanelStore
 
     public PanelStore(string dataDirectory)
     {
+        ServerNames.Store = this;
         Directory.CreateDirectory(dataDirectory);
         DataDirectory = dataDirectory;
         _path = Path.Combine(dataDirectory, "panel.json");

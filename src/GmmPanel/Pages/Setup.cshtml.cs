@@ -53,7 +53,7 @@ public class SetupModel : PanelPage
             return Page();
         }
         Step = Server != null && _store.Current.Servers.Any(s => s.Name.Equals(Server, StringComparison.OrdinalIgnoreCase)) ? "wait" : "server";
-        AgentUrl = GuessAgentUrl();
+        AgentUrl = GmmSettings.AgentUrl(_store.Current, Request);
         return Page();
     }
 
@@ -90,21 +90,40 @@ public class SetupModel : PanelPage
     {
         if (Viewer?.IsPanelAdmin != true)
             return LocalRedirect("/denied");
-        name = (name ?? "").Trim();
-        AgentUrl = string.IsNullOrWhiteSpace(agentUrl) ? GuessAgentUrl() : agentUrl.Trim();
+        // The name people see; the server's ID (token, history, links) is made from it
+        string label = (name ?? "").Trim();
+        name = GmmPanel.Data.ServerNames.NewId(label, _store.Current.Servers.Select(s => s.Name));
+        AgentUrl = string.IsNullOrWhiteSpace(agentUrl) ? GmmSettings.AgentUrl(_store.Current, Request) : agentUrl.Trim();
         Step = "server";
-        if (!PanelStore.IsServerName(name))
-            Problem = "Server names use letters, digits, - and _ (up to 40), like Production or Test.";
-        else if (!Uri.TryCreate(AgentUrl, UriKind.Absolute, out Uri? url) || url.Scheme is not ("wss" or "ws") || AgentUrl.Contains('"'))
-            Problem = "The agent address starts with wss://, like wss://panel.example.com/agent.";
+        if (label.Length == 0 || label.Length > GmmPanel.Data.ServerNames.MaxLabel || CommandCatalog.TextProblem(label, GmmPanel.Data.ServerNames.MaxLabel, "The server name", allowEmpty: false) != null)
+            Problem = $"Give the server a name, up to {GmmPanel.Data.ServerNames.MaxLabel} characters, like Production or Deathmatch #2.";
+        else if (GmmSettings.AgentUrlProblem(AgentUrl) is string bad)
+            Problem = bad;
+        else if (_store.Current.Servers.Any(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            Problem = $"There's already a server called {name}. Give this one its own name, like {name}-2, or make a new token for it in Site settings, Servers.";
         if (Problem != null)
             return Page();
+        // Remembered, so Site settings, Servers shows every server's settings with the same address
+        if (AgentUrl != GmmSettings.AgentUrl(_store.Current, Request))
+        {
+            PanelData data = _store.LoadForEdit();
+            data.AgentUrl = AgentUrl;
+            _store.Save(data);
+        }
 
-        bool replaced = _store.Current.Servers.Any(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         Token = _store.NewServerToken(name);
+        if (label != name)
+        {
+            PanelData named = _store.LoadForEdit();
+            if (named.Servers.FirstOrDefault(s => s.Name == name) is { } entry)
+            {
+                entry.DisplayName = label;
+                _store.Save(named);
+            }
+        }
         Server = name;
         Step = "token";
-        _audit.Write(Admin.Audit, replaced ? $"new token for {name}" : $"add server {name}", name, true, "from the setup page");
+        _audit.Write(Admin.Audit, $"add server {name}", name, true, "from the setup page");
         return Page();
     }
 
@@ -119,12 +138,4 @@ public class SetupModel : PanelPage
             : "<span class=\"ind warn\">Waiting for the server to connect</span>", "text/html");
     }
 
-    // Game servers connect to /agent on the panel's own address; an owner with a separate, locked agent address changes it
-    private string GuessAgentUrl()
-    {
-        string host = Request.Host.Host;
-        if (host is "localhost" or "127.0.0.1")
-            return $"ws://127.0.0.1:{Request.Host.Port ?? 5080}/agent";
-        return $"wss://{host}/agent";
-    }
 }

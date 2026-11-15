@@ -34,8 +34,6 @@
   "Visitor": "访客",
   "Player": "玩家",
   "Moderator": "版主",
-  "Join a server straight from here. Sign in with Steam to see your profile, or what your admin flags allow.": "直接从这里加入服务器。用 Steam 登录即可查看你的资料，或你的管理权限允许的内容。",
-  "Each server connects to the panel on its own. A server that isn't connected shows what it last reported.": "每台服务器自行连接到面板。未连接的服务器显示它最后上报的状态。",
   "{0} playing now": "{0} 人正在游戏",
   "{0} different players this week": "本周 {0} 位不同玩家",
   "Peak hours {0}": "高峰时段 {0}",
@@ -173,7 +171,6 @@
   "Rules": "规则",
   "Server rules": "服务器规则",
   "The panel notes each map change from now on.": "从现在起面板会记录每次换图。",
-  "These apply on every one of our servers. Staff may act on anything that breaks them; see a player breaking them? Report it.": "这些规则适用于我们所有服务器。管理团队可对任何违规采取措施；看到有人违规？请举报。",
   "{0} playing now on {1} servers.": "{1} 台服务器上有 {0} 人在玩。",
   "Leaderboards": "排行榜",
   "Most played": "游戏时长最多",
@@ -229,7 +226,6 @@
   "the player": "玩家",
   "Do it": "执行",
   "Do it?": "确认执行？",
-  "Ban, mute and gag need CS2-SimpleAdmin on the server picked in the header, and the admin flag for each.": "封禁、禁麦和禁言需要顶部所选服务器装有 CS2-SimpleAdmin，并拥有对应的管理员权限。",
   "Comments": "备注",
   "only staff see these, unless shown": "仅管理团队可见，除非设为显示",
   "No comments yet.": "暂无备注。",
@@ -380,5 +376,10 @@
   "No replies yet. Staff answer here.": "暂无回复。管理员会在这里回复。",
   "No replies.": "没有回复。",
   "Not yet": "尚未",
-  "Report details": "举报详情"
+  "Report details": "举报详情",
+  "Join a server from here, or sign in with Steam.": "从这里加入服务器，或用 Steam 登录。",
+  "An offline server shows what it last reported.": "离线服务器显示其最后报告的状态。",
+  "These apply on every server. See someone breaking them? Report it.": "适用于所有服务器。看到有人违反？请举报。",
+  "Ban, mute and gag need CS2-SimpleAdmin and the matching admin flag.": "封禁、禁麦和禁言需要 CS2-SimpleAdmin 及相应的管理员权限。",
+  "Move": "移动"
 }

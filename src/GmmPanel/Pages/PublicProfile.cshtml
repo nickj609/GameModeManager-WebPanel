@@ -38,7 +38,7 @@
 {
     <div class="me-settings">
         <div class="public-label">@T("Plays on")</div>
-        <div class="server-tags">@foreach (string server in r.Servers) { <a class="server-tag" href="/server/@Uri.EscapeDataString(server)">@server</a> }</div>
+        <div class="server-tags">@foreach (string server in r.Servers) { <a class="server-tag" href="/server/@Uri.EscapeDataString(server)">@Label(server)</a> }</div>
     </div>
 }
 </div>

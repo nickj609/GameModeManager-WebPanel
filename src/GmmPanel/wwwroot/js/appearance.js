@@ -7,14 +7,21 @@
 
     // The defaults are the site's look (this script runs after the stylesheets load, so theme.css is read here)
     // theme "" = the site's (Site settings: dark, light or auto, on <html data-site-theme>)
-    var defaults = { theme: "", accent: "#d4801a", warn: "#ef5350", glass: 0.86, blur: 16, bars: 0.80, dim: 0.05, pattern: "", pstrength: 6 };   // pattern "" = the site's (Site settings)
+    var defaults = { theme: "", accent: "#d4801a", warn: "#ef5350", glass: 0.88, blur: 16, bars: 0.94, dim: 0.05, pattern: "", pstrength: 6 };   // pattern "" = the site's (Site settings)
     try {
         var siteAccent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
         if (/^#[0-9a-fA-F]{6}$/.test(siteAccent)) defaults.accent = siteAccent;
         var siteWarn = getComputedStyle(document.documentElement).getPropertyValue("--warn").trim();
         if (/^#[0-9a-fA-F]{6}$/.test(siteWarn)) defaults.warn = siteWarn;
-        var siteDim = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dim"));   // Site settings' darkness
+        var css = getComputedStyle(document.documentElement);   // Site settings' starting look
+        var siteDim = parseFloat(css.getPropertyValue("--dim"));
         if (siteDim >= 0 && siteDim <= 1) defaults.dim = siteDim;
+        var siteGlass = parseFloat(css.getPropertyValue("--glass"));
+        if (siteGlass >= 0.4 && siteGlass <= 1) defaults.glass = siteGlass;
+        var siteBlur = parseFloat(css.getPropertyValue("--blur"));
+        if (siteBlur >= 0 && siteBlur <= 32) defaults.blur = siteBlur;
+        var siteBars = parseFloat(css.getPropertyValue("--bar-alpha"));
+        if (siteBars >= 0.4 && siteBars <= 1) defaults.bars = siteBars;
     } catch (e) { }
     var key = "gmm.look";
 
