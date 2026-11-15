@@ -1199,6 +1199,7 @@ img.logo-img { max-height: 40px; max-width: 220px; object-fit: contain; display:
 .logo-svg .accent { fill: var(--accent); }
 .logo-svg .accent-stroke { stroke: var(--accent); }
 .foot-logo-svg svg { height: 20px; max-width: 160px; }
+.favicon-now { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; display: block; }
 .site-form .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 14px; }
 .site-grid label.check { flex-direction: row; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 14px; color: var(--soft); align-self: center; }

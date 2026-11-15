@@ -6,7 +6,7 @@ Site settings has one section at a time, picked in the menu on the left. A link 
 
 | Group | Section | What it sets |
 | --- | --- | --- |
-| Look | **Site look** | The site's name, a logo (PNG, JPEG, WebP or SVG, up to 512 KB; see [SVG logos](#svg-logos)), the line under it, the footer text, the colours (accent, notifications, header and footer, panel, page), a pattern, the corner rounding, the default language, and the background everyone starts with. |
+| Look | **Site look** | The site's name, a logo (PNG, JPEG, WebP or SVG, up to 512 KB; see [SVG logos](#svg-logos)), an optional smaller logo for the footer, a favicon (the browser tab's icon: PNG, ICO or SVG; the default is a white crosshair), the line under it, the footer text, the colours (accent, notifications, header and footer, panel, page), a pattern, the corner rounding, the default language, and the background everyone starts with. |
 | Look | **Community links** | Links in the footer and the menu (Discord, website, YouTube, Twitch, store ...). Each uses the accent colour unless you give it its own. |
 | Pictures | **Backgrounds** | Upload pictures or short WebM/MP4 videos (up to 25 MB), give each a display name, and choose whether visitors see your own backgrounds too. |
 | Pictures | **Map pictures** | The squares on the server cards: one picture per map (up to 2 MB), named after the map. |
@@ -15,7 +15,7 @@ Site settings has one section at a time, picked in the menu on the left. A link 
 | Features | **Status widget** | An embeddable server card for your website, and `/status.json` for bots. |
 | People | **Panel admins** | Who has full access. |
 | People | **Permissions** | The admin flag each part of the panel needs. See [Permissions](https://github.com/nickj609/GameModeManager-WebPanel/wiki/Permissions). |
-| Servers | **Servers** | Add and remove game servers, and make a new token for one. |
+| Servers | **Servers** | Add and remove game servers, make a new token for one, see the `Panel` settings for its `GameModeManager.json`, and change the address game servers connect to. |
 | Servers | **Discord** | A channel's webhook, and what to post there. See [Discord](#discord). |
 | Data | **Retention** | How long records are kept. See [What the panel keeps](#what-the-panel-keeps). |
 | Data | **Backup** | Download the settings and records as one zip, and restore it on a new machine. |

@@ -59,7 +59,7 @@
         break;
 
     case "token":
-        string panelBlock = "\"Panel\": {\n  \"Enabled\": true,\n  \"Url\": \"" + Model.AgentUrl + "\",\n  \"ServerName\": \"" + Model.Server + "\",\n  \"SecretsFile\": \"panel-secrets.json\",\n  \"Console\": true,\n  \"PublicAddress\": \"\",\n  \"PluginData\": true\n}";
+        string panelBlock = GmmPanel.Data.GmmSettings.PanelBlock(Model.AgentUrl ?? "", Model.Server ?? "");
         string secrets = "{\n  \"Token\": \"" + Model.Token + "\"\n}";
         <p class="note">This token is shown once: the panel keeps only its hash. Lost it? Make a new one in Site settings, Servers; the old one stops working.</p>
         <div class="group-title">1. In GameModeManager.json on @Model.Server</div>

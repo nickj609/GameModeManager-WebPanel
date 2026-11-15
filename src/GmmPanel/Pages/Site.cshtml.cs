@@ -54,6 +54,9 @@ public partial class SiteModel : PanelPage
     public string AccentColour => SiteLook.IsColour(Look.Accent) ? Look.Accent : "#d4801a";   // The colour picker starts here for a link without its own
     public string? LogoUrl => _theme.LogoUrl;
     public Microsoft.AspNetCore.Html.HtmlString? LogoSvg => _theme.LogoSvg("preview");
+    public string? FooterLogoUrl => _theme.FooterLogoUrl;
+    public Microsoft.AspNetCore.Html.HtmlString? FooterLogoSvg => _theme.FooterLogoSvg("preview-foot");
+    public string? FaviconUrl => _theme.FaviconUrl;
     public bool Owner => Viewer?.IsPanelAdmin == true;
     public string? Message { get; private set; }
     public bool Failed { get; private set; }
@@ -74,7 +77,8 @@ public partial class SiteModel : PanelPage
     }
 
     public async Task<IActionResult> OnPostSiteAsync(string? name, string? sub, string? footer, string? accent, string? warn, string? bars, string? panel, string? page, string? notify,
-        string? pattern, int patternStrength, int radius, IFormFile? logo, bool removeLogo, bool reset)
+        string? pattern, int patternStrength, int radius, IFormFile? logo, bool removeLogo, IFormFile? footerLogo, bool removeFooterLogo,
+        IFormFile? favicon, bool removeFavicon, bool reset)
     {
         if (!Owner)
             return LocalRedirect("/denied");
@@ -82,6 +86,8 @@ public partial class SiteModel : PanelPage
         if (reset)
         {
             RemoveLogo(data.Site.Logo);
+            RemoveLogo(data.Site.FooterLogo);
+            RemoveLogo(data.Site.Favicon);
             data.Site = new SiteLook();
             return Saved(data, "The site look is back to the panel's own.");
         }
@@ -117,31 +123,53 @@ public partial class SiteModel : PanelPage
         string language = Request.Form["language"].ToString();
         site.Language = Lang.Languages.Any(l => l.Code == language) ? language : "";
 
-        if (removeLogo)
+        foreach (var (file, remove, name_, what, icon) in new[] { (logo, removeLogo, "logo", "The logo", false), (footerLogo, removeFooterLogo, "footer-logo", "The footer logo", false), (favicon, removeFavicon, "favicon", "The favicon", true) })
         {
-            RemoveLogo(site.Logo);
-            site.Logo = "";
-        }
-        else if (logo is { Length: > 0 })
-        {
-            if (logo.Length > SiteTheme.MaxLogoBytes)
-                return Fail("The logo can be up to 512 KB.");
-            using var memory = new MemoryStream();
-            await logo.CopyToAsync(memory);
-            byte[] bytes = memory.ToArray();
-            string? ext = SiteTheme.PictureType(bytes);
-            // An SVG is kept only as its cleaned shapes and text (no scripts or links), and drawn in the page in the theme's colours
-            string? svg = ext == null ? SvgLogo.Clean(bytes) : null;
-            if (ext == null && svg == null)
-                return Fail("The logo has to be a PNG, JPEG, WebP or SVG picture.");
-            RemoveLogo(site.Logo);
-            site.Logo = "logo" + (ext ?? ".svg");
-            if (svg != null)
-                await System.IO.File.WriteAllTextAsync(Path.Combine(_theme.Folder, site.Logo), svg);
-            else
-                await System.IO.File.WriteAllBytesAsync(Path.Combine(_theme.Folder, site.Logo), bytes);
+            string current = name_ switch { "logo" => site.Logo, "footer-logo" => site.FooterLogo, _ => site.Favicon };
+            string? saved = current;
+            if (remove)
+            {
+                RemoveLogo(current);
+                saved = "";
+            }
+            else if (file is { Length: > 0 })
+            {
+                var (stored, problem) = await StorePictureAsync(file, name_, what, icon);
+                if (problem != null)
+                    return Fail(problem);
+                if (current != stored)
+                    RemoveLogo(current);
+                saved = stored;
+            }
+            switch (name_)
+            {
+                case "logo": site.Logo = saved!; break;
+                case "footer-logo": site.FooterLogo = saved!; break;
+                default: site.Favicon = saved!; break;
+            }
         }
         return Saved(data, "Site look saved. Everyone sees it on their next page.");
+    }
+
+    // A logo, footer logo or favicon into data/branding as <name>.<type>. PNG, JPEG or WebP as they are; an SVG only as its
+    // cleaned shapes and text (no scripts or links), drawn in the page in the theme's colours; an .ico for the favicon.
+    private async Task<(string? File, string? Problem)> StorePictureAsync(IFormFile upload, string name, string what, bool icon)
+    {
+        if (upload.Length > SiteTheme.MaxLogoBytes)
+            return (null, $"{what} can be up to 512 KB.");
+        using var memory = new MemoryStream();
+        await upload.CopyToAsync(memory);
+        byte[] bytes = memory.ToArray();
+        string? ext = SiteTheme.PictureType(bytes) ?? (icon && SiteTheme.IsIcon(bytes) ? ".ico" : null);
+        string? svg = ext == null ? SvgLogo.Clean(bytes) : null;
+        if (ext == null && svg == null)
+            return (null, icon ? $"{what} has to be a PNG, ICO or SVG picture." : $"{what} has to be a PNG, JPEG, WebP or SVG picture.");
+        string file = name + (ext ?? ".svg");
+        if (svg != null)
+            await System.IO.File.WriteAllTextAsync(Path.Combine(_theme.Folder, file), svg);
+        else
+            await System.IO.File.WriteAllBytesAsync(Path.Combine(_theme.Folder, file), bytes);
+        return (file, null);
     }
 
     // A background (picture or short video) into data/backgrounds, or a map picture into data/maps named after its map

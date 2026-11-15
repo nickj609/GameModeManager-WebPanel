@@ -102,7 +102,8 @@
     <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false,"selfRequestsOnly":true,"historyCacheSize":0}'>
     <meta name="robots" content="noindex, nofollow">
     <title>@T(title) · @Theme.Name</title>
-    <link rel="icon" href="/img/favicon.svg?v=@Build" type="image/svg+xml">
+    @if (Theme.FaviconUrl is { } favicon) { <link rel="icon" href="@favicon" type="@GmmPanel.Data.SiteTheme.ContentType(Theme.Look.Favicon)"> }
+    else { <link rel="icon" href="/img/favicon.svg?v=@Build" type="image/svg+xml"> }
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="preload" href="/fonts/barlow-500.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
@@ -292,7 +293,7 @@
        site's pages, then the language *@
     <footer class="site-foot">
         @* The mark follows the header's logo: the owner's picture, else the built-in crosshair (a site name alone has no mark) *@
-        <span class="foot-text foot-brand">@if (Theme.LogoSvg("foot") is { } footSvg) { <span class="logo-svg foot-logo-svg" aria-label="@Theme.Brand">@footSvg</span> } else if (Theme.LogoUrl is { } footLogo) { <img class="foot-logo" src="@footLogo" alt="@Theme.Name"> } else { @if (Theme.Look.Name.Length == 0) { <svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg> }var (footName, footEnding) = GmmPanel.Data.SiteTheme.Domain(Theme.Brand); if (footEnding != null) { <b>@footName<span class="logo-io">@footEnding</span></b> } else { <b>@footName</b> } }@if (Theme.Look.Footer.Length > 0) { <small>@Theme.Look.Footer</small> } else { <small>© @DateTime.Now.Year</small> }</span>
+        <span class="foot-text foot-brand">@if ((Theme.FooterLogoSvg("foot") ?? (Theme.FooterLogoUrl == null ? Theme.LogoSvg("foot") : null)) is { } footSvg) { <span class="logo-svg foot-logo-svg" aria-label="@Theme.Brand">@footSvg</span> } else if ((Theme.FooterLogoUrl ?? Theme.LogoUrl) is { } footLogo) { <img class="foot-logo" src="@footLogo" alt="@Theme.Name"> } else { @if (Theme.Look.Name.Length == 0) { <svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg> }var (footName, footEnding) = GmmPanel.Data.SiteTheme.Domain(Theme.Brand); if (footEnding != null) { <b>@footName<span class="logo-io">@footEnding</span></b> } else { <b>@footName</b> } }@if (Theme.Look.Footer.Length > 0) { <small>@Theme.Look.Footer</small> } else { <small>© @DateTime.Now.Year</small> }</span>
         @if (links.Count > 0)
         {
             <nav class="foot-icons" aria-label="@T("Community")">

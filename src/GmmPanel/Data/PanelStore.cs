@@ -10,6 +10,7 @@ public sealed class PanelData
 {
     public List<AdminEntry> Admins { get; set; } = new();
     public List<ServerEntry> Servers { get; set; } = new();
+    public string AgentUrl { get; set; } = "";           // Where game servers connect (wss://.../agent), for GameModeManager.json; "" = the panel's own address
     public Dictionary<string, string> Permissions { get; set; } = new();   // Panel area -> admin flag, where it differs from the default (Auth/PanelPermissions.cs)
     public List<LinkEntry> Links { get; set; } = new();   // Icons in the header: the community's Discord, website, store ...
     public SiteLook Site { get; set; } = new();          // How the panel looks for everyone (Site settings, panel admins)
@@ -37,6 +38,8 @@ public sealed class SiteLook
     public string Sub { get; set; } = "";           // The small line under the logo ("GameModeManager")
     public string Footer { get; set; } = "";        // The footer's left side
     public string Logo { get; set; } = "";          // data/branding/<file>, or "" for the built-in logo
+    public string FooterLogo { get; set; } = "";    // data/branding/<file>: the footer's own logo, or "" for the logo above
+    public string Favicon { get; set; } = "";       // data/branding/<file>: the browser tab's icon, or "" for the panel's crosshair
     public string Accent { get; set; } = "";        // #rrggbb
     public string Warn { get; set; } = "";          // #rrggbb: heads-up states (reports, notes, pauses); "" = orange
     public string Bars { get; set; } = "";          // Header and footer

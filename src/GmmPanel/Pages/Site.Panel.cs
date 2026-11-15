@@ -173,18 +173,38 @@ public partial class SiteModel
         return Done($"{entry.Name} is no longer a panel admin. Their servers' admin flags still count.");
     }
 
-    // A new server, or a new token for one (the old token stops working at its next connect)
-    public IActionResult OnPostToken(string? server)
+    // A new server (add), or a new token for one already on the list (the old token stops working at its next connect)
+    public IActionResult OnPostToken(string? server, bool add)
     {
         server = (server ?? "").Trim();
         if (!PanelStore.IsServerName(server))
-            return Done("Server names use letters, digits, - and _ (up to 40), like Production or Test.", failed: true);
+            return Done("Server names use letters, digits, - and _ (up to 40), like Production or Deathmatch-2.", failed: true);
         bool existed = Data.Servers.Any(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase));
+        // Adding a name that's taken would replace that server's token and cut it off: each server needs its own name
+        if (add && existed)
+            return Done($"There's already a server called {server}. Give this one its own name, like {server}-2 or {server}-EU.", failed: true);
         NewToken = _store.NewServerToken(server);
         NewTokenServer = server;
         _audit.Write(Admin.Audit, existed ? $"new token for {server}" : $"add server {server}", server, true, "from the Panel page");
         return Done(existed ? $"{server} has a new token. Put it in its panel-secrets.json; the old one stops working." : $"{server} is added. Put its token in its panel-secrets.json.");
     }
+
+    // Where game servers connect: only GameModeManager.json changes when it does (their tokens stay the same)
+    public IActionResult OnPostAgentUrl(string? url)
+    {
+        url = (url ?? "").Trim();
+        if (url.Length > 0 && GmmSettings.AgentUrlProblem(url) is string problem)
+            return Done(problem, failed: true);
+        PanelData data = _store.LoadForEdit();
+        data.AgentUrl = url;
+        _store.Save(data);
+        _audit.Write(Admin.Audit, $"agent address {(url.Length > 0 ? url : "the panel's own")}", null, true, "");
+        return Done(url.Length > 0
+            ? "Agent address saved. Open each server's GameModeManager settings below and paste the new Url into its GameModeManager.json; its token stays the same."
+            : "The agent address is the panel's own again.");
+    }
+
+    public string AgentUrl => GmmSettings.AgentUrl(Data, Request);
 
     public IActionResult OnPostRemoveServer(string? server)
     {

@@ -15,6 +15,32 @@ GameModeManager reads its config on a map change, so change map or restart the s
 </details>
 
 <details>
+<summary>How should I name my servers? I have two Deathmatch servers.</summary>
+<br>
+
+Each server needs its own name, because the name is how the panel tells them apart: its token, its history and its graphs all go by it. Names use letters, digits, `-` and `_`, up to 40, and capitals don't make a name different (`deathmatch` and `Deathmatch` are the same server).
+
+For two of the same kind, add what sets them apart:
+
+| Like | When |
+| --- | --- |
+| `Deathmatch-1`, `Deathmatch-2` | The same mode, run twice |
+| `Deathmatch-EU`, `Deathmatch-NA` | Servers in different places |
+| `Deathmatch-Pistols`, `Deathmatch-AWP` | Different setups of a mode |
+
+The panel won't add a name that's already taken, so you can't cut a server off by mistake. The name is what people see on the server's tab and card, so keep it short and clear.
+
+</details>
+
+<details>
+<summary>I moved the panel to a new domain. Do my servers need new tokens?</summary>
+<br>
+
+No. A token doesn't depend on the address. Set the new address under **Site settings → Servers → Agent address**, then open each server's **GameModeManager settings**, paste that `Panel` block into its `GameModeManager.json`, and change the map. Its `panel-secrets.json` stays as it is.
+
+</details>
+
+<details>
 <summary>Why does http://127.0.0.1:5080 say "400 Bad Request"?</summary>
 <br>
 

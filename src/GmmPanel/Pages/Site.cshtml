@@ -44,7 +44,7 @@
         <label>Site name <small>The tab title, and the logo when there's no picture</small><input type="text" name="name" maxlength="40" value="@look.Name" placeholder="GameModeManager Panel"></label>
         <label>Subtitle <small>Under the logo</small><input type="text" name="sub" maxlength="40" value="@look.Sub" placeholder="GameModeManager"></label>
         <label class="wide">Footer text<input type="text" name="footer" maxlength="120" value="@look.Footer" placeholder="© and the year, after your site name"></label>
-        <label>Logo picture <small>In the header and, smaller, the footer. PNG, JPEG, WebP or SVG, up to 512 KB; about 200 × 48 looks best. An SVG takes the theme's colours: <code>currentColor</code> is the text colour, <code>class="accent"</code> the accent</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
+        <label>Logo picture <small>In the header, and the footer unless it has its own. PNG, JPEG, WebP or SVG, up to 512 KB; about 200 × 48 looks best. An SVG takes the theme's colours: <code>currentColor</code> is the text colour, <code>class="accent"</code> the accent</small><input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
         <div class="logo-now">
             @if (Model.LogoUrl != null)
             {
@@ -54,6 +54,30 @@
             else
             {
                 <span class="note">No picture: the built-in logo@(look.Name.Length > 0 ? ", or your site name," : "") shows.</span>
+            }
+        </div>
+        <label>Footer logo <small>Optional: a smaller mark for the footer, about 160 × 20. PNG, JPEG, WebP or SVG, up to 512 KB</small><input type="file" name="footerLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"></label>
+        <div class="logo-now">
+            @if (Model.FooterLogoUrl != null)
+            {
+                @if (Model.FooterLogoSvg is { } footNow) { <span class="logo-svg foot-logo-svg">@footNow</span> } else { <img class="foot-logo" src="@Model.FooterLogoUrl" alt="Your footer logo"> }
+                <label class="check"><input type="checkbox" name="removeFooterLogo" value="true"> Remove it</label>
+            }
+            else
+            {
+                <span class="note">None: the footer uses the logo above@(Model.LogoUrl == null ? ", or your site name" : "").</span>
+            }
+        </div>
+        <label>Favicon <small>The browser tab's icon. A square PNG (at least 64 × 64), ICO or SVG, up to 512 KB</small><input type="file" name="favicon" accept="image/png,image/x-icon,.ico,image/svg+xml,.svg"></label>
+        <div class="logo-now">
+            @if (Model.FaviconUrl != null)
+            {
+                <img class="favicon-now" src="@Model.FaviconUrl" alt="Your favicon" width="32" height="32">
+                <label class="check"><input type="checkbox" name="removeFavicon" value="true"> Remove it</label>
+            }
+            else
+            {
+                <span class="note">None: the panel's crosshair shows.</span>
             }
         </div>
     </div>
@@ -285,6 +309,16 @@
         <span class="label">@server.Name <small>@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : "Hasn't connected since the panel started")</small>
             @if (versionProblem != null) { <small class="version-warn">@versionProblem</small> }</span>
         <span class="ind @(view?.Online == true ? "ok" : "bad")">@(view?.Online == true ? "Online" : "Offline")</span>
+        <button type="button" class="small" data-dlg="gmm-@server.Name">GameModeManager settings</button>
+        <dialog class="dlg details-dlg ticket-dlg" id="gmm-@server.Name" aria-labelledby="gmm-@server.Name-title">
+            <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@server.Name</span></div>
+            <div class="ticket-section">
+                <p class="note">Replace the <code>Panel</code> block in its <code>GameModeManager.json</code> (in <code>addons/counterstrikesharp/configs/plugins/GameModeManager/</code>),
+                    then change the map or restart it. Its <code>panel-secrets.json</code> and token stay the same.</p>
+                <div class="snippet"><pre id="gmm-block-@server.Name">@GmmSettings.PanelBlock(Model.AgentUrl, server.Name)</pre><button type="button" class="small" data-copy="gmm-block-@server.Name">Copy</button></div>
+            </div>
+            <div class="details-links"><button type="button" class="small dlg-close" data-dlg-close>Close</button></div>
+        </dialog>
         <form method="post" asp-page-handler="Token">
             <input type="hidden" name="server" value="@server.Name">
             <button type="submit" class="small" data-confirm="@server.Name gets a new token and the old one stops working: it has to be put in its panel-secrets.json again." data-confirm-title="New token for @server.Name?" data-confirm-yes="New token">New token</button>
@@ -296,10 +330,17 @@
     </div>
 }
 <form method="post" asp-page-handler="Token" class="mod-form">
-    <label>New server<input type="text" name="server" maxlength="40" pattern="[A-Za-z0-9_\-]+" required placeholder="Test"></label>
+    <input type="hidden" name="add" value="true">
+    <label>New server <small>Its own name: letters, digits, - and _, like Deathmatch-2 or Retakes-EU</small><input type="text" name="server" maxlength="40" pattern="[A-Za-z0-9_\-]+" required placeholder="Deathmatch-2"></label>
     <button type="submit" class="primary">Add server</button>
 </form>
 <p class="note">The <a href="/setup">setup page</a> walks through adding a server, with the GameModeManager settings to paste.</p>
+<div class="group-title">Agent address</div>
+<form method="post" asp-page-handler="AgentUrl" class="mod-form">
+    <label>Where game servers connect <small>Moved the panel to a new domain? Change it here, then paste each server's new GameModeManager settings; no new tokens are needed. Empty: the panel's own address</small>
+        <input type="text" name="url" maxlength="200" value="@Model.Data.AgentUrl" placeholder="@Model.AgentUrl"></label>
+    <button type="submit" class="primary">Save</button>
+</form>
 
 </section>
 <section class="pane" data-pane="permissions"><div class="pane-head"><span class="crumb">People</span><h2>Permissions</h2></div>

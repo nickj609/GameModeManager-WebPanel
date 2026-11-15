@@ -40,23 +40,41 @@ public sealed class SiteTheme
             ? (name[..dot], name[dot..]) : (name, null);
     }
 
-    // An SVG logo, drawn inside the page so it takes the theme's colours (SvgLogo); null for a picture or no logo. Each place
+    // The site's pictures in data/branding: the logo (header, and footer unless it has its own), the footer logo and the favicon
+    public string? LogoUrl => Url(Look.Logo);
+    public string? FooterLogoUrl => Url(Look.FooterLogo);
+    public string? FaviconUrl => Url(Look.Favicon);
+    public bool LogoIsSvg => IsSvg(Look.Logo);
+    public bool FooterLogoIsSvg => IsSvg(Look.FooterLogo);
+
+    // An SVG logo is drawn inside the page so it takes the theme's colours (SvgLogo); null for a picture or none. Each place
     // it's drawn gets its own id prefix.
-    public bool LogoIsSvg => Look.Logo.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) && LogoUrl != null;
-    private (string Version, string Markup)? _svg;
-    public Microsoft.AspNetCore.Html.HtmlString? LogoSvg(string prefix)
+    public Microsoft.AspNetCore.Html.HtmlString? LogoSvg(string prefix) => Svg(Look.Logo, prefix);
+    public Microsoft.AspNetCore.Html.HtmlString? FooterLogoSvg(string prefix) => Svg(Look.FooterLogo, prefix);
+
+    // The files a request may fetch from /branding
+    public bool Serves(string file) => file.Length > 0 && (file == Look.Logo || file == Look.FooterLogo || file == Look.Favicon);
+
+    private string? Url(string file) => Exists(file) ? $"/branding/{file}?v={Version}" : null;
+    private bool Exists(string file) => file.Length > 0 && File.Exists(Path.Combine(Folder, file));
+    private bool IsSvg(string file) => file.EndsWith(".svg", StringComparison.OrdinalIgnoreCase) && Exists(file);
+
+    private readonly Dictionary<string, (string Version, string Markup)> _svg = new();
+    private Microsoft.AspNetCore.Html.HtmlString? Svg(string file, string prefix)
     {
-        if (!LogoIsSvg)
+        if (!IsSvg(file))
             return null;
         string version = Version;
-        if (_svg is not { } cached || cached.Version != version)
-            _svg = cached = (version, File.ReadAllText(Path.Combine(Folder, Look.Logo)));
-        return new Microsoft.AspNetCore.Html.HtmlString(SvgLogo.WithIds(cached.Markup, prefix));
+        lock (_svg)
+        {
+            if (!_svg.TryGetValue(file, out var cached) || cached.Version != version)
+                _svg[file] = cached = (version, File.ReadAllText(Path.Combine(Folder, file)));
+            return new Microsoft.AspNetCore.Html.HtmlString(SvgLogo.WithIds(cached.Markup, prefix));
+        }
     }
 
-    public string? LogoUrl => Look.Logo.Length > 0 && File.Exists(Path.Combine(Folder, Look.Logo)) ? $"/branding/{Look.Logo}?v={Version}" : null;
-
-    private string LogoStamp() => Look.Logo.Length > 0 && File.Exists(Path.Combine(Folder, Look.Logo)) ? File.GetLastWriteTimeUtc(Path.Combine(Folder, Look.Logo)).Ticks.ToString() : "";
+    private string LogoStamp() => string.Concat(new[] { Look.Logo, Look.FooterLogo, Look.Favicon }.Where(Exists)
+        .Select(f => File.GetLastWriteTimeUtc(Path.Combine(Folder, f)).Ticks.ToString()));
 
     public string Css()
     {
@@ -124,11 +142,14 @@ public sealed class SiteTheme
     }
 
     // A logo picture: PNG, JPEG or WebP only (an SVG can carry script), checked by its first bytes, up to 512 KB
+    // A favicon can also be an .ico
+    public static bool IsIcon(byte[] bytes) => bytes.Length > 6 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 1 && bytes[3] == 0;
+
     public static string? PictureType(byte[] bytes) =>
         bytes.Length > 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 ? ".png"
         : bytes.Length > 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF ? ".jpg"
         : bytes.Length > 12 && Encoding.ASCII.GetString(bytes, 0, 4) == "RIFF" && Encoding.ASCII.GetString(bytes, 8, 4) == "WEBP" ? ".webp"
         : null;
 
-    public static string ContentType(string file) => Path.GetExtension(file) switch { ".png" => "image/png", ".jpg" => "image/jpeg", ".webp" => "image/webp", ".svg" => "image/svg+xml", _ => "application/octet-stream" };
+    public static string ContentType(string file) => Path.GetExtension(file) switch { ".png" => "image/png", ".jpg" => "image/jpeg", ".webp" => "image/webp", ".svg" => "image/svg+xml", ".ico" => "image/x-icon", _ => "application/octet-stream" };
 }
