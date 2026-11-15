@@ -136,10 +136,9 @@
             <div class="dlg-head details-head"><span id="@bgDialog-title">@b.Name</span><small class="mono">@file</small></div>
             <div class="ticket-section">
                 <div class="group-title">Display name</div>
-                <form method="post" asp-page-handler="RenameBackground" class="inline-form">
+                <form method="post" asp-page-handler="RenameBackground" class="inline-form" id="@bgDialog-form">
                     <input type="hidden" name="name" value="@file">
                     <input type="text" name="title" maxlength="40" value="@Model.DisplayName(file)" placeholder="@b.Name" aria-label="Display name">
-                    <button type="submit" class="small primary">Save</button>
                 </form>
                 <p class="note">Shown in the background picker.</p>
             </div>
@@ -148,7 +147,8 @@
                     <input type="hidden" name="kind" value="background"><input type="hidden" name="name" value="@file">
                     <button type="submit" class="small danger" data-confirm="@file is deleted from the panel's data folder." data-confirm-title="Delete @file?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
                 </form>
-                <button type="button" class="small dlg-close" data-dlg-close>Close</button>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="@bgDialog-form">Save</button>
             </div>
         </dialog>
     </div>
@@ -198,12 +198,11 @@
             <div class="dlg-head details-head"><span id="link-dlg-@i-title">@link.Label</span></div>
             <div class="ticket-section">
                 <div class="group-title">Colour</div>
-                <form method="post" asp-page-handler="LinkColor" class="inline-form">
+                <form method="post" asp-page-handler="LinkColor" class="inline-form" id="link-form-@i">
                     <input type="hidden" name="index" value="@i">
                     <input type="color" name="color" value="@(link.Color.Length > 0 ? link.Color : Model.AccentColour)" aria-label="Colour" data-colour-code="link-code-@i">
                     <span class="colour-code" id="link-code-@i">@(link.Color.Length > 0 ? link.Color : Model.AccentColour)</span>
                     @if (link.Color.Length > 0) { <button type="submit" name="accent" value="1" class="small">Use the accent</button> }
-                    <button type="submit" class="small primary">Save</button>
                 </form>
                 <p class="note">@(link.Color.Length > 0 ? "Its own colour." : "Uses the accent.")</p>
             </div>
@@ -212,7 +211,8 @@
                     <input type="hidden" name="index" value="@i">
                     <button type="submit" class="small danger" data-confirm="@link.Label is removed from the footer and menu." data-confirm-title="Remove @link.Label?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
                 </form>
-                <button type="button" class="small dlg-close" data-dlg-close>Close</button>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="link-form-@i">Save</button>
             </div>
         </dialog>
     </div>
@@ -325,10 +325,9 @@
             <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@GmmPanel.Data.ServerNames.Label(server.Name)</span><small class="mono">@server.Name</small></div>
             <div class="ticket-section">
                 <div class="group-title">Display name</div>
-                <form method="post" asp-page-handler="ServerLabel" class="inline-form">
+                <form method="post" asp-page-handler="ServerLabel" class="inline-form" id="srv-form-@server.Name">
                     <input type="hidden" name="server" value="@server.Name">
                     <input type="text" name="label" maxlength="@GmmPanel.Data.ServerNames.MaxLabel" value="@server.DisplayName" placeholder="@server.Name" aria-label="Display name">
-                    <button type="submit" class="small primary">Save</button>
                 </form>
                 <p class="note">Shown on its tab, card and pages. Its ID, token and history stay the same.</p>
                 <div class="group-title">GameModeManager.json</div>
@@ -344,7 +343,8 @@
                     <input type="hidden" name="server" value="@server.Name">
                     <button type="submit" class="small danger" data-confirm="@server.Name can no longer connect to the panel." data-confirm-title="Remove @server.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
                 </form>
-                <button type="button" class="small dlg-close" data-dlg-close>Close</button>
+                <button type="button" class="small dlg-cancel" data-dlg-close>Cancel</button>
+                <button type="submit" class="small primary" form="srv-form-@server.Name">Save</button>
             </div>
         </dialog>
     </div>
