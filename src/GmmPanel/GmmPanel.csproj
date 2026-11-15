@@ -15,10 +15,10 @@
   <ItemGroup>
     <!-- Exact version: Dependabot proposes updates. 11.x needs .NET 11. -->
     <PackageReference Include="AspNet.Security.OpenId.Steam" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.15" />
     <!-- The Steam sign-in uses AngleSharp to read Steam's discovery page. Its own pick (1.3.0) has GHSA-pgww-w46g-26qg,
          fixed in 1.5.0. The panel never sanitises HTML with it, but this keeps the build free of known CVEs. -->
-    <PackageReference Include="AngleSharp" Version="1.10.1" />
+    <PackageReference Include="AngleSharp" Version="1.10.3" />
   </ItemGroup>
 
   <ItemGroup>
