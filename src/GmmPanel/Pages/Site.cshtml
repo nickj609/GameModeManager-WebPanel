@@ -291,9 +291,10 @@
     ServerView? view = Model.Find(server.Name);
     string? versionProblem = AgentVersion.Problem(view);
     <div class="row">
-        <span class="label">@GmmPanel.Data.ServerNames.Label(server.Name)@if (server.DisplayName.Length > 0) { <small class="mono">ID: @server.Name</small> } <small>@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : "Hasn't connected since the panel started")</small>
+        @* The status dot with the name (as on the server tabs); everything else is in its Settings pop-up *@
+        <span class="label"><span class="ind @(view?.Online == true ? "ok" : "bad")" title="@(view?.Online == true ? "Online" : "Offline")">@GmmPanel.Data.ServerNames.Label(server.Name)</span>
+            <small>@(server.DisplayName.Length > 0 ? $"ID {server.Name} · " : "")@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : view?.Online == true ? "Online" : "Not connected yet")</small>
             @if (versionProblem != null) { <small class="version-warn">@versionProblem</small> }</span>
-        <span class="ind @(view?.Online == true ? "ok" : "bad")">@(view?.Online == true ? "Online" : "Offline")</span>
         <button type="button" class="small" data-dlg="gmm-@server.Name">Settings</button>
         <dialog class="dlg details-dlg ticket-dlg" id="gmm-@server.Name" aria-labelledby="gmm-@server.Name-title">
             <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@GmmPanel.Data.ServerNames.Label(server.Name)</span><small class="mono">@server.Name</small></div>
@@ -309,16 +310,18 @@
                 <p class="note">Replace the <code>Panel</code> block in its <code>GameModeManager.json</code>, then change the map. Its token stays the same.</p>
                 <div class="snippet"><pre id="gmm-block-@server.Name">@GmmSettings.PanelBlock(Model.AgentUrl, server.Name)</pre><button type="button" class="small" data-copy="gmm-block-@server.Name">Copy</button></div>
             </div>
-            <div class="details-links"><button type="button" class="small dlg-close" data-dlg-close>Close</button></div>
+            <div class="details-links">
+                <form method="post" asp-page-handler="Token">
+                    <input type="hidden" name="server" value="@server.Name">
+                    <button type="submit" class="small" data-confirm="@server.Name gets a new token and the old one stops working: it has to be put in its panel-secrets.json again." data-confirm-title="New token for @server.Name?" data-confirm-yes="New token">New token</button>
+                </form>
+                <form method="post" asp-page-handler="RemoveServer">
+                    <input type="hidden" name="server" value="@server.Name">
+                    <button type="submit" class="small danger" data-confirm="@server.Name can no longer connect to the panel." data-confirm-title="Remove @server.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
+                </form>
+                <button type="button" class="small dlg-close" data-dlg-close>Close</button>
+            </div>
         </dialog>
-        <form method="post" asp-page-handler="Token">
-            <input type="hidden" name="server" value="@server.Name">
-            <button type="submit" class="small" data-confirm="@server.Name gets a new token and the old one stops working: it has to be put in its panel-secrets.json again." data-confirm-title="New token for @server.Name?" data-confirm-yes="New token">New token</button>
-        </form>
-        <form method="post" asp-page-handler="RemoveServer">
-            <input type="hidden" name="server" value="@server.Name">
-            <button type="submit" class="small danger" data-confirm="@server.Name can no longer connect to the panel." data-confirm-title="Remove @server.Name?" data-confirm-yes="Remove" data-confirm-danger="true">Remove</button>
-        </form>
     </div>
 }
 <form method="post" asp-page-handler="Token" class="mod-form">
