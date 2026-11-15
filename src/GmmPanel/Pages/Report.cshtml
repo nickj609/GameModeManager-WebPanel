@@ -16,7 +16,7 @@
 @if (Model.HasRules) { <p class="note"><a href="/rules">@T("Read the server rules")</a></p> }
 <form method="post" class="ticket-form">
     <label>@T("Server")<select name="server" required>
-        @foreach (var (server, _) in Model.Reportable) { <option value="@server" selected="@(string.Equals(server, Model.Server, StringComparison.OrdinalIgnoreCase))">@server</option> }
+        @foreach (var (server, _) in Model.Reportable) { <option value="@server" selected="@(string.Equals(server, Model.Server, StringComparison.OrdinalIgnoreCase))">@Label(server)</option> }
     </select></label>
     <label>@T("Player")<select name="player">
         <option value="">@T("Not listed")</option>

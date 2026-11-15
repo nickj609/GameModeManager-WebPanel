@@ -33,7 +33,7 @@ else
         <partial name="_MapSquare" model="@((art, s?.Map.Label ?? ""))" />
         <div class="widget-text">
             <span class="ind @(view.Online ? "ok" : "bad")">@(view.Online ? T("Online") : T("Offline"))</span>
-            <b class="widget-name">@view.Name</b>
+            <b class="widget-name">@Label(view.Name)</b>
             <span class="widget-sub">@(s == null ? T("No status yet") : $"{s.Mode.Label} · {s.Map.Label}")</span>
             <span class="widget-sub"><b>@players</b> / @(s?.MaxPlayers ?? 0)</span>
         </div>

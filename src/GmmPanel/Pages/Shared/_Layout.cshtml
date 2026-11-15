@@ -134,7 +134,7 @@
             bool selectedOnline = Registry.Find(selected)?.Online == true;
             <details class="switcher bar-wide" id="switcher">
                 <summary title="The server Manage, Admin and Moderate work on">
-                    <span class="ind @(selectedOnline ? "ok" : "bad")"><span class="switcher-name">@selected</span></span>
+                    <span class="ind @(selectedOnline ? "ok" : "bad")"><span class="switcher-name">@Label(selected)</span></span>
                     @if (mine.Count > 1) { <svg class="ic caret" aria-hidden="true"><use href="#i-caret"/></svg> }
                 </summary>
                 @if (mine.Count > 1)

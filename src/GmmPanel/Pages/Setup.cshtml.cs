@@ -90,11 +90,13 @@ public class SetupModel : PanelPage
     {
         if (Viewer?.IsPanelAdmin != true)
             return LocalRedirect("/denied");
-        name = (name ?? "").Trim();
+        // The name people see; the server's ID (token, history, links) is made from it
+        string label = (name ?? "").Trim();
+        name = GmmPanel.Data.ServerNames.NewId(label, _store.Current.Servers.Select(s => s.Name));
         AgentUrl = string.IsNullOrWhiteSpace(agentUrl) ? GmmSettings.AgentUrl(_store.Current, Request) : agentUrl.Trim();
         Step = "server";
-        if (!PanelStore.IsServerName(name))
-            Problem = "Server names use letters, digits, - and _ (up to 40), like Production or Deathmatch-2.";
+        if (label.Length == 0 || label.Length > GmmPanel.Data.ServerNames.MaxLabel || CommandCatalog.TextProblem(label, GmmPanel.Data.ServerNames.MaxLabel, "The server name", allowEmpty: false) != null)
+            Problem = $"Give the server a name, up to {GmmPanel.Data.ServerNames.MaxLabel} characters, like Production or Deathmatch #2.";
         else if (GmmSettings.AgentUrlProblem(AgentUrl) is string bad)
             Problem = bad;
         else if (_store.Current.Servers.Any(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
@@ -110,6 +112,15 @@ public class SetupModel : PanelPage
         }
 
         Token = _store.NewServerToken(name);
+        if (label != name)
+        {
+            PanelData named = _store.LoadForEdit();
+            if (named.Servers.FirstOrDefault(s => s.Name == name) is { } entry)
+            {
+                entry.DisplayName = label;
+                _store.Save(named);
+            }
+        }
         Server = name;
         Step = "token";
         _audit.Write(Admin.Audit, $"add server {name}", name, true, "from the setup page");

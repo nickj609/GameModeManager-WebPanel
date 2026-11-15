@@ -50,7 +50,7 @@
     case "server":
         <p class="note">Each game server gets its own token. GameModeManager connects out to the panel with it, so the game host opens no port.</p>
         <form method="post" asp-page-handler="Server" class="setup-form">
-            <label>Server name<input type="text" name="name" required maxlength="40" pattern="[A-Za-z0-9_\-]+" placeholder="Production" value="@Model.Server"></label>
+            <label>Server name <small>Shown on its tab and card, like Deathmatch #2</small><input type="text" name="name" required maxlength="@GmmPanel.Data.ServerNames.MaxLabel" placeholder="Production" value="@Model.Server"></label>
             <label>Agent address<input type="text" name="agentUrl" required value="@Model.AgentUrl" spellcheck="false">
                 <small>The tunnel's hostname for agents, with /agent at the end</small></label>
             <button type="submit" class="primary">Make its token</button>

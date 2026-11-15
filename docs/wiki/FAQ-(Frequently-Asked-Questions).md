@@ -18,17 +18,12 @@ GameModeManager reads its config on a map change, so change map or restart the s
 <summary>How should I name my servers? I have two Deathmatch servers.</summary>
 <br>
 
-Each server needs its own name, because the name is how the panel tells them apart: its token, its history and its graphs all go by it. Names use letters, digits, `-` and `_`, up to 40, and capitals don't make a name different (`deathmatch` and `Deathmatch` are the same server).
+Each server has two names:
 
-For two of the same kind, add what sets them apart:
+- **A display name**, what people see on its tab, card and pages, like `Deathmatch #2` or `FFA Deathmatch · EU`. Any text, up to 24 characters, and you can change it any time under **Site settings → Servers → Settings**. Two servers can share one if you want, but the panel will mention it, since people can't tell them apart.
+- **An ID**, made from the display name when you add the server (`Deathmatch #2` becomes `Deathmatch-2`), or one you choose. Its token, history, graphs, links and `ServerName` in `GameModeManager.json` go by it, so it never changes and each server has its own.
 
-| Like | When |
-| --- | --- |
-| `Deathmatch-1`, `Deathmatch-2` | The same mode, run twice |
-| `Deathmatch-EU`, `Deathmatch-NA` | Servers in different places |
-| `Deathmatch-Pistols`, `Deathmatch-AWP` | Different setups of a mode |
-
-The panel won't add a name that's already taken, so you can't cut a server off by mistake. The name is what people see on the server's tab and card, so keep it short and clear.
+So name them however reads best; the panel keeps them apart.
 
 </details>
 

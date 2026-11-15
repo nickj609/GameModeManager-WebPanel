@@ -22,7 +22,7 @@
         <partial name="_MapSquare" model="@((art, s?.Map.Label ?? ""))" />
         <div class="spot-title">
             <small>@(s?.Mode.Label ?? T("No status yet")) · @(view.Online ? F("online for {0}", Format.Span(now - (view.OnlineSince ?? now))) : T("offline"))</small>
-            <h2>@view.Name</h2>
+            <h2>@Label(view.Name)</h2>
             <span class="spot-map">@(s?.Map.Label ?? "")@(s?.NextMap != null ? " · " + F("next {0}", s.NextMap) : "")</span>
         </div>
         <div class="spot-actions">

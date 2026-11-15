@@ -15,7 +15,7 @@
             hx-get="/?handler=Spot&amp;s=@Uri.EscapeDataString(server.Name)" hx-target="#spot" hx-swap="innerHTML">
         <span class="chip-top">
             <span class="ind @(server.Online ? "ok" : "bad")"></span>
-            <b>@server.Name</b>
+            <b title="@Label(server.Name)">@Label(server.Name)</b>
             <span class="chip-count">@players<small>/@(status?.MaxPlayers ?? 0)</small></span>
         </span>
         <span class="chip-sub">@(status == null ? T("No status yet") : $"{status.Mode.Label} · {status.Map.Label}")</span>

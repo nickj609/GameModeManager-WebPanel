@@ -174,9 +174,15 @@ public partial class SiteModel
     }
 
     // A new server (add), or a new token for one already on the list (the old token stops working at its next connect)
-    public IActionResult OnPostToken(string? server, bool add)
+    public IActionResult OnPostToken(string? server, bool add, string? label)
     {
+        label = (label ?? "").Trim();
+        if (add && label.Length > 0 && LabelProblem(label) is string badLabel)
+            return Done(badLabel, failed: true);
+        // A new server's ID comes from its display name unless one is given
         server = (server ?? "").Trim();
+        if (add && server.Length == 0)
+            server = GmmPanel.Data.ServerNames.NewId(label, Data.Servers.Select(s => s.Name));
         if (!PanelStore.IsServerName(server))
             return Done("Server names use letters, digits, - and _ (up to 40), like Production or Deathmatch-2.", failed: true);
         bool existed = Data.Servers.Any(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase));
@@ -185,9 +191,43 @@ public partial class SiteModel
             return Done($"There's already a server called {server}. Give this one its own name, like {server}-2 or {server}-EU.", failed: true);
         NewToken = _store.NewServerToken(server);
         NewTokenServer = server;
+        if (add && label.Length > 0 && label != server)
+        {
+            PanelData named = _store.LoadForEdit();
+            if (named.Servers.FirstOrDefault(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase)) is { } entry)
+            {
+                entry.DisplayName = label;
+                _store.Save(named);
+            }
+        }
         _audit.Write(Admin.Audit, existed ? $"new token for {server}" : $"add server {server}", server, true, "from the Panel page");
-        return Done(existed ? $"{server} has a new token. Put it in its panel-secrets.json; the old one stops working." : $"{server} is added. Put its token in its panel-secrets.json.");
+        string shown = GmmPanel.Data.ServerNames.Label(server);
+        bool shared = add && _store.Current.Servers.Count(s => GmmPanel.Data.ServerNames.Label(s.Name).Equals(shown, StringComparison.OrdinalIgnoreCase)) > 1;
+        return Done(existed ? $"{server} has a new token. Put it in its panel-secrets.json; the old one stops working."
+            : $"{shown} is added (ID {server}). Put its token in its panel-secrets.json." + (shared ? $" Another server is also shown as {shown}." : ""));
     }
+
+    // A server's display name: what people read on its tab, card and pages. Its ID (token, history, links) stays the same
+    public IActionResult OnPostServerLabel(string? server, string? label)
+    {
+        label = (label ?? "").Trim();
+        if (label.Length > 0 && LabelProblem(label) is string bad)
+            return Done(bad, failed: true);
+        PanelData data = _store.LoadForEdit();
+        if (data.Servers.FirstOrDefault(s => s.Name.Equals(server, StringComparison.OrdinalIgnoreCase)) is not { } entry)
+            return Done("That server isn't on the list.", failed: true);
+        entry.DisplayName = label == entry.Name ? "" : label;
+        _store.Save(data);
+        _audit.Write(Admin.Audit, $"server {entry.Name} display name {(label.Length > 0 ? label : "cleared")}", entry.Name, true, "");
+        string shown = label.Length > 0 ? label : entry.Name;
+        // Two servers may share a name if the owner wants; say so, as visitors can't tell them apart
+        bool shared = data.Servers.Count(s => (s.DisplayName.Length > 0 ? s.DisplayName : s.Name).Equals(shown, StringComparison.OrdinalIgnoreCase)) > 1;
+        return Done(shared ? $"Saved. Another server is also shown as {shown}, so people can't tell them apart." : $"{entry.Name} is shown as {shown}.");
+    }
+
+    private static string? LabelProblem(string label) =>
+        label.Length > GmmPanel.Data.ServerNames.MaxLabel ? $"Display names can be up to {GmmPanel.Data.ServerNames.MaxLabel} characters."
+        : CommandCatalog.TextProblem(label, GmmPanel.Data.ServerNames.MaxLabel, "The display name", allowEmpty: false);
 
     // Where game servers connect: only GameModeManager.json changes when it does (their tokens stay the same)
     public IActionResult OnPostAgentUrl(string? url)

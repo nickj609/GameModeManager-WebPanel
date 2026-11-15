@@ -301,13 +301,21 @@
     ServerView? view = Model.Find(server.Name);
     string? versionProblem = AgentVersion.Problem(view);
     <div class="row">
-        <span class="label">@server.Name <small>@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : "Hasn't connected since the panel started")</small>
+        <span class="label">@GmmPanel.Data.ServerNames.Label(server.Name)@if (server.DisplayName.Length > 0) { <small class="mono">ID: @server.Name</small> } <small>@(view?.Connection?.Hello is { } hello ? $"GameModeManager {hello.GmmVersion}" : "Hasn't connected since the panel started")</small>
             @if (versionProblem != null) { <small class="version-warn">@versionProblem</small> }</span>
         <span class="ind @(view?.Online == true ? "ok" : "bad")">@(view?.Online == true ? "Online" : "Offline")</span>
         <button type="button" class="small" data-dlg="gmm-@server.Name">Settings</button>
         <dialog class="dlg details-dlg ticket-dlg" id="gmm-@server.Name" aria-labelledby="gmm-@server.Name-title">
-            <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@server.Name</span></div>
+            <div class="dlg-head details-head"><span id="gmm-@server.Name-title">@GmmPanel.Data.ServerNames.Label(server.Name)</span><small class="mono">@server.Name</small></div>
             <div class="ticket-section">
+                <div class="group-title">Display name</div>
+                <form method="post" asp-page-handler="ServerLabel" class="inline-form">
+                    <input type="hidden" name="server" value="@server.Name">
+                    <input type="text" name="label" maxlength="@GmmPanel.Data.ServerNames.MaxLabel" value="@server.DisplayName" placeholder="@server.Name" aria-label="Display name">
+                    <button type="submit" class="small primary">Save</button>
+                </form>
+                <p class="note">Shown on its tab, card and pages. Its ID, token and history stay the same.</p>
+                <div class="group-title">GameModeManager.json</div>
                 <p class="note">Replace the <code>Panel</code> block in its <code>GameModeManager.json</code> (in <code>addons/counterstrikesharp/configs/plugins/GameModeManager/</code>),
                     then change the map or restart it. Its <code>panel-secrets.json</code> and token stay the same.</p>
                 <div class="snippet"><pre id="gmm-block-@server.Name">@GmmSettings.PanelBlock(Model.AgentUrl, server.Name)</pre><button type="button" class="small" data-copy="gmm-block-@server.Name">Copy</button></div>
@@ -326,7 +334,8 @@
 }
 <form method="post" asp-page-handler="Token" class="mod-form">
     <input type="hidden" name="add" value="true">
-    <label>New server <small>Its own name: letters, digits, - and _, like Deathmatch-2 or Retakes-EU</small><input type="text" name="server" maxlength="40" pattern="[A-Za-z0-9_\-]+" required placeholder="Deathmatch-2"></label>
+    <label>New server <small>Its display name, like Deathmatch #2</small><input type="text" name="label" maxlength="@GmmPanel.Data.ServerNames.MaxLabel" required placeholder="Deathmatch #2"></label>
+    <label>ID <small>Optional: made from the name. Letters, digits, - and _; it can't be changed later</small><input type="text" name="server" maxlength="40" pattern="[A-Za-z0-9_\-]+" placeholder="Deathmatch-2"></label>
     <button type="submit" class="primary">Add server</button>
 </form>
 <p class="note">The <a href="/setup">setup page</a> walks through adding a server, with the GameModeManager settings to paste.</p>

@@ -29,7 +29,7 @@
             <div class="server-ticks">
                 @foreach (var server in Model.Servers)
                 {
-                    <label class="tick"><input type="checkbox" name="servers" value="@server.Name"><span class="ind @(server.Online ? "ok" : "bad")">@server.Name</span></label>
+                    <label class="tick"><input type="checkbox" name="servers" value="@server.Name"><span class="ind @(server.Online ? "ok" : "bad")">@Label(server.Name)</span></label>
                 }
             </div>
         </div>

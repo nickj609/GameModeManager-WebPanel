@@ -64,7 +64,7 @@
         <partial name="_MapSquare" model="@((s == null ? null : Model.ArtFor(s.Map.Name), s?.Map.Label ?? ""))" />
         <div class="spot-title">
             <small><span class="ind @(view.Online ? "ok" : "bad")">@(view.Online ? $"Online for {Format.Span(DateTimeOffset.UtcNow - (view.OnlineSince ?? DateTimeOffset.UtcNow))}" : "Offline")</span></small>
-            <h1>@view.Name</h1>
+            <h1>@Label(view.Name)</h1>
             @if (s?.Server?.Hostname is { Length: > 0 } host) { <div class="info-host">@host</div> }
             @if (s != null)
             {

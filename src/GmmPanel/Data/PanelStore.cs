@@ -108,7 +108,8 @@ public sealed class LinkEntry
 
 public sealed class ServerEntry
 {
-    public string Name { get; set; } = "";
+    public string Name { get; set; } = "";          // The ID: its token, history, links and logs go by it, so it never changes
+    public string DisplayName { get; set; } = "";   // What people read (tabs, cards, titles); "" = the ID. Changed any time
     public string TokenHash { get; set; } = "";   // SHA-256 of the server's token, hex. The token itself is never stored
 }
 
@@ -135,6 +136,7 @@ public sealed class PanelStore
 
     public PanelStore(string dataDirectory)
     {
+        ServerNames.Store = this;
         Directory.CreateDirectory(dataDirectory);
         DataDirectory = dataDirectory;
         _path = Path.Combine(dataDirectory, "panel.json");
