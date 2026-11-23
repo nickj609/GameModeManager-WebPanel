@@ -13,7 +13,7 @@
 
 @* ---------- Server ---------- *@
 <section class="pane on" data-pane="server">
-    <div class="pane-head"><span class="crumb">Server &rsaquo;</span><h2>Server</h2></div>
+    <div class="pane-head"><h2>Server</h2></div>
     @if (s.Server == null)
     {
         <div class="empty">@Outdated</div>
@@ -62,7 +62,7 @@
     var others = s.Integrations.Where(i => s.Plugins == null || !s.Plugins.Any(p => IntegrationFor(p) == i)).ToList();
 }
 <section class="pane" data-pane="plugins">
-    <div class="pane-head"><span class="crumb">Server &rsaquo;</span><h2>Plugins</h2></div>
+    <div class="pane-head"><h2>Plugins</h2></div>
     @if (s.Plugins == null)
     {
         <div class="empty">@Outdated</div>
@@ -76,42 +76,52 @@
         {
             bool loaded = plugin.State == "loaded";
             IntegrationInfo? integration = IntegrationFor(plugin);
+            // A web address in the description becomes the link icon after the version; the folder shows on hover
+            var site = System.Text.RegularExpressions.Regex.Match(plugin.Description + " " + plugin.Author, @"https?://[^\s)]+");
+            string Strip(string text) => site.Success ? System.Text.RegularExpressions.Regex.Replace(text.Replace(site.Value, ""), @"\s*\(\s*\)|\s{2,}", " ").Trim(' ', '·', '-', ':') : text;
+            string about = Strip(plugin.Description), author = Strip(plugin.Author);
+            string folder = plugin.Module.Length > 0 && plugin.Module != plugin.Name ? $"plugins/{plugin.Name}" : "";
             <div class="row plugin-row">
-                <span class="label">@(plugin.Module.Length > 0 ? plugin.Module : plugin.Name)
+                <span class="label" title="@(folder.Length > 0 ? folder : null)">@(plugin.Module.Length > 0 ? plugin.Module : plugin.Name)
                     @if (plugin.Version.Length > 0) { <span class="ver">@plugin.Version</span> }
-                    <small>@(plugin.Author.Length > 0 ? $"by {plugin.Author}" : "")@(plugin.Author.Length > 0 && plugin.Description.Length > 0 ? " · " : "")@plugin.Description@(plugin.State == "disabled" ? $" · disabled" : plugin.Module.Length > 0 && plugin.Module != plugin.Name ? $" · plugins/{plugin.Name}" : "")</small>
+                    @if (site.Success) { <a class="plugin-site" href="@site.Value" target="_blank" rel="noopener noreferrer" title="@site.Value" aria-label="Project page"><svg class="ic" aria-hidden="true"><use href="#i-globe"/></svg></a> }
+                    @* Only a plugin that isn't running gets a status: a list of "Loaded" said nothing *@
+                    @switch (plugin.State)
+                    {
+                        case "loaded": break;
+                        case "loading": <span class="ind warn plugin-state">Loading</span> break;
+                        case "unloaded": <span class="ind bad plugin-state">Unloaded</span> break;
+                        case "disabled": <span class="ind off plugin-state">Disabled</span> break;
+                        default: <span class="ind off plugin-state">Not loaded</span> break;
+                    }
+                    <small>@(author.Length > 0 ? $"by {author}" : "")@(author.Length > 0 && about.Length > 0 ? " · " : "")@about</small>
                     @if (integration != null)
                     {
-                        <small class="gmm-uses @(loaded ? "" : "idle")"><svg class="ic" aria-hidden="true"><use href="#i-@(loaded ? "ok" : "no")"/></svg>@(loaded ? "GameModeManager uses it" + (integration.Detail.Length > 0 ? $": {integration.Detail}" : "") : "GameModeManager works with it once it's loaded")</small>
+                        <small class="gmm-uses @(loaded ? "" : "idle")" title="@(loaded && integration.Detail.Length > 0 ? integration.Detail : null)"><svg class="ic" aria-hidden="true"><use href="#i-@(loaded ? "ok" : "no")"/></svg>@(loaded ? "Used by GameModeManager" : "GameModeManager works with it once it's loaded")</small>
                     }
                 </span>
-                @switch (plugin.State)
-                {
-                    case "loaded": <span class="ind ok">Loaded</span> break;
-                    case "loading": <span class="ind warn">Loading</span> break;
-                    case "unloaded": <span class="ind bad">Unloaded</span> break;
-                    case "disabled": <span class="ind off">Disabled</span> break;
-                    default: <span class="ind off">Not loaded</span> break;
-                }
+                @* Bare icons in a fixed column, so every row's right edge lines up (GameModeManager's own row has none) *@
+                <span class="plugin-acts">
                 @if (owner && !plugin.Protected)
                 {
                     @* One form per button: a submit button named "action" sent its value twice *@
-                    foreach (var (verb, label, css, question) in loaded
-                        ? new[] { ("reload", "Reload", "small", $"CounterStrikeSharp unloads {plugin.Name} and loads it again. Its players' state may reset."),
-                                  ("unload", "Unload", "small danger", $"{plugin.Name} stops until it's loaded again or the server restarts.") }
+                    foreach (var (verb, label, icon, question) in loaded
+                        ? new[] { ("reload", "Reload", "refresh", $"CounterStrikeSharp unloads {plugin.Name} and loads it again. Its players' state may reset."),
+                                  ("unload", "Unload", "no", $"{plugin.Name} stops until it's loaded again or the server restarts.") }
                         : plugin.State == "disabled"
-                        ? new[] { ("load", "Load", "small", $"{plugin.Name} runs from plugins/disabled until the server restarts. To load it on every start, move its folder out of disabled.") }
-                        : new[] { ("load", "Load", "small primary", "") })
+                        ? new[] { ("load", "Load", "play", $"{plugin.Name} runs from plugins/disabled until the server restarts. To load it on every start, move its folder out of disabled.") }
+                        : new[] { ("load", "Load", "play", "") })
                     {
                         <form hx-post="@post" hx-target="#toasts" hx-swap="beforeend">
                             <input type="hidden" name="command" value="plugin">
                             <input type="hidden" name="plugin" value="@plugin.Name">
                             <input type="hidden" name="action" value="@verb">
-                            <button type="submit" class="@css" @(live ? "" : "disabled")
-                                    data-confirm="@(question.Length > 0 ? question : null)" data-confirm-title="@label @plugin.Name?" data-confirm-yes="@label" data-confirm-danger="@(verb == "unload" ? "true" : null)">@label</button>
+                            <button type="submit" class="plugin-act @(verb == "unload" ? "unload" : "")" title="@label" aria-label="@label @plugin.Name" @(live ? "" : "disabled")
+                                    data-confirm="@(question.Length > 0 ? question : null)" data-confirm-title="@label @plugin.Name?" data-confirm-yes="@label" data-confirm-danger="@(verb == "unload" ? "true" : null)"><svg class="ic" aria-hidden="true"><use href="#i-@icon"/></svg></button>
                         </form>
                     }
                 }
+                </span>
             </div>
         }
         @if (others.Count > 0)

@@ -29,6 +29,8 @@
             @if (address != null)
             {
                 <a class="button primary" href="steam://connect/@address" title="@F("Opens CS2 and joins {0}", address)"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>@T("Connect")</a>
+            @* The address to paste into the console (steam:// links do nothing without Steam, on a phone say) *@
+            <button type="button" class="button copy-address" data-copy-text="@address" title="@F("Copy {0}: paste it after connect in the game's console", address)" aria-label="@T("Copy address")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button>
             }
             else
             {
@@ -42,7 +44,8 @@
         </div>
     </div>
 
-    <div class="spot-grid">
+    @* A quick look: who's on now. The history (graphs, recent maps, countries) is on the server's own page: Details *@
+    <div class="spot-grid spot-glance">
         <section class="spot-live">
             <div class="group-title">@T("Who's on") <small>@roster.Count / @(s?.MaxPlayers ?? 0)</small></div>
             @if (roster.Count == 0)
@@ -68,17 +71,6 @@
                 </div>
             }
         </section>
-        <section>
-            <div class="group-title">@T("Last 24 hours") <small>@F("peak {0}", peak)</small></div>
-            @if (Model.SpotDay.Count > 1)
-            {
-                @Graph.Players(Model.SpotDay, now.AddHours(-24), now, 600, 110, "graph", F("{0}: players over the last 24 hours, peak {1}", view.Name, peak))
-            }
-            else
-            {
-                <div class="empty">@T("The graph fills in as the panel samples, every 5 minutes.")</div>
-            }
-        </section>
     </div>
-    @if (Model.SpotCountries is { } countries) { <partial name="_Countries" model="countries" /> }
+    @* Player countries are on the server's page with its other history *@
 </div>

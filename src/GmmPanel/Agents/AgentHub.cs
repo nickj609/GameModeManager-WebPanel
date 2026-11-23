@@ -45,14 +45,6 @@ public sealed class AgentHub
             return;
         }
 
-        if (_registry.Find(server.Name)?.Online == true)
-        {
-            // Two links for one server: an old agent loop is still running (a hot reload), or the token is used twice
-            _audit.Write($"agent from {from}", "connect", server.Name, false, "this server is already connected");
-            context.Response.StatusCode = StatusCodes.Status409Conflict;
-            return;
-        }
-
         using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync(new WebSocketAcceptContext
         {
             KeepAliveInterval = TimeSpan.FromSeconds(30),
@@ -77,10 +69,12 @@ public sealed class AgentHub
         }
 
         var connection = new AgentConnection(server.Name, socket, hello) { RemoteAddress = context.Connection.RemoteIpAddress };
-        if (!_registry.TryClaim(server.Name, connection))
+        // A server reconnecting while the panel still has its old link (the network cut it without a close, so the panel
+        // only notices after the keep-alive timeout) gets in at once: the old link is dropped, the server stays online
+        if (_registry.Claim(server.Name, connection) is { } stale)
         {
-            await SendErrorAsync(socket, "This server is already connected.", stopping);
-            return;
+            _logger.LogInformation("Agent {Server} reconnected; its previous link is closed", server.Name);
+            stale.Abort();
         }
 
         _logger.LogInformation("Agent {Server} connected from {From}: GameModeManager {Gmm}, CounterStrikeSharp {Css}",
@@ -101,11 +95,14 @@ public sealed class AgentHub
         finally
         {
             connection.FailAll();
-            _registry.Release(server.Name, connection);
-            _history.OnOffline(server.Name);
-            _ = ReportIfStillOfflineAsync(server.Name);
+            // A link replaced by a newer one leaves the server online: no offline note, no Discord post
+            if (_registry.Release(server.Name, connection))
+            {
+                _history.OnOffline(server.Name);
+                _ = ReportIfStillOfflineAsync(server.Name);
+                _logger.LogInformation("Agent {Server} disconnected", server.Name);
+            }
             await connection.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye");
-            _logger.LogInformation("Agent {Server} disconnected", server.Name);
         }
     }
 

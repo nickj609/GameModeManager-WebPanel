@@ -173,7 +173,7 @@ builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o
 
 builder.Services.AddRazorPages(options =>
 {
-    foreach (string page in new[] { "/SignIn", "/Denied", "/Error", "/Setup", "/Index", "/Bans", "/Stats", "/Appearance", "/ServerInfo", "/Search", "/Privacy", "/Widget", "/Rules", "/PublicProfile" })
+    foreach (string page in new[] { "/SignIn", "/Denied", "/Error", "/Setup", "/Index", "/Bans", "/Stats", "/Appearance", "/ServerInfo", "/AllServers", "/Search", "/Privacy", "/Widget", "/Rules", "/PublicProfile" })
         options.Conventions.AllowAnonymousToPage(page);
     options.Conventions.AuthorizeFolder("/Audit", "paneladmin");
     options.Conventions.AuthorizePage("/Site", "paneladmin");
@@ -189,9 +189,11 @@ if (app.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(panel["DevSign
 
 app.UseForwardedHeaders();
 
-// Outside Development the panel only answers https (as cloudflared reports it), so cookies are never sent in the clear
+// Outside Development the panel only answers https (as cloudflared reports it), so cookies are never sent in the clear,
+// and browsers are told to use https only (HSTS) so they never try http first
 if (!app.Environment.IsDevelopment())
 {
+    app.UseHsts();
     app.Use((context, next) =>
     {
         if (context.Request.IsHttps || context.Request.Path == "/healthz")

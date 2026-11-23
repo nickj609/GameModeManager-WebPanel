@@ -16,9 +16,16 @@
     // Their country's flag after the name, when Player countries is on (Site settings, Features)
     string? country = id != null && GmmPanel.Data.Features.On(PanelData.Current, "countries") ? (History.Player(id)?.Country ?? ViewData["Country"] as string) : null;   // A row's own country (a ban's), when our servers haven't seen them
 }
+@{
+    // Public tables link to the public profile, but only for players our servers have seen: someone banned before the panel
+    // was set up has no profile here, so their Steam page opens (in a new tab) instead
+    bool profile = steamLink && id != null && GmmPanel.Data.Features.On(PanelData.Current, "profiles") && History.Player(id) != null;
+    string href = !steamLink ? $"/players/{id}" : profile ? $"/u/{id}" : $"https://steamcommunity.com/profiles/{id}";
+    bool external = steamLink && !profile;
+}
 @if (id != null)
 {
-    <a class="player" href="@(steamLink ? (GmmPanel.Data.Features.On(PanelData.Current, "profiles") ? $"/u/{id}" : $"https://steamcommunity.com/profiles/{id}") : $"/players/{id}")" title="@name · SteamID64 @id">
+    <a class="player" href="@href" target="@(external ? "_blank" : null)" rel="@(external ? "noopener" : null)" title="@name · SteamID64 @id">
         @if (avatar != null) { <img class="avatar small" src="@avatar" alt="" width="28" height="28" loading="lazy" referrerpolicy="no-referrer"> }
         else { <span class="avatar small letter">@(known is { Length: > 0 } ? char.ToUpperInvariant(known[0]) : '?')</span> }
         <span class="player-name @(known == null ? "mono" : "")">@name</span>@Format.Flag(country)

@@ -114,7 +114,7 @@ public sealed class Discord
 
     // Appeals and reports: who wrote it, who it's about (a report), the server, and the message quoted; a Steam profile
     // button for the reported player, else the writer
-    public void Ticket(string title, string from, string fromId, string message, string? server = null, string? about = null, string? aboutId = null)
+    public void Ticket(string title, string from, string fromId, string message, string? server = null, string? about = null, string? aboutId = null, string? reason = null)
     {
         if (!Settings.Tickets)
             return;
@@ -123,6 +123,8 @@ public sealed class Discord
             facts.Add(("🚩 Reported", Pill(about)));
         if (aboutId != null && aboutId != about)
             facts.Add(("🆔 Their SteamID", $"**{Plain(aboutId)}**"));
+        if (!string.IsNullOrEmpty(reason))
+            facts.Add(("🏷️ Reason", Pill(reason)));
         string quoted = string.Join("\n", Plain(message.Trim(), 1000).Split('\n').Select(line => "> " + line));
         string profile = aboutId ?? fromId;
         Post(new Card(title, Warn())
@@ -156,7 +158,11 @@ public sealed class Discord
             if (key is not ("confirm" or "kind" or "server" or "source" or "list") && value.Length > 0 && !used.Contains(key))
                 facts.Add((key == "reason" ? "📝 Reason" : Words(key), Pill(value, 200)));
         if (map == null && mode != null)
-            map = status?.Modes.FirstOrDefault(m => m.Name.Equals(mode, StringComparison.OrdinalIgnoreCase))?.Maps.FirstOrDefault(m => Pictures?.UrlFor(m) != null);
+        {
+            // The mode's default map (where a change to it goes), else, from an older agent, the first of its maps with a picture
+            ModeInfo? info = status?.Modes.FirstOrDefault(m => m.Name.Equals(mode, StringComparison.OrdinalIgnoreCase));
+            map = info?.DefaultMap is { Length: > 0 } first ? first : info?.Maps.FirstOrDefault(m => Pictures?.UrlFor(m) != null);
+        }
         bool now = name is "change_map" or "change_mode";
         // Bans, mutes, gags and warns go through CS2-SimpleAdmin and count on every server: no server name or page.
         // A kick or slay is on this server.
@@ -392,7 +398,9 @@ public sealed class Discord
     // A post and a plain-text stand-in, sent if Discord refuses the card
     private sealed record Message(object Card, string Fallback);
 
-    // One at a time, a second apart: Discord's webhook limit is about 30 a minute
+    // One at a time, two seconds apart: Discord's webhook limit is about 30 a minute. When it says to slow down (429), the
+    // post waits as long as Discord asks (its Retry-After) and is sent again, up to 3 tries, so a burst (every server
+    // coming back after a restart) arrives late instead of being lost
     private async Task SendLoopAsync()
     {
         await foreach (Message message in _queue.Reader.ReadAllAsync())
@@ -402,10 +410,21 @@ public sealed class Discord
                 continue;
             try
             {
-                // A webhook the panel doesn't own sends components only with with_components
-                using var content = new StringContent(JsonSerializer.Serialize(message.Card, Skip), System.Text.Encoding.UTF8, "application/json");
-                using HttpResponseMessage response = await _http.PostAsync(url + (url.Contains('?') ? "&" : "?") + "with_components=true", content);
-                if ((int)response.StatusCode == 400)
+                HttpResponseMessage? response = null;
+                for (int attempt = 1; attempt <= 3; attempt++)
+                {
+                    response?.Dispose();
+                    // A webhook the panel doesn't own sends components only with with_components
+                    using var content = new StringContent(JsonSerializer.Serialize(message.Card, Skip), System.Text.Encoding.UTF8, "application/json");
+                    response = await _http.PostAsync(url + (url.Contains('?') ? "&" : "?") + "with_components=true", content);
+                    if ((int)response.StatusCode != 429)
+                        break;
+                    TimeSpan wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(5);
+                    _logger.LogInformation("Discord asked to slow down: the post waits {Seconds} s", (int)Math.Ceiling(wait.TotalSeconds));
+                    await Task.Delay(wait + TimeSpan.FromMilliseconds(250));
+                }
+                using var _ = response;
+                if ((int)response!.StatusCode == 400)
                 {
                     _logger.LogWarning("Discord refused a post: {Answer}", await response.Content.ReadAsStringAsync());
                     using var plain = new StringContent(JsonSerializer.Serialize(new { content = message.Fallback, allowed_mentions = new { parse = Array.Empty<string>() } }), System.Text.Encoding.UTF8, "application/json");
@@ -418,7 +437,7 @@ public sealed class Discord
             {
                 _logger.LogWarning("Discord post failed: {Error}", error.Message);
             }
-            await Task.Delay(1000);
+            await Task.Delay(2000);
         }
     }
 

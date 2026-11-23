@@ -11,9 +11,11 @@ public class StatsModel : PublicListModel
     private const int PageSize = 25;
     private readonly History _history;
     private readonly UserPrefs _prefs;
+    private readonly MapPictures _maps;
 
-    public StatsModel(PublicData data, History history, UserPrefs prefs) : base(data)
+    public StatsModel(PublicData data, History history, UserPrefs prefs, MapPictures maps) : base(data)
     {
+        _maps = maps;
         _history = history;
         _prefs = prefs;
     }
@@ -22,7 +24,8 @@ public class StatsModel : PublicListModel
     {
         ("played", PanelSource, "played", "Most played"),
         ("week", PanelSource, "week", "This week"),
-        ("newest", PanelSource, "newest", "Newest")
+        ("newest", PanelSource, "newest", "Newest"),
+        ("maps", PanelSource, "maps", "Maps")
     };
 
     public override string Path => "/stats";
@@ -35,11 +38,14 @@ public class StatsModel : PublicListModel
     {
         "played" => "Hours played on all our servers, since the panel started counting.",
         "week" => "Hours played this week (from Monday).",
+        "maps" => "The maps played lately on all our servers, by time played.",
         _ => "The latest players to join our servers."
     };
 
     protected override DataPage? PanelList(string list, string search, int page)
     {
+        if (list == "maps")
+            return Maps(search, page);
         var players = _history.All().Where(p => !_prefs.IsHidden(p.SteamId));
         if (search.Length > 0)
             players = players.Where(p => p.SteamId == search || p.Names.Any(n => n.Contains(search, StringComparison.OrdinalIgnoreCase)));
@@ -73,6 +79,31 @@ public class StatsModel : PublicListModel
                 ["visits"] = x.p.Sessions.ToString("N0"),
                 ["lastseen"] = Format.Ago(x.p.LastSeen),
                 ["firstseen"] = Format.Ago(x.p.FirstSeen)
+            }).ToList(),
+            Page = page,
+            PageSize = PageSize,
+            Total = rows.Count
+        };
+    }
+
+    // The Maps board: time played, how many times, the busiest moment and when each last ran
+    private DataPage Maps(string search, int page)
+    {
+        var rows = _history.MapTotals()
+            .Where(m => search.Length == 0 || m.Map.Contains(search, StringComparison.OrdinalIgnoreCase) || m.Label.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(m => m.Seconds).ToList();
+        return new DataPage
+        {
+            Columns = new() { Col("place", "#", "number"), Col("map", "Map", "map"), Col("hours", "Played", "number"), Col("plays", "Times", "number"), Col("peak", "Peak", "number"), Col("last", "Last played", "time") },
+            Rows = rows.Skip((page - 1) * PageSize).Take(PageSize).Select((m, i) => new Dictionary<string, string?>
+            {
+                ["place"] = ((page - 1) * PageSize + i + 1).ToString(),
+                ["map"] = m.Label.Length > 0 ? m.Label : m.Map,
+                ["map.pic"] = _maps.UrlFor(m.Map),   // Its picture beside the name (the crosshair when there's none)
+                ["hours"] = m.Seconds < 60 ? "<1 min" : Format.Hours(m.Seconds),
+                ["plays"] = m.Plays.ToString("N0"),
+                ["peak"] = m.Peak.ToString(),
+                ["last"] = Format.Ago(m.Last)
             }).ToList(),
             Page = page,
             PageSize = PageSize,

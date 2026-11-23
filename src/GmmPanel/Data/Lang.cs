@@ -52,7 +52,8 @@ public static class Lang
         "Are you sure?", "Cancel", "Yes", "Turn on sv_cheats?", "Turn it on", "Save to GameModeManager.json?", "Schedule it", "Save it",
         "It also writes the change into GameModeManager.json on each ticked server, so it lasts after a restart. The file's comments go; a copy from before the panel's first change is kept as GameModeManager.json.before-panel.bak. A deploy that uploads its own GameModeManager.json replaces it.",
         "Changes need a match restart", "{0} applies after the match restarts.", "Restart now", "Restart later", "Replay round",
-        "End round", "Restart match", "Next round", "Changes apply next round", "{0} applies from the next round.", "On", "Off"
+        "End round", "Restart match", "Next round", "Changes apply next round", "{0} applies from the next round.", "On", "Off",
+        "Cleared.", "Nothing to copy.", "Couldn't copy.", "Couldn't clear."
     };
 
     public static Dictionary<string, string> Script() =>

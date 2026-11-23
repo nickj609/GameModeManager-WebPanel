@@ -23,6 +23,22 @@
         var siteBars = parseFloat(css.getPropertyValue("--bar-alpha"));
         if (siteBars >= 0.4 && siteBars <= 1) defaults.bars = siteBars;
     } catch (e) { }
+    // The background picture the last page showed (panel.js keeps it): asked for now, from the <head>, so it's usually
+    // loaded and decoded by the first frame instead of being fetched only when the backdrop is drawn
+    try {
+        var shown = window.localStorage.getItem("gmm.bg.shown");
+        if (shown && /^\/media\/[^"'()\\]+$/.test(shown)) {
+            var link = document.createElement("link");
+            link.rel = "preload";
+            link.as = "image";
+            link.href = shown;
+            document.head.appendChild(link);
+            var picture = new Image();   // And decoded early: preload alone only fetches
+            picture.src = shown;
+            if (picture.decode) picture.decode().catch(function () { });
+        }
+    } catch (e) { }
+
     var key = "gmm.look";
 
     // Older versions saved every value, the untouched ones at the built-in starting look: those are read as unset, so the

@@ -36,12 +36,12 @@ public static partial class AuditText
         (new(@"^appeal sent$"), "Appeal submitted"),
         (new(@"^report sent about (.+)$"), "Report submitted: $1"),
         (new(@"^task scheduled: (.+)$"), "Task scheduled: $1"),
-        (new(@"^task (\S+) (\S+)$"), "Task $1: $2"),
         (new(@"^appeal (\S+) (accepted|rejected) (.+)$"), "Appeal #$1 $2 $3"),
         (new(@"^report (\S+) closed (.+)$"), "Report #$1 closed $2"),
         (new(@"^report (\S+) (ban|mute|gag|kick|warn|slay) (.+)$"), "Report #$1: $2 applied $3"),
         (new(@"^(report|appeal) (\S+) comment(.*)$"), "$1 #$2: comment added$3"),
         (new(@"^audit export (csv|json) (.+)$"), "Audit log exported ($1) $2"),
+        (new(@"^list export (csv|json) (\S+) (.+)$"), "List exported ($1): $2 $3"),
         (new(@"^backup downloaded (.+)$"), "Backup downloaded $1"),
         (new(@"^backup restored (.+)$"), "Backup restored $1"),
     };
@@ -53,14 +53,49 @@ public static partial class AuditText
         Match settings = Settings().Match(what);
         if (settings.Success)
             return new(settings.Groups[1].Value == "features" ? "Features updated" : "Integrations updated", settings.Groups[2].Value.Trim() is { Length: > 0 } values ? values : null);
+        // A task paused, resumed or deleted: what happened, the task's id as code
+        Match task = Task().Match(what);
+        if (task.Success)
+            return new(task.Groups[2].Value switch { "pause" => "Task paused", "resume" => "Task resumed", "delete" => "Task deleted", var other => $"Task {other}" }, task.Groups[1].Value);
         foreach (var (pattern, title) in Rules)
             if (pattern.IsMatch(what))
                 return new(Capital(Upper(pattern.Replace(what, title))), null);
         // A server command (CommandService): its id as words, its parameters as they were sent
         Match command = Command().Match(what);
         if (command.Success)
-            return new(Capital(command.Groups[1].Value.Replace('_', ' ')), command.Groups[2].Value.Trim() is { Length: > 0 } code ? code : null);
+            return Sentence(command.Groups[1].Value, command.Groups[2].Value.Trim())
+                ?? new(Capital(command.Groups[1].Value.Replace('_', ' ')), command.Groups[2].Value.Trim() is { Length: > 0 } code ? code : null);
         return new(Capital(what), null);
+    }
+
+    // The common commands as sentences, as GitHub's audit log reads ("Set gravity to Low"); the rest keep their words and
+    // parameters. Values can hold spaces ("line=mp_restartgame 1"), so the parameters split before each "name="
+    private static Action? Sentence(string id, string parameters)
+    {
+        var a = ArgSplit().Split(parameters).Where(p => p.Contains('=')).Select(p => p.Split('=', 2))
+            .GroupBy(p => p[0]).ToDictionary(g => g.Key, g => g.First()[1].Trim());
+        string Get(string key) => a.TryGetValue(key, out string? value) ? value : "";
+        string minutes = Get("minutes") is { Length: > 0 } m ? (m == "0" ? "permanent" : $"{m} min") : "";
+        string extra = string.Join(" · ", new[] { minutes, Get("reason") }.Where(x => x.Length > 0));
+        return id switch
+        {
+            "console" when Get("line").Length > 0 => new("Console command", Get("line")),
+            "set_value" => new($"Set {Get("setting")} to {Get("value")}", null),
+            "set_setting" => new($"Turned {Get("setting")} {(Get("on") == "true" ? "on" : "off")}", null),
+            "change_map" => new($"Changed map to {Get("map")}", null),
+            "set_next_map" => new($"Set next map to {Get("map")}", null),
+            "change_mode" => new($"Changed mode to {Get("mode")}", null),
+            "set_next_mode" => new($"Set next mode to {Get("mode")}", null),
+            "start_warmup" => new(Get("mode").Length > 0 ? $"Started warmup: {Get("mode")}" : "Started warmup", null),
+            "set_hostname" => new($"Set hostname to {Get("value")}", null),
+            "set_rotation" => new($"Rotation: {Get("key")} set to {Get("value")}", null),
+            "run_action" => new($"Ran action {(Get("action").Length > 0 ? Get("action") : Get("name"))}", null),
+            "matchzy" => new($"MatchZy: {Get("action")}", null),
+            "moderate" when Get("action").Length > 0 => new(
+                Capital(Get("action").Replace("sa-", "")) + (Get("steamid").Length > 0 ? $" {Get("steamid")}" : ""),
+                extra.Length > 0 ? extra : null),
+            _ => null
+        };
     }
 
     // For searching: the title and the code together, as they show
@@ -72,5 +107,7 @@ public static partial class AuditText
 
     [GeneratedRegex(@"^([a-z]+(?:_[a-z]+)*)((?: \S+=.*)?)$")] private static partial Regex Command();
     [GeneratedRegex(@"\b(csv|json)\b")] private static partial Regex Formats();
+    [GeneratedRegex(@"^task (\S+) (\S+)$")] private static partial Regex Task();
+    [GeneratedRegex(@" (?=[a-z_]+=)")] private static partial Regex ArgSplit();
     [GeneratedRegex(@"^(features|integrations): ?(.*)$")] private static partial Regex Settings();
 }

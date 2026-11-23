@@ -6,7 +6,7 @@
     <p class="note">@T("No servers yet. Panel admins add one on the setup page.")</p>
 }
 <div class="strip scroll" role="tablist" aria-label="@T("Servers")">
-@foreach (ServerView server in Model.Servers)
+@foreach (ServerView server in Model.StripServers)
 {
     StatusSnapshot? status = server.Status;
     bool on = server == Model.Spot;

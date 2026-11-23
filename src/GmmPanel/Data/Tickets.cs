@@ -37,6 +37,11 @@ public sealed class Tickets
         public string HandledBy { get; set; } = "";
         public DateTimeOffset? HandledAt { get; set; }
         public List<Comment> Comments { get; set; } = new();   // Staff's comments; Public ones the writer sees on their profile
+        public string Reason { get; set; } = "";            // Reports: cheating, griefing, abuse or other ("" before reasons existed)
+        public bool? TargetWasOn { get; set; }              // Reports: whether they were on that server when it was sent (null: not known)
+        public string ClaimedBy { get; set; } = "";         // "Looking at it": who, so two staff don't answer the same one
+        public string ClaimedBySteamId { get; set; } = "";
+        public DateTimeOffset? ClaimedAt { get; set; }
 
         public Ticket Clone()
         {
@@ -62,6 +67,45 @@ public sealed class Tickets
             Save();
             return true;
         }
+    }
+
+    public static readonly string[] Reasons = { "cheating", "griefing", "abuse", "other" };
+
+    // The words for a report's reason (translated where shown)
+    public static string ReasonLabel(string reason) => reason switch
+    {
+        "cheating" => "Cheating",
+        "griefing" => "Griefing",
+        "abuse" => "Abuse or spam",
+        "other" => "Other",
+        _ => ""
+    };
+
+    // "Looking at it": claim it, or let it go (only whoever claimed it, unless it's over 2 hours old)
+    public bool Claim(string id, string name, string steamId, bool claim)
+    {
+        lock (_lock)
+        {
+            Ticket? ticket = _tickets.FirstOrDefault(t => t.Id == id);
+            if (ticket == null || ticket.Status != "OPEN")
+                return false;
+            bool stale = ticket.ClaimedAt is { } at && at < DateTimeOffset.UtcNow.AddHours(-2);
+            if (ticket.ClaimedBySteamId.Length > 0 && ticket.ClaimedBySteamId != steamId && !stale)
+                return false;
+            ticket.ClaimedBy = claim ? name : "";
+            ticket.ClaimedBySteamId = claim ? steamId : "";
+            ticket.ClaimedAt = claim ? DateTimeOffset.UtcNow : null;
+            Save();
+            return true;
+        }
+    }
+
+    // A player's other reports (newest first), for the report page
+    public List<Ticket> ReportsAbout(string targetSteamId, string exceptId)
+    {
+        lock (_lock)
+            return _tickets.Where(t => t.Kind == "report" && t.TargetSteamId == targetSteamId && t.Id != exceptId)
+                .OrderByDescending(t => t.Created).Select(Copy).ToList();
     }
 
     public List<Ticket> List(string kind, string filter, string search)
@@ -121,6 +165,25 @@ public sealed class Tickets
             ticket.HandledAt = DateTimeOffset.UtcNow;
             Save();
             return true;
+        }
+    }
+
+    // Answering one report can close the player's other open ones with it (the same answer, noted as such)
+    public int CloseOthers(string targetSteamId, string exceptId, string by, string note)
+    {
+        lock (_lock)
+        {
+            var others = _tickets.Where(t => t.Kind == "report" && t.TargetSteamId == targetSteamId && t.Id != exceptId && t.Status == "OPEN").ToList();
+            foreach (Ticket t in others)
+            {
+                t.Status = "CLOSED";
+                t.HandledBy = by;
+                t.HandledAt = DateTimeOffset.UtcNow;
+                t.Comments.Add(new Comment(by, "", DateTimeOffset.UtcNow, note, false));
+            }
+            if (others.Count > 0)
+                Save();
+            return others.Count;
         }
     }
 

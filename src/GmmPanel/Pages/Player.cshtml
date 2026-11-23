@@ -18,17 +18,20 @@
         else { <span class="avatar huge letter">@((r?.Name ?? "?")[..1].ToUpperInvariant())</span> }
         <div class="profile-who">
             <h1>@(r?.Name ?? "Not seen yet")@(Model.FeatureOn("countries") ? Format.Flag(r?.Country) : null)</h1>
+            @* The SteamID on its own line under the name, as GitHub puts the username *@
+            <div class="profile-id"><span class="mono" title="SteamID64">@Model.SteamId</span><button type="button" class="copy-id shown" data-copy-text="@Model.SteamId" title="@T("Copy SteamID")" aria-label="@T("Copy SteamID")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
             <div class="profile-tags">
                 @if (Model.Online is { } on) { <span class="ind ok">On @on.Server for @Format.Span(DateTimeOffset.UtcNow - on.Since)</span> }
                 else if (r != null) { <span class="ind off">Last seen @Format.Ago(r.LastSeen)</span> }
-                <span class="mono muted" title="SteamID64">@Model.SteamId</span>
             </div>
-            @if (r != null && (r.Names.Count > 1 || r.Servers.Count > 0))
+            @* Where they play: the same server tags as their public profile *@
+            @if (r is { Servers.Count: > 0 })
             {
-                <div class="player-also">
-                    @if (r.Servers.Count > 0) { <span>Plays on @string.Join(", ", r.Servers)</span> }
-                    @if (r.Names.Count > 1) { <span>Also known as @string.Join(", ", r.Names.Skip(1))</span> }
-                </div>
+                <div class="server-tags player-servers">@foreach (string server in r.Servers) { <a class="server-tag" href="/server/@Uri.EscapeDataString(server)">@GmmPanel.Data.ServerNames.Label(server)</a> }</div>
+            }
+            @if (r is { Names.Count: > 1 })
+            {
+                <div class="player-also"><span>Also known as @string.Join(", ", r.Names.Skip(1))</span></div>
             }
             <div class="profile-buttons">
                 <a class="button small" href="https://steamcommunity.com/profiles/@Model.SteamId" target="_blank" rel="noopener noreferrer"><svg class="ic" aria-hidden="true"><use href="#i-steam"/></svg>Steam</a>
@@ -53,7 +56,7 @@
                     </select>
                 </div>
                 <input type="text" name="reason" maxlength="128" placeholder="Reason: what they did" aria-label="Reason" data-field="reason">
-                <button type="submit" class="danger small" data-confirm="@(r?.Name ?? Model.SteamId) (@Model.SteamId)." data-confirm-title="Do it?" data-confirm-yes="Do it" data-confirm-danger="true" data-act-from="pick">Do it</button>
+                <button type="submit" class="danger" data-confirm="@(r?.Name ?? Model.SteamId) (@Model.SteamId)." data-confirm-title="Do it?" data-confirm-yes="Do it" data-confirm-danger="true" data-act-from="pick">Do it</button>
             </form>
         </div>
     }
@@ -118,7 +121,7 @@
                 }
                 <form class="note-form" hx-post="@self?handler=Note" hx-target="#toasts" hx-swap="beforeend">
                     <textarea name="text" rows="2" maxlength="@GmmPanel.Data.PlayerNotes.MaxText" minlength="2" required placeholder="Warned about mic spam, 13 Nov"></textarea>
-                    <button type="submit" class="small">Add note</button>
+                    <button type="submit">Add note</button>
                 </form>
             </section>
 

@@ -41,13 +41,13 @@
     };
 }
 <div class="table-wrap scroll">
-    <table class="data@(board ? " board" : "")">
+    <table class="data@(board ? " board" : " fixed-cols")">
         <thead><tr>
             @foreach (DataColumn column in columns)
             {
-                <th class="@(column.Key == "place" ? "place-col" : "")">@T(column.Label)</th>
+                <th class="@(column.Key == "place" ? "place-col" : "") col-@column.Kind col-key-@column.Key">@T(column.Label)</th>
             }
-            @if (details) { <th><span class="sr">@T("Details")</span></th> }
+            @if (details) { <th class="col-acts"><span class="sr">@T("Details")</span></th> }
         </tr></thead>
         <tbody>
         @foreach (var row in Model.Rows)
@@ -60,19 +60,31 @@
                     switch (column.Kind)
                     {
                         case "steamid":
-                            <td class="steamid">@if (value != null && CommandCatalog.IsSteamId(value)) {<a href="https://steamcommunity.com/profiles/@value" target="_blank" rel="noopener noreferrer">@value</a>} else {@value}</td>
+                            <td class="steamid">@if (value != null && CommandCatalog.IsSteamId(value)) {<a href="https://steamcommunity.com/profiles/@value" target="_blank" rel="noopener noreferrer">@value</a>} else {@value}@if (value != null && CommandCatalog.IsSteamId(value)) {<button type="button" class="copy-id" data-copy-text="@value" title="@T("Copy SteamID")" aria-label="@T("Copy SteamID")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button>}</td>
                             break;
                         case "status":
-                            <td><span class="ind @StatusClass(value)">@(string.IsNullOrEmpty(value) ? "" : T(value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant()))</span></td>
+                            @if (string.IsNullOrEmpty(value)) { <td></td> } else { <td><span class="ind @StatusClass(value)">@T(value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant())</span></td> }
                             break;
                         case "time":
-                            <td class="time">@value</td>
+                            @* As on Moderate (_DataTable): "8 days ago" when the moment is known, else a short date; exact on hover *@
+                            if (long.TryParse(row.GetValueOrDefault(column.Key + ".at"), out long unix))
+                            {
+                                <td class="time" title="@value">@Format.Ago(DateTimeOffset.FromUnixTimeSeconds(unix))</td>
+                            }
+                            else
+                            {
+                                <td class="time" title="@value">@Format.Short(value)</td>
+                            }
+                            break;
+                        case "map":
+                            @* Stats' Maps board: the map's picture beside its name, as in Recent maps *@
+                            <td class="map-cell" title="@value">@if (row.GetValueOrDefault(column.Key + ".pic") is { Length: > 0 } pic) {<img class="map-log-pic" src="@pic" alt="" loading="lazy">} else {<span class="map-log-pic none"><svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg></span>}<b>@value</b></td>
                             break;
                         case "number":
                             <td class="number @(column.Key == "place" ? "place-col" : "")">@value</td>
                             break;
                         default:
-                            <td>@value</td>
+                            <td class="one" title="@value">@value</td>
                             break;
                     }
                 }

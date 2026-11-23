@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using GmmPanel.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ public class IndexModel : PanelPage
     [BindProperty(SupportsGet = true)] public string Result { get; set; } = "";   // "", ok, refused
     [BindProperty(SupportsGet = true)] public int Days { get; set; } = 7;          // 1, 7, 30, 90, 0 = everything
     [BindProperty(SupportsGet = true)] public int P { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string Sort { get; set; } = "";       // A header's order: "key", or "-key" descending; "" newest first
 
     public List<AuditEntry> Entries { get; private set; } = new();
     public int Total { get; private set; }
@@ -35,6 +37,21 @@ public class IndexModel : PanelPage
     {
         List<AuditEntry> all = Filtered();
         all.Reverse();
+        // A header's order (newest first within it); anything unknown keeps newest first
+        Sort = Sort is { Length: <= 12 } sort && Regex.IsMatch(sort, "^-?[a-z]+$") ? sort : "";
+        bool desc = Sort.StartsWith('-');
+        Func<AuditEntry, string>? by = Sort.TrimStart('-') switch
+        {
+            "user" => e => (e.Who ?? "").ToLowerInvariant(),
+            "action" => e => AuditText.Describe(e.What ?? "").Title.ToLowerInvariant(),
+            "server" => e => (e.Server ?? "").ToLowerInvariant(),
+            "result" => e => e.Ok ? "1" : "0",
+            _ => null
+        };
+        if (by != null)
+            all = (desc ? all.OrderByDescending(by) : all.OrderBy(by)).ToList();
+        else if (Sort == "when")
+            all.Reverse();
         Total = all.Count;
         P = Math.Clamp(P, 1, Pages);
         Entries = all.Skip((P - 1) * PageSize).Take(PageSize).ToList();
@@ -56,7 +73,8 @@ public class IndexModel : PanelPage
             .ToList();
     }
 
-    public string PageUrl(int page) => $"/audit?q={Uri.EscapeDataString(Q)}&server={Uri.EscapeDataString(Server)}&result={Result}&days={Days}&p={page}";
+    public string PageUrl(int page, string? sort = null) => $"/audit?q={Uri.EscapeDataString(Q)}&server={Uri.EscapeDataString(Server)}&result={Result}&days={Days}&p={page}" +
+        ((sort ?? Sort) is { Length: > 0 } order ? $"&sort={Uri.EscapeDataString(order)}" : "");
 
     // What the search shows (q, server, result, days), every page of it; format: json or csv
     public IActionResult OnGetExport(string? format)

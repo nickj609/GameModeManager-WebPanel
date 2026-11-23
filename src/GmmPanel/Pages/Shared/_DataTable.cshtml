@@ -23,8 +23,9 @@
     bool tickets = Model.Source?.Id == PanelLists.Id && list?.Id is "appeals" or "reports";
     int pages = data == null ? 1 : Math.Max(1, (data.Total + data.PageSize - 1) / data.PageSize);
 
-    string PageUrl(int page) => $"/moderate?handler=List&server={q}&source={Uri.EscapeDataString(Model.Source?.Id ?? "")}&list={Uri.EscapeDataString(list?.Id ?? "")}" +
-        $"&page={page}&search={Uri.EscapeDataString(Model.Search)}&filter={Uri.EscapeDataString(Model.Filter)}";
+    string PageUrl(int page, string? sort = null) => $"/moderate?handler=List&server={q}&source={Uri.EscapeDataString(Model.Source?.Id ?? "")}&list={Uri.EscapeDataString(list?.Id ?? "")}" +
+        $"&page={page}&search={Uri.EscapeDataString(Model.Search)}&filter={Uri.EscapeDataString(Model.Filter)}" + ((sort ?? Model.Sort) is { Length: > 0 } order ? $"&sort={Uri.EscapeDataString(order)}" : "")
+        + (Model.OnlyServer.Length > 0 ? $"&srv={Uri.EscapeDataString(Model.OnlyServer)}" : "") + (Model.Range.Length > 0 ? $"&range={Model.Range}" : "");
 
     static string StatusClass(string? value) => (value ?? "").ToUpperInvariant() switch
     {
@@ -41,52 +42,90 @@
 }
 else if (data.Rows.Count == 0)
 {
-    <div class="empty">@(Model.Search.Length > 0 ? $"Nothing matches \"{Model.Search}\"." : "Nothing here.")</div>
+    @* An empty list says what isn't there, as common sites do ("No bans") *@
+    <div class="empty">@(Model.Search.Length > 0 ? $"Nothing matches \"{Model.Search}\"." : (list?.Id, Model.Filter) switch
+    {
+        ("bans", "active") => "No active bans.",
+        ("bans", _) => "No bans.",
+        ("mutes", "active") => "No active mutes or gags.",
+        ("mutes", _) => "No mutes or gags.",
+        ("warns", "active") => "No active warnings.",
+        ("warns", _) => "No warnings.",
+        ("appeals", "all") => "No appeals.",
+        ("appeals", _) => "No open appeals.",
+        ("reports", "all") => "No reports.",
+        ("reports", _) => "No open reports.",
+        ("online" or "players", _) => "Nobody's on right now.",
+        ("chat", _) => "No chat yet.",
+        ("seen", _) => "No players yet.",
+        ("admins", _) => "No server admins.",
+        ("groups", _) => "No admin groups.",
+        _ => "Nothing here."
+    })</div>
 }
 else
 {
     <div class="table-wrap scroll">
-        <table class="data">
+        <table class="data fixed-cols">
             <thead><tr>
                 @foreach (DataColumn column in columns)
                 {
-                    <th>@column.Label</th>
+                    @* The panel's own lists sort the whole list from the header: again flips it; times and numbers start newest or biggest first *@
+                    if (column.Sortable)
+                    {
+                        bool now = Model.Sort.TrimStart('-') == column.Key;
+                        bool desc = now && Model.Sort.StartsWith('-');
+                        string next = now ? (desc ? column.Key : "-" + column.Key) : (column.Kind is "time" or "number" ? "-" + column.Key : column.Key);
+                        <th class="col-@column.Kind col-key-@column.Key" aria-sort="@(now ? (desc ? "descending" : "ascending") : null)"><button type="button" class="th-sort @(now ? "on" : "")" hx-get="@PageUrl(1, next)" hx-target="closest [data-list]" hx-swap="innerHTML">@column.Label<svg class="ic" aria-hidden="true"><use href="#i-caret"/></svg></button></th>
+                    }
+                    else
+                    {
+                        <th class="col-@column.Kind col-key-@column.Key">@column.Label</th>
+                    }
                 }
-                @if (rowActions.Count > 0 || tickets) { <th></th> }
+                @if (rowActions.Count > 0 && !tickets) { <th class="col-acts"></th> }
             </tr></thead>
             <tbody>
             @foreach (var row in data.Rows)
             {
-                <tr>
+                @* Appeals and reports: the whole row opens the ticket (panel.js; links inside it keep their own) *@
+                <tr class="@(tickets ? "row-link" : null)" data-href="@(tickets ? $"/tickets/{row.GetValueOrDefault("id")}" : null)">
                     @foreach (DataColumn column in columns)
                     {
                         string? value = row.GetValueOrDefault(column.Key);
-                        if (tickets && column.Key == "text") { <td class="ticket-cell"><a href="/tickets/@row.GetValueOrDefault("id")">@value</a></td> continue; }
+                        if (tickets && column.Key == "text") { string? comments = row.GetValueOrDefault("comments"); <td class="ticket-cell one" title="@value">@if (row.GetValueOrDefault("repeat") is { Length: > 0 } repeat) {<span class="ticket-repeat" title="@F("{0} open reports on them", repeat)">×@repeat</span>}@if (comments is { Length: > 0 } && comments != "0") {<span class="ticket-count" title="@F("{0} comments", comments)"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>@comments</span>}<a href="/tickets/@row.GetValueOrDefault("id")">@value</a></td> continue; }
                         if (fold && column.Key == "name") { ViewData["Country"] = row.GetValueOrDefault("country"); <td><partial name="_Player" model="@((value, row.GetValueOrDefault(steamKey)))" /></td> ViewData.Remove("Country"); continue; }
                         switch (column.Kind)
                         {
                             case "steamid":
-                                <td class="steamid">@if (value != null && CommandCatalog.IsSteamId(value)) {<a href="/players/@value" title="Player history">@value</a>} else {@value}</td>
+                                <td class="steamid">@if (value != null && CommandCatalog.IsSteamId(value)) {<a href="/players/@value" title="Player history">@value</a>} else {@value}@if (value != null && CommandCatalog.IsSteamId(value)) {<button type="button" class="copy-id" data-copy-text="@value" title="@T("Copy SteamID")" aria-label="@T("Copy SteamID")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button>}</td>
                                 break;
                             case "status":
-                                <td><span class="ind @StatusClass(value)">@(value == null ? "" : value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant())</span></td>
+                                @* No status, no dot (Player history's "Now" for someone not on) *@
+                                if (string.IsNullOrEmpty(value)) { <td></td> }
+                                else { <td><span class="ind @StatusClass(value)">@(value[..1].ToUpperInvariant() + value[1..].ToLowerInvariant())</span></td> }
                                 break;
                             case "time":
-                                <td class="time">@value</td>
+                                @* The panel's own rows carry the moment (<key>.at): "8 days ago". A plugin's database time has no
+                                   known time zone, so only shortened. The exact time on hover either way *@
+                                if (long.TryParse(row.GetValueOrDefault(column.Key + ".at"), out long unix))
+                                {
+                                    <td class="time" title="@value">@Format.Ago(DateTimeOffset.FromUnixTimeSeconds(unix))</td>
+                                }
+                                else
+                                {
+                                    <td class="time" title="@value">@Format.Short(value)</td>
+                                }
                                 break;
                             case "number":
                                 <td class="number">@value</td>
                                 break;
                             default:
-                                <td>@value</td>
+                                <td class="one" title="@value">@value</td>
                                 break;
                         }
                     }
-                    @if (tickets)
-                    {
-                        <td class="acts"><a class="button small" href="/tickets/@row.GetValueOrDefault("id")">Open@(row.GetValueOrDefault("comments") is { Length: > 0 } n && n != "0" ? $" · {n}" : "")</a></td>
-                    }
-                    else if (rowActions.Count > 0)
+                    @if (!tickets && rowActions.Count > 0)
                     {
                         string? steamId = row.GetValueOrDefault(steamKey);
                         <td class="acts">
@@ -130,9 +169,16 @@ else
             </tbody>
         </table>
     </div>
+    @* One page: just the count (buttons that can't be used are noise); more: Previous and Next *@
     <div class="pager">
-        <span>@data.Total.ToString("N0") in all · page @data.Page of @pages</span>
-        <button type="button" class="small" @(data.Page > 1 ? "" : "disabled") hx-get="@PageUrl(data.Page - 1)" hx-target="closest [data-list]" hx-swap="innerHTML">Previous</button>
-        <button type="button" class="small" @(data.Page < pages ? "" : "disabled") hx-get="@PageUrl(data.Page + 1)" hx-target="closest [data-list]" hx-swap="innerHTML">Next</button>
+        <span>@data.Total.ToString("N0") in all@(pages > 1 ? $" · page {data.Page} of {pages}" : "")</span>
+        @* The whole list as shown, to keep outside the panel (up to 2,000 rows) *@
+        @{ string exportUrl = PageUrl(1).Replace("handler=List", "handler=Export"); }
+        <span class="list-export">Export <a href="@exportUrl&amp;format=csv" download>CSV</a> <a href="@exportUrl&amp;format=json" download>JSON</a></span>
+        @if (pages > 1)
+        {
+            <button type="button" class="small" @(data.Page > 1 ? "" : "disabled") hx-get="@PageUrl(data.Page - 1)" hx-target="closest [data-list]" hx-swap="innerHTML">Previous</button>
+            <button type="button" class="small" @(data.Page < pages ? "" : "disabled") hx-get="@PageUrl(data.Page + 1)" hx-target="closest [data-list]" hx-swap="innerHTML">Next</button>
+        }
     </div>
 }

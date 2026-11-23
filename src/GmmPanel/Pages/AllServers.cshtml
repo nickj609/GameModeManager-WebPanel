@@ -1,0 +1,84 @@
+@page "/servers"
+@model AllServersModel
+@{
+    ViewData["Title"] = T("All servers");
+}
+@* Every server, as a server browser: the homepage's strip links here when it can't show them all *@
+<div class="page-title">
+    <div class="eyebrow"><a href="/">@T("Servers")</a> &rsaquo; @T("All servers")</div>
+    <h1>@T("All servers")</h1>
+    <p>@F("{0} servers · {1} playing now", Model.All, Model.Playing)</p>
+</div>
+
+@* A plain GET form, like the audit log's: a search can be bookmarked or shared *@
+<form class="audit-export" method="get" action="/servers">
+    <span class="mod-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" name="q" value="@Model.Q" maxlength="64" placeholder="@T("Search servers, modes or maps")" aria-label="@T("Search servers")"></span>
+    <select name="mode" aria-label="@T("Mode")">
+        <option value="">@T("Every mode")</option>
+        @foreach (string mode in Model.Modes) { <option value="@mode" selected="@(Model.Mode == mode)">@mode</option> }
+    </select>
+    <label class="check"><input type="checkbox" name="on" value="true" checked="@Model.On"> @T("With players")</label>
+    @if (Model.Sort.Length > 0) { <input type="hidden" name="sort" value="@Model.Sort"> }
+    <button type="submit" class="primary">@T("Search")</button>
+    @if (Model.Q.Length > 0 || Model.Mode.Length > 0 || Model.On) { <a class="button small" href="/servers">@T("Clear")</a> }
+</form>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="empty">@(Model.All == 0 ? T("No servers yet.") : T("Nothing matches."))</div>
+}
+else
+{
+    <div class="table-wrap scroll">
+        <table class="data fixed-cols servers-table">
+            <thead><tr>
+                @* Every column sorts the whole list: again flips it; Players starts busiest first *@
+                @foreach (var (key, label) in new[] { ("name", "Server"), ("mode", "Mode"), ("map", "Map"), ("players", "Players") })
+                {
+                    bool now = Model.Sort.TrimStart('-') == key || (Model.Sort.Length == 0 && key == "players");
+                    bool desc = now && (Model.Sort.StartsWith('-') || Model.Sort.Length == 0);
+                    string next = now ? (desc ? key : "-" + key) : (key == "players" ? "-players" : key);
+                    <th class="col-key-@key" aria-sort="@(now ? (desc ? "descending" : "ascending") : null)"><a class="th-sort @(now ? "on" : "")" href="@Model.PageUrl(1, next)">@T(label)<svg class="ic" aria-hidden="true"><use href="#i-caret"/></svg></a></th>
+                }
+                <th class="col-acts"><span class="sr">@T("Connect")</span></th>
+            </tr></thead>
+            <tbody>
+            @foreach (ServerView view in Model.Rows)
+            {
+                StatusSnapshot? s = view.Status;
+                int players = view.Online ? s?.Players ?? 0 : 0;
+                int max = s?.MaxPlayers ?? 0;
+                string? address = view.Online ? view.ConnectAddress : null;
+                string? pic = Model.ArtFor(s?.Map.Name);
+                @* The row opens the server's page (panel.js row-link); its links and buttons keep their own job *@
+                <tr class="row-link" data-href="/server/@Uri.EscapeDataString(view.Name)">
+                    <td class="one" title="@Label(view.Name)"><span class="ind @(view.Online ? "ok" : "bad")"></span> <a class="server-name" href="/server/@Uri.EscapeDataString(view.Name)">@Label(view.Name)</a></td>
+                    <td class="one" title="@(s?.Mode.Label)">@(s?.Mode.Label ?? T("No status yet"))</td>
+                    <td class="map-cell" title="@(s?.Map.Label)">@if (s != null) { @if (pic != null) {<img class="map-log-pic" src="@pic" alt="" loading="lazy">} else {<span class="map-log-pic none"><svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg></span>}<span>@s.Map.Label</span> }</td>
+                    <td><span class="players-cell"><span class="players-track"><span class="players-fill" data-fill="@(max > 0 ? Math.Round(players * 100.0 / max) : 0)"></span></span><span class="num">@players / @max</span></span></td>
+                    <td class="acts">
+                        @if (address != null)
+                        {
+                            <button type="button" class="plugin-act" data-copy-text="@address" title="@F("Copy {0}: paste it after connect in the game's console", address)" aria-label="@T("Copy address")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button>
+                            <a class="button small primary" href="steam://connect/@address" title="@F("Opens CS2 and joins {0}", address)">@T("Connect")</a>
+                        }
+                        else
+                        {
+                            <span class="button small primary disabled" title="@T(view.Online ? "The server didn't report its public address" : "The server is offline")">@T("Connect")</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="pager">
+        <span>@F("{0} in all", Model.Total)@(Model.Pages > 1 ? " · " + F("page {0} of {1}", Model.P, Model.Pages) : "")</span>
+        @if (Model.Pages > 1)
+        {
+            @if (Model.P > 1) { <a class="button small" href="@Model.PageUrl(Model.P - 1)">@T("Previous")</a> } else { <span class="button small disabled">@T("Previous")</span> }
+            @if (Model.P < Model.Pages) { <a class="button small" href="@Model.PageUrl(Model.P + 1)">@T("Next")</a> } else { <span class="button small disabled">@T("Next")</span> }
+        }
+    </div>
+}

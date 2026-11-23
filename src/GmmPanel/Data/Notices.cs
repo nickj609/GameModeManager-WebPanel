@@ -64,6 +64,18 @@ public sealed class Notices
         }
     }
 
+    // The bell's "Clear all": their notices go, what they're about stays (new ones still come, Records keeps what was seen)
+    public void Clear(string steamId)
+    {
+        lock (_lock)
+        {
+            if (!_people.TryGetValue(steamId, out Person? p) || p.Items.Count == 0)
+                return;
+            p.Items = new();
+            Save();
+        }
+    }
+
     // From the panel's own commands: a kick it sent (CommandService)
     public void Add(string steamId, string kind, string text, string value, string link)
     {

@@ -88,7 +88,11 @@ In `addons/counterstrikesharp/configs/plugins/GameModeManager/GameModeManager.js
   "Enabled": true,
   "Url": "wss://panel.<your domain>/agent",
   "ServerName": "Production",
-  "SecretsFile": "panel-secrets.json"
+  "SecretsFile": "panel-secrets.json",
+  "Console": true,
+  "PublicAddress": "",
+  "PluginData": true,
+  "Countries": true
 }
 ```
 
@@ -105,7 +109,7 @@ With Cloudflare Access in front of the address (step 1), add the service token t
 > [!CAUTION]
 > **Never put `panel-secrets.json` in git.** Upload it once per server through your host's file manager.
 
-Change map or restart the server: the panel shows it **Online** within a minute. The other `Panel` settings (`Console`, `PublicAddress`) are in GameModeManager's [Configuration](https://github.com/nickj609/GameModeManager/wiki/Configuration#panel-settings).
+Change map or restart the server: the panel shows it **Online** within a minute. What each `Panel` setting does is in GameModeManager's [Configuration](https://github.com/nickj609/GameModeManager/wiki/Configuration#panel-settings).
 
 # Other Ways to Host
 Cloudflare Tunnel is the easiest way to run the panel at home, but it isn't required. The panel runs anywhere that gives it:

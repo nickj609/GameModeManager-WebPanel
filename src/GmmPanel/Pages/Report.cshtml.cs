@@ -50,7 +50,7 @@ public class ReportModel : PanelPage
         return Page();
     }
 
-    public IActionResult OnPost(string? player, string? steamId, string? text)
+    public IActionResult OnPost(string? player, string? steamId, string? reason, string? text)
     {
         if (!Features.On(_store.Current, "reports"))
             return NotFound();
@@ -67,6 +67,8 @@ public class ReportModel : PanelPage
         // Only someone a server has seen (on now, or in the player history): a made-up SteamID never lands with staff
         else if (_history.Player(target) == null && !Reportable.Any(r => r.Players.Any(p => p.SteamId == target)))
             Problem = "That player hasn't been on any of our servers, so there's nothing to report. Pick someone from the list.";
+        else if (!Tickets.Reasons.Contains(reason))
+            Problem = "Choose a reason.";
         else if (text.Length is < 10 or > Tickets.MaxText)
             Problem = $"Say what happened, in 10 to {Tickets.MaxText} characters.";
         if (Problem != null)
@@ -74,14 +76,16 @@ public class ReportModel : PanelPage
 
         string name = _history.Player(target)?.Name
             ?? Reportable.SelectMany(r => r.Players).FirstOrDefault(p => p.SteamId == target).Name ?? "";
-        if (_tickets.Add(new Tickets.Ticket { Kind = "report", Server = server, SteamId = Admin.SteamId, Name = Admin.Name, TargetSteamId = target, TargetName = name, Text = text }) is string refused)
+        // Whether they're on that server right now, kept with the report (the history can't tell afterwards)
+        bool wasOn = Reportable.Any(r => r.Server.Equals(server, StringComparison.OrdinalIgnoreCase) && r.Players.Any(p => p.SteamId == target));
+        if (_tickets.Add(new Tickets.Ticket { Kind = "report", Server = server, SteamId = Admin.SteamId, Name = Admin.Name, TargetSteamId = target, TargetName = name, Text = text, Reason = reason!, TargetWasOn = wasOn }) is string refused)
         {
             Problem = refused;
             return Page();
         }
         _audit.Write(Admin.Audit, $"report sent about {target}", server, true, "");
-        _discord.Ticket("New player report", Admin.Name, Admin.SteamId, text, server, name.Length > 0 ? name : target, target);
-        TempData["Sent"] = "Report sent. Thanks: staff will look at it.";
+        _discord.Ticket("New player report", Admin.Name, Admin.SteamId, text, server, name.Length > 0 ? name : target, target, Tickets.ReasonLabel(reason!));
+        TempData["Sent"] = "Report sent. You'll see staff's answer here.";
         return Redirect("/profile#tickets");
     }
 

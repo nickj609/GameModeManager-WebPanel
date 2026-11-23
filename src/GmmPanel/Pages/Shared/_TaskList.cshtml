@@ -1,7 +1,7 @@
 @model TasksModel
 @* The schedule: what, where, when it runs next, and what happened last time. Pause, resume or delete your own (panel
    admins: any). *@
-<div class="group-title">Scheduled <small>panel time</small></div>
+<div class="group-title">Scheduled</div>
 @if (Model.List.Count == 0)
 {
     <div class="empty">Nothing scheduled. Pick "Every day" or "Every few minutes" above, for a nightly mode change or an announcement.</div>
@@ -19,8 +19,8 @@ else
                     <td>@(kind == null ? job.Kind : GmmPanel.Data.TaskKinds.Describe(kind, job.Fields))<br><small class="muted">by @job.ByName@(job.OnlyWithPlayers ? " · only with players" : "")</small></td>
                     <td>@Model.ServersText(job)</td>
                     <td>@GmmPanel.Data.Jobs.Schedule(job)</td>
-                    <td class="time">@(job.Paused ? "Paused" : job.Next?.ToLocalTime().ToString("d MMM HH:mm") ?? (job.LastRun != null ? "Done" : "Missed"))</td>
-                    <td class="task-last">@(job.LastRun == null && job.LastResult.Length == 0 ? "Not yet" : $"{job.LastRun?.ToLocalTime():d MMM HH:mm} {job.LastResult}")</td>
+                    <td class="time" title="@(job.Next?.ToLocalTime().ToString("d MMM HH:mm"))">@(job.Paused ? "Paused" : job.Next is { } next ? Format.In(next) : "—")</td>
+                    <td class="task-last" title="@(job.LastRun?.ToLocalTime().ToString("d MMM HH:mm"))">@if (job.LastRun == null && job.LastResult.Length == 0) {<span class="muted">Not yet</span>} else { var (css, label) = GmmPanel.Data.TaskRunner.Outcome(job.LastResult); <span class="ind @css" title="@job.LastResult">@label</span>@if (job.LastRun is { } ran) {<span class="muted"> · @Format.Ago(ran)</span>} }</td>
                     <td class="acts">
                         @if (Model.CanChange(job))
                         {
@@ -28,9 +28,9 @@ else
                                 <input type="hidden" name="id" value="@job.Id">
                                 @if (job.Next != null || job.Paused)
                                 {
-                                    <button type="submit" class="small" name="act" value="@(job.Paused ? "resume" : "pause")">@(job.Paused ? "Resume" : "Pause")</button>
+                                    <button type="submit" class="plugin-act" name="act" value="@(job.Paused ? "resume" : "pause")" title="@(job.Paused ? "Resume" : "Pause")" aria-label="@(job.Paused ? "Resume" : "Pause")"><svg class="ic" aria-hidden="true"><use href="#i-@(job.Paused ? "play" : "pause")"/></svg></button>
                                 }
-                                <button type="submit" class="small danger" name="act" value="delete" data-confirm="It won't run again." data-confirm-title="Delete this task?" data-confirm-yes="Delete" data-confirm-danger="true">Delete</button>
+                                <button type="submit" class="plugin-act unload" name="act" value="delete" title="Delete" aria-label="Delete" data-confirm="It won't run again." data-confirm-title="Delete this task?" data-confirm-yes="Delete" data-confirm-danger="true"><svg class="ic" aria-hidden="true"><use href="#i-clear"/></svg></button>
                             </form>
                         }
                     </td>

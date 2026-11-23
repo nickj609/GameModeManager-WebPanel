@@ -7,8 +7,10 @@
 | **Visitors** | Not signed in | The servers, who's on, the graphs, Bans, Stats, Rules and public profiles (each one only if its [feature](https://github.com/nickj609/GameModeManager-WebPanel/wiki/Configuration#features) is on). |
 | **Players** | Signed in through Steam, with no admin flags | Also My profile: their bans, mutes and warnings, and their own appeals and reports. |
 | **VIPs** | `@css/vip` (or only `@css/reservation`) | The same as players, with a VIP tag. These flags are perks, not staff powers. |
-| **Staff** | Any other admin flag on a server | Manage, Moderate and each player's page, limited to what their flags allow on that server. |
+| **Staff** | Any other admin flag on a server | Manage, Moderate and each player's page, limited to what their flags allow on that server. Reports, the chat log, who's on and player history show only the servers they have flags on. |
 | **Panel admins** | Listed under **Site settings → Panel admins** | Everything, on every server, including Site settings and the audit log. |
+
+Anyone who can read a list on Moderate can also export it (CSV or JSON, up to 2,000 rows); each export is in the audit log.
 
 Admin flags come from each server: CounterStrikeSharp's `admins.json` and `admin_groups.json`, and CS2-SimpleAdmin's admins. GameModeManager tells the panel the flags of whoever signs in, and checks them again before it runs anything.
 
@@ -29,7 +31,7 @@ Admin flags come from each server: CounterStrikeSharp's `admins.json` and `admin
 | Chat log | `@css/chat` | Moderate: what players said |
 | Player history | `@css/generic` | Moderate: everyone seen, and each player's page |
 | Ban appeals | `@css/unban` | Moderate: read, accept (unban) and reject appeals |
-| Player reports | `@css/kick` | Moderate: read and close reports |
+| Player reports | `@css/kick` | Moderate: read, claim and close reports, and kick the reported player |
 | Server admins | `@css/generic` | Moderate: CounterStrikeSharp's admins and groups, read only |
 
 # Set by the Server

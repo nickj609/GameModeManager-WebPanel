@@ -124,6 +124,7 @@ public sealed class DataColumn
     public string Key { get; set; } = "";
     public string Label { get; set; } = "";
     public string Kind { get; set; } = "text";        // text, steamid, time, status (an .ind word), number
+    public bool Sortable { get; set; }                // The panel's own lists: the header sorts the whole list (PanelLists)
 }
 
 public sealed class FollowUp
@@ -235,6 +236,7 @@ public sealed class ActionInfo : NamedItem
 public sealed class ModeInfo : NamedItem
 {
     public List<string> Maps { get; set; } = new();   // Map names in this mode's map groups
+    public string? DefaultMap { get; set; }           // The map a change to this mode goes to; null from older agents
 }
 
 public sealed class SettingInfo : NamedItem

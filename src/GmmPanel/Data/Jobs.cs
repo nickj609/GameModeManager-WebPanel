@@ -284,6 +284,19 @@ public sealed class TaskRunner
         ? job.Servers
         : _store.Current.Servers.Where(s => user.CanUse(s.Name)).Select(s => s.Name).ToList();
 
+    // A last run as a status, as job dashboards show it: Done (every server), "1 of 2 done" (some skipped or failed),
+    // Failed (none), Missed (the panel wasn't running); Summary's full text goes on hover
+    public static (string Css, string Label) Outcome(string result)
+    {
+        if (result.StartsWith("Missed"))
+            return ("bad", "Missed");
+        var m = System.Text.RegularExpressions.Regex.Match(result, @"^(\d+) of (\d+) done");
+        if (!m.Success)
+            return ("off", result);
+        int ok = int.Parse(m.Groups[1].Value), all = int.Parse(m.Groups[2].Value);
+        return ok == all ? ("ok", "Done") : ok == 0 ? ("bad", "Failed") : ("warn", $"{ok} of {all} done");
+    }
+
     public static string Summary(List<ServerResult> results)
     {
         int ok = results.Count(r => r.Ok && !r.Skipped), skipped = results.Count(r => r.Skipped);

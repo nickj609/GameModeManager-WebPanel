@@ -18,11 +18,12 @@ The panel answers:
 | --- | --- | --- |
 | 101 | Accepted | Send `hello` within 10 seconds |
 | 401 | Unknown or missing server token | Log once and retry slowly (the token is wrong; retrying fast won't help) |
-| 409 | This server already has a live link | Retry with backoff; the old link times out within 75 s |
 | 429 | Too many connects from this address (12 a minute) | Back off |
 
 Cloudflare closes idle WebSockets after about 100 seconds. Both sides ping every 30 s; the panel drops a link that
-hasn't answered for 75 s. Reconnect with backoff: 1 s, doubling to 60 s, with jitter.
+hasn't answered for 75 s. Reconnect with backoff: 1 s, doubling to 60 s, with jitter. A server that connects again while the
+panel still holds its old link (a network cut with no close) replaces that link; a reconnect within 60 s keeps its
+"online for" running.
 
 ## Messages
 
@@ -65,7 +66,7 @@ Fields: `kind`, `settings` (the changed settings' names), `canReplay`, `canEndRo
 | `nextMap` | As players see it, or null |
 | `voteInProgress` | A GameModeManager or GG1MapChooser vote |
 | `votes` | `{ canStart, unavailable }`: whether an admin can start a vote now, and why not |
-| `modes` | `[{ name, displayName, maps: [map names] }]` |
+| `modes` | `[{ name, displayName, maps: [map names], defaultMap }]`. `defaultMap` is the map a change to the mode goes to (its `DefaultMap`), or null; Discord posts show its picture for a mode change |
 | `maps` | `[{ name, displayName }]` |
 | `settings` | `[{ name, displayName, state: On / Off / Mixed / Unknown, applies: now / round / restart / map, cheats, group }]`. `cheats`: turning it on leaves sv_cheats on; `group`: the cfg's `// group:` (its menu page), "" for none |
 | `valueSettings` | `[{ name, displayName, value (or null), choices: [labels], cheatChoices: [labels], applies, group }]` |

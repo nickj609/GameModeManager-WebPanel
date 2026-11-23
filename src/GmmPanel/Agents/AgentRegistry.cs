@@ -54,13 +54,29 @@ public sealed class ServerView
         get { lock (_lock) return _events.ToList(); }
     }
 
+    // A link that comes back within a minute (the network cut it; GameModeManager reconnects in about a second) or replaces
+    // a link still up is the same session: "online for" keeps counting from when it first came up
+    private static readonly TimeSpan SameSession = TimeSpan.FromSeconds(60);
+    private DateTimeOffset? _lastOnlineSince;
+
     public void SetConnection(AgentConnection? connection)
     {
         lock (_lock)
         {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            if (connection == null)
+            {
+                _lastOnlineSince = OnlineSince ?? _lastOnlineSince;
+                OnlineSince = null;
+                OfflineSince = now;
+            }
+            else
+            {
+                bool same = Connection != null || OfflineSince is { } off && now - off <= SameSession;
+                OnlineSince = same ? OnlineSince ?? _lastOnlineSince ?? now : now;
+                OfflineSince = null;
+            }
             Connection = connection;
-            OfflineSince = connection == null ? DateTimeOffset.UtcNow : null;
-            OnlineSince = connection == null ? null : DateTimeOffset.UtcNow;
             Revision++;
         }
     }
@@ -117,25 +133,29 @@ public sealed class AgentRegistry
     public IEnumerable<ServerView> All() => _servers.Values;
 
     // A server takes its place only when no live link holds it
-    public bool TryClaim(string name, AgentConnection connection)
+    // A server's new link takes over. The link it replaces, if the panel still thought one was up (the network dropped it
+    // without telling the panel), is returned to be closed. Only the server's own token gets here.
+    public AgentConnection? Claim(string name, AgentConnection connection)
     {
         ServerView view = Get(name);
         lock (view)
         {
-            if (view.Connection != null)
-                return false;
+            AgentConnection? stale = view.Connection;
             view.SetConnection(connection);
-            return true;
+            return stale;
         }
     }
 
-    public void Release(string name, AgentConnection connection)
+    // True when this link was still the server's: a link already replaced by a newer one leaves the server online
+    public bool Release(string name, AgentConnection connection)
     {
         ServerView view = Get(name);
         lock (view)
         {
-            if (view.Connection == connection)
-                view.SetConnection(null);
+            if (view.Connection != connection)
+                return false;
+            view.SetConnection(null);
+            return true;
         }
     }
 }

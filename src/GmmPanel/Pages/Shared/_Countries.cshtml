@@ -37,3 +37,12 @@
         <div class="countries-credit"><a href="https://db-ip.com" target="_blank" rel="noopener noreferrer">IP geolocation by DB-IP</a></div>
     </section>
 }
+else
+{
+    @* Too few players yet: the section keeps its place with one line (a country shows once History.MinPerCountry players
+       from it have played, so nobody stands out) *@
+    <section class="countries">
+        <div class="group-title">@T("Player countries")</div>
+        <p class="note">@F("Shows once {0} players from one country have played.", GmmPanel.Data.History.MinPerCountry)</p>
+    </section>
+}

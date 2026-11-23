@@ -150,6 +150,24 @@ public sealed class History : IDisposable
         return list.Take(count).ToList();
     }
 
+    // Stats' Maps board: every map in the servers' recent map logs (the newest ~200 plays each, and the ones playing now),
+    // with its time played, how many times, its busiest moment and when it last ran
+    public sealed record MapTotal(string Map, string Label, long Seconds, int Plays, int Peak, DateTimeOffset Last);
+
+    public List<MapTotal> MapTotals()
+    {
+        var plays = new List<MapPlay>();
+        IEnumerable<string> servers;
+        lock (_lock)
+            servers = (Directory.Exists(_root) ? Directory.GetDirectories(_root).Select(d => Path.GetFileName(d)) : Array.Empty<string>()).ToList();
+        foreach (string server in servers)
+            plays.AddRange(RecentMaps(server, KeepMaps * 2));
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        return plays.GroupBy(p => p.Map, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new MapTotal(g.Key, g.First().Label, (long)g.Sum(p => ((p.End ?? now) - p.Start).TotalSeconds), g.Count(), g.Max(p => p.Peak), g.Max(p => p.End ?? now)))
+            .ToList();
+    }
+
     public void OnOffline(string server)
     {
         lock (_lock)
@@ -293,46 +311,101 @@ public sealed class History : IDisposable
             return _players.Values.Select(Copy).ToList();
     }
 
-    public (List<PlayerRecord> Rows, int Total) Players(string search, int page, int pageSize)
+    // allow: the servers the viewer may see (null: all); a player shows when seen on one of them
+    public (List<PlayerRecord> Rows, int Total) Players(string search, int page, int pageSize, Func<string, bool>? allow = null, string sort = "", string onlyServer = "")
     {
         lock (_lock)
         {
             IEnumerable<PlayerRecord> rows = _players.Values;
+            if (allow != null)
+                rows = rows.Where(p => p.Servers.Any(allow));
             if (search.Length > 0)
                 rows = rows.Where(p => p.SteamId == search || p.Names.Any(n => n.Contains(search, StringComparison.OrdinalIgnoreCase)));
-            var list = rows.OrderByDescending(p => p.LastSeen).ToList();
+            // Moderate's server picker: people seen on that one
+            if (onlyServer.Length > 0)
+                rows = rows.Where(p => p.Servers.Contains(onlyServer, StringComparer.OrdinalIgnoreCase));
+            // Last seen first, unless a header asked for another order ("-key" = descending; Player history's headers)
+            bool desc = sort.StartsWith('-');
+            var list = sort.TrimStart('-') switch
+            {
+                "name" => (desc ? rows.OrderByDescending(p => p.Name, StringComparer.OrdinalIgnoreCase) : rows.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)).ToList(),
+                "first" => (desc ? rows.OrderByDescending(p => p.FirstSeen) : rows.OrderBy(p => p.FirstSeen)).ToList(),
+                "played" => (desc ? rows.OrderByDescending(p => Seconds(p)) : rows.OrderBy(p => Seconds(p))).ToList(),
+                "last" when !desc => rows.OrderBy(p => p.LastSeen).ToList(),
+                _ => rows.OrderByDescending(p => p.LastSeen).ToList()
+            };
             return (list.Skip((page - 1) * pageSize).Take(pageSize).Select(Copy).ToList(), list.Count);
         }
     }
 
-    // The chat log, newest first: one server or all, a SteamID or a text search
-    public (List<ChatLine> Rows, int Total) Chat(string? server, string? steamId, string search, int page, int pageSize)
+    // The chat log, newest first: one server or all, a SteamID or a text search. Read a day at a time from the newest
+    // (one file per server per day): once the page is full, the older days are only counted, by their lines (kept per
+    // file until it changes), not read line by line, so a page stays quick however much chat the servers keep. A search
+    // or a SteamID still reads every day, as only the lines can say what matches.
+    private readonly Dictionary<string, (long Length, DateTime Written, int Lines)> _chatCounts = new();
+
+    public (List<ChatLine> Rows, int Total) Chat(string? server, string? steamId, string search, int page, int pageSize, Func<string, bool>? allow = null, DateTimeOffset? since = null)
     {
         var found = new List<ChatLine>();
+        int total = 0, needed = page * pageSize;
+        bool everyLine = steamId != null || search.Length > 0;
         lock (_lock)
         {
             IEnumerable<string> servers = server != null ? new[] { server } : Directory.Exists(_root) ? Directory.GetDirectories(_root).Select(d => Path.GetFileName(d)) : Array.Empty<string>();
-            foreach (string name in servers)
+            if (allow != null)
+                servers = servers.Where(allow);
+            // Every server's day files, grouped by day, newest day first (the file's name is its UTC date)
+            var days = servers.SelectMany(name => Directory.Exists(Path.Combine(ServerDir(name), "chat"))
+                    ? Directory.GetFiles(Path.Combine(ServerDir(name), "chat"), "*.jsonl").Select(file => (Server: name, File: file, Day: Path.GetFileNameWithoutExtension(file)))
+                    : Enumerable.Empty<(string Server, string File, string Day)>())
+                .GroupBy(f => f.Day).OrderByDescending(g => g.Key, StringComparer.Ordinal);
+            string? firstDay = since?.UtcDateTime.ToString("yyyy-MM-dd");
+            foreach (var day in days)
             {
-                string dir = Path.Combine(ServerDir(name), "chat");
-                if (!Directory.Exists(dir))
+                // A time range skips the days before it; its first day is read line by line (part of it is in range)
+                if (firstDay != null && string.CompareOrdinal(day.Key, firstDay) < 0)
+                    break;
+                bool whole = firstDay == null || string.CompareOrdinal(day.Key, firstDay) > 0;
+                if (!everyLine && whole && found.Count >= needed)
+                {
+                    total += day.Sum(f => LineCount(f.File));
                     continue;
-                foreach (string file in Directory.GetFiles(dir, "*.jsonl").OrderByDescending(f => f))
+                }
+                // A day is kept whole when the page still needs lines: its file runs oldest first, so stopping part way would
+                // keep the day's oldest lines, not its newest
+                bool keep = everyLine || found.Count < needed;
+                foreach (var (name, file, _) in day)
                     foreach (string text in File.ReadLines(file))
                     {
                         ChatLine? line;
                         try { line = JsonSerializer.Deserialize<ChatLine>(text, Json); }
                         catch (JsonException) { continue; }
-                        if (line == null || (steamId != null && line.SteamId != steamId))
+                        if (line == null || (steamId != null && line.SteamId != steamId) || (since != null && line.At < since))
                             continue;
                         if (search.Length > 0 && !line.Text.Contains(search, StringComparison.OrdinalIgnoreCase) && !line.Name.Contains(search, StringComparison.OrdinalIgnoreCase) && line.SteamId != search)
                             continue;
-                        found.Add(line with { Server = name });
+                        total++;
+                        if (keep)
+                            found.Add(line with { Server = name });
                     }
             }
         }
         found = found.OrderByDescending(l => l.At).ToList();
-        return (found.Skip((page - 1) * pageSize).Take(pageSize).ToList(), found.Count);
+        return (found.Skip((page - 1) * pageSize).Take(pageSize).ToList(), total);
+    }
+
+    // A chat file's lines, counted once until it changes (today's file grows; older days don't). Called under _lock.
+    private int LineCount(string file)
+    {
+        var info = new FileInfo(file);
+        if (_chatCounts.TryGetValue(file, out var known) && known.Length == info.Length && known.Written == info.LastWriteTimeUtc)
+            return known.Lines;
+        int lines = 0;
+        foreach (string text in File.ReadLines(file))
+            if (text.Length > 0)
+                lines++;
+        _chatCounts[file] = (info.Length, info.LastWriteTimeUtc, lines);
+        return lines;
     }
 
     // ---------- Inside ----------

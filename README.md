@@ -11,8 +11,8 @@ Tired of joining the server just to change the map?
 The GameModeManager Panel gives your community a home page and your staff the in-game admin menus in a browser:
 
 - **Everything the in-game menus do:** change the map or mode now or next, start votes, turn settings on and off, run actions, pause, replay rounds, warmup and rotation, with the same questions and warnings as in game.
-- **A home page for your community:** every server with its map, players and a Connect button, the last 24 hours of players, where your players come from, leaderboards, bans, rules and each player's public profile.
-- **Moderation with [CS2-SimpleAdmin](https://github.com/daffyyyy/CS2-SimpleAdmin):** bans, mutes, gags and warnings, the chat log, player history, staff notes, and ban appeals and player reports with replies.
+- **A home page for your community:** every server with its map, players and a Connect button, and a searchable list of all of them for big communities. Each server's player graphs, recent maps and countries, leaderboards for players and maps, bans, rules and each player's public profile.
+- **Moderation with [CS2-SimpleAdmin](https://github.com/daffyyyy/CS2-SimpleAdmin):** bans, mutes, gags and warnings, the chat log, player history and staff notes. Player reports have a reason, the reported player's chat and other reports, and a claim so two staff don't answer the same one. Lists sort, filter by server and time, and export to CSV or JSON.
 - **Steam sign-in and your own admin flags:** staff get exactly what their flags give them in game, on each server. Panel admins get everything.
 - **No open ports and no RCON over the internet:** GameModeManager connects *out* to the panel, so it works on hosts that only give you game ports, and with a Cloudflare Tunnel your home network opens no ports either.
 - **Your look:** your name, logo, colours, links and backgrounds, and each person can pick their own theme. Dark and light, desktop and phone, in 13 languages.
@@ -25,12 +25,12 @@ Please drop a ⭐ star in the repository
 | Manage a server | Moderate |
 | :-: | :-: |
 | ![Manage page](docs/images/manage.png) | ![Moderate page](docs/images/moderate.png) |
-| Maps, modes, settings, rounds, actions, warmup, rotation and MatchZy, on the server picked in the header. Admins also get the server's console, hostname and plugins. | CS2-SimpleAdmin's bans, mutes and warnings, who's on, the chat log, player history, and ban appeals and reports. |
+| Maps, modes, settings, rounds, actions, warmup, rotation and MatchZy, on the server picked in the header. Admins also get the server's console, hostname and plugins. | CS2-SimpleAdmin's bans, mutes and warnings, who's on, the chat log, player history, and ban appeals and reports, sortable and exportable. |
 
 | A player | Stats |
 | :-: | :-: |
 | ![Player page](docs/images/player.png) | ![Stats page](docs/images/stats.png) |
-| Everything about one player for staff: their numbers, staff notes, sanctions, appeals and reports, and recent chat, with ban, mute, gag and warn in one place. | Leaderboards for everyone: most played, this week and newest players, with their countries. |
+| Everything about one player for staff: their numbers, staff notes, sanctions, appeals and reports, and recent chat, with ban, mute, gag and warn in one place. | Leaderboards for everyone: most played, this week and newest players, and the maps played most. |
 
 ![Site settings](docs/images/site-settings.png)
 
@@ -39,7 +39,7 @@ Please drop a ⭐ star in the repository
 The pictures in this README come from the panel's demo servers, so the players and numbers are made up.
 
 ## Requirements
-- [GameModeManager](https://github.com/nickj609/GameModeManager) **2.4.0 or newer** on each game server
+- [GameModeManager](https://github.com/nickj609/GameModeManager) **2.4.0 or newer** on each game server (2.4.1 for a mode's map picture in Discord posts)
 - A domain for its https address: [Cloudflare](https://www.cloudflare.com/)'s free plan is the easiest, but [any https setup works](https://github.com/nickj609/GameModeManager-WebPanel/wiki/Installation#other-ways-to-host)
 - Somewhere that's always on: Windows (x64), a Raspberry Pi 4 or 5 with a 64-bit OS, or a server or Docker host
 - Optional: [CS2-SimpleAdmin](https://github.com/daffyyyy/CS2-SimpleAdmin) for bans, mutes and warnings, and [MatchZy](https://github.com/shobhit-pathak/MatchZy) for match controls

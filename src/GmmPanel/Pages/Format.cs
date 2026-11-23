@@ -15,7 +15,42 @@ public static class Format
         if (age < TimeSpan.FromMinutes(1)) return F("{0} s ago", (int)age.TotalSeconds);
         if (age < TimeSpan.FromHours(1)) return F("{0} min ago", (int)age.TotalMinutes);
         if (age < TimeSpan.FromDays(1)) return F("{0} h ago", (int)age.TotalHours);
+        if (age < TimeSpan.FromDays(2)) return T("yesterday");
+        if (age < TimeSpan.FromDays(30)) return F("{0} days ago", (int)age.TotalDays);
         return Date(at.Value, seconds: false);
+    }
+
+    // How long until: "in 5 min", "in 3 h", "tomorrow", "in 4 days" (a task's next run)
+    public static string In(DateTimeOffset at)
+    {
+        TimeSpan wait = at - DateTimeOffset.UtcNow;
+        if (wait < TimeSpan.FromMinutes(1)) return T("under a minute");
+        if (wait < TimeSpan.FromHours(1)) return F("in {0} min", (int)Math.Ceiling(wait.TotalMinutes));
+        if (wait < TimeSpan.FromDays(1)) return F("in {0} h", (int)wait.TotalHours);
+        if (wait < TimeSpan.FromDays(2)) return T("tomorrow");
+        return F("in {0} days", (int)wait.TotalDays);
+    }
+
+    // A time from a plugin's own database ("yyyy-MM-dd HH:mm", in a time zone the panel can't know, so never "ago"):
+    // short, as "Nov 13, 18:38" in the page's language, with the year when it isn't this year. Anything else as it came.
+    public static string Short(string? value)
+    {
+        if (!DateTime.TryParseExact(value, new[] { "yyyy-MM-dd HH:mm", "yyyy-MM-dd HH:mm:ss" }, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out DateTime at))
+            return value ?? "";
+        // The panel runs in invariant-globalization mode (no culture data), so the day's order is written out per language,
+        // like Lang.Date; only English gets a month name
+        bool thisYear = at.Year == DateTime.Now.Year;
+        string day = Current switch
+        {
+            "de" or "pl" or "ru" or "uk" or "lv" or "tr" => thisYear ? "dd.MM." : "dd.MM.yyyy",
+            "fr" or "es" or "pt-BR" => thisYear ? "dd/MM" : "dd/MM/yyyy",
+            "nl" => thisYear ? "dd-MM" : "dd-MM-yyyy",
+            "hu" => thisYear ? "MM. dd." : "yyyy. MM. dd.",
+            "zh-Hans" => thisYear ? "MM/dd" : "yyyy/MM/dd",
+            _ => thisYear ? "MMM d" : "MMM d yyyy"
+        };
+        return at.ToString(day + ", HH:mm", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     // A date and time: yyyy-MM-dd HH:mm:ss in English, else in the language's own short format

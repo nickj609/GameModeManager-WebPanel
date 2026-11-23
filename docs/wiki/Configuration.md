@@ -86,8 +86,9 @@ Paste a channel's webhook address (channel settings, Integrations, Webhooks) and
 - Optionally, everything staff do through the panel.
 
 Posts use your site name, accent colour and logo (PNG, JPEG or WebP; Discord can't show an SVG). A map change shows the
-map's picture, and a server's posts have **Connect** and **View server** buttons. CS2-SimpleAdmin posts its own bans and
-mutes with its own webhook settings.
+map's picture, a mode change the picture of the map it goes to (GameModeManager 2.4.1 or newer), and a server's posts have
+**Connect** and **View server** buttons. Posts go out 2 seconds apart, and wait when Discord asks the panel to slow down.
+CS2-SimpleAdmin posts its own bans and mutes with its own webhook settings.
 
 > [!NOTE]
 > Pictures, the logo and the buttons need the panel's public address. The panel learns it when a panel admin opens it

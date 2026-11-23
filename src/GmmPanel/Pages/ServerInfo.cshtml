@@ -14,6 +14,46 @@
     string? address = view.Online ? view.ConnectAddress : null;
     var roster = view.Online ? s?.Roster ?? new() : new();
     string? art = s == null ? null : Model.ArtFor(s.Map.Name);
+    bool known = Model.Maps.Count > 0 || Model.Week.Count > 1;
+    // Player counts and recent maps: the panel's own history, so shown even before the server reports again. The graphs go
+    // on the right; the recent maps under Who's on, so the two columns are about as long
+    void Graphs()
+    {
+            <section>
+                <div class="group-title">@T("Last 24 hours") <small>@F("peak {0}", peakDay)</small></div>
+                @if (day.Count > 1) { @Graph.Players(day, now.AddHours(-24), now, 600, 100, "graph", F("Players over the last 24 hours, peak {0}", peakDay)) }
+                else { <div class="empty">@T("Not enough history yet: the panel samples every 5 minutes.")</div> }
+                <div class="group-title">@T("Last 7 days") <small>@F("peak {0}", peakWeek)</small></div>
+                @if (Model.Week.Count > 1) { @Graph.Players(Model.Week, now.AddDays(-7), now, 600, 100, "graph", F("Players over the last 7 days, peak {0}", peakWeek)) }
+                else { <div class="empty">@T("Not enough history yet.")</div> }
+            </section>
+    }
+    void RecentMaps()
+    {
+                @* The last maps played: the current one first, then how long each ran and its busiest moment *@
+                <div class="group-title">@T("Recent maps")</div>
+                @if (Model.Maps.Count == 0)
+                {
+                    <div class="empty">@T("The panel notes each map change from now on.")</div>
+                }
+                else
+                {
+                    <div class="map-log">
+                        @foreach (var play in Model.Maps)
+                        {
+                            string? pic = Model.ArtFor(play.Map);
+                            <div class="map-log-row">
+                                @* No picture: the crosshair on the accent, as the server card shows it *@
+                                @if (pic != null) { <img class="map-log-pic" src="@pic" alt="" loading="lazy"> } else { <span class="map-log-pic none"><svg class="ic" aria-hidden="true"><use href="#i-logo-cross"/></svg></span> }
+                                <span class="map-log-name"><b>@play.Label</b> <small>@play.Mode</small></span>
+                                <span class="map-log-when">@(play.End == null ? T("Now") : Format.Ago(play.Start))</span>
+                                <span class="map-log-len">@(((play.End ?? now) - play.Start).TotalMinutes < 1 ? "<1 min" : Format.Span((play.End ?? now) - play.Start))</span>
+                                <span class="map-log-peak" title="@T("Most players at once")">@F("peak {0}", play.Peak)</span>
+                            </div>
+                        }
+                    </div>
+                }
+    }
 }
 <div class="eyebrow crumbs"><a href="/">@T("Servers")</a> &rsaquo; @T("Server")</div>
 
@@ -37,6 +77,8 @@
         @if (address != null)
         {
             <a class="button primary" href="steam://connect/@address" title="@F("Opens CS2 and joins {0}", address)"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>@T("Connect")</a>
+            @* The address to paste into the console (steam:// links do nothing without Steam, on a phone say) *@
+            <button type="button" class="button copy-address" data-copy-text="@address" title="@F("Copy {0}: paste it after connect in the game's console", address)" aria-label="@T("Copy address")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button>
         }
         else
         {
@@ -53,6 +95,10 @@
 @if (s == null)
 {
     <p class="note">@T("This server hasn't reported in since the panel started.")</p>
+    @if (known)
+    {
+        <div class="spot-grid history-only">@{ Graphs(); }<section>@{ RecentMaps(); }</section></div>
+    }
 }
 else
 {
@@ -66,7 +112,8 @@ else
             else
             {
                 bool board = roster.Any(p => p.Score != 0 || p.Ping != 0 || p.Kills != 0);
-                if (board) { <div class="live-head"><span></span><span class="live-name">@T("Player")</span><span class="live-stat">K / D</span><span class="live-stat score">@T("Score")</span><span class="live-stat ping">@T("Ping")</span><span class="team"></span></div> }
+                @* Headings over their columns, one style for all (the picture's column has none; Team names the CT/T column) *@
+                if (board) { <div class="live-head"><span class="live-pic"></span><span class="live-name">@T("Player")</span><span class="live-stat">K / D</span><span class="live-stat score">@T("Score")</span><span class="live-stat ping">@T("Ping")</span><span class="team">@T("Team")</span></div> }
                 <div class="live-list">
                 @foreach (RosterEntry p in roster.OrderBy(p => p.Team).ThenByDescending(p => p.Score).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
                 {
@@ -81,37 +128,9 @@ else
                 }
                 </div>
             }
+            @{ RecentMaps(); }
         </section>
-        <section>
-            <div class="group-title">@T("Last 24 hours") <small>@F("peak {0}", peakDay)</small></div>
-            @if (day.Count > 1) { @Graph.Players(day, now.AddHours(-24), now, 600, 100, "graph", F("Players over the last 24 hours, peak {0}", peakDay)) }
-            else { <div class="empty">@T("Not enough history yet: the panel samples every 5 minutes.")</div> }
-            <div class="group-title">@T("Last 7 days") <small>@F("peak {0}", peakWeek)</small></div>
-            @if (Model.Week.Count > 1) { @Graph.Players(Model.Week, now.AddDays(-7), now, 600, 100, "graph", F("Players over the last 7 days, peak {0}", peakWeek)) }
-            else { <div class="empty">@T("Not enough history yet.")</div> }
-            @* The last maps played: the current one first, then how long each ran and its busiest moment *@
-            <div class="group-title">@T("Recent maps")</div>
-            @if (Model.Maps.Count == 0)
-            {
-                <div class="empty">@T("The panel notes each map change from now on.")</div>
-            }
-            else
-            {
-                <div class="map-log">
-                    @foreach (var play in Model.Maps)
-                    {
-                        string? pic = Model.ArtFor(play.Map);
-                        <div class="map-log-row">
-                            @if (pic != null) { <img class="map-log-pic" src="@pic" alt="" loading="lazy"> } else { <span class="map-log-pic none"></span> }
-                            <span class="map-log-name"><b>@play.Label</b> <small>@play.Mode</small></span>
-                            <span class="map-log-when">@(play.End == null ? T("Now") : Format.Ago(play.Start))</span>
-                            <span class="map-log-len">@Format.Span((play.End ?? now) - play.Start)</span>
-                            <span class="map-log-peak" title="@T("Most players at once")">@F("peak {0}", play.Peak)</span>
-                        </div>
-                    }
-                </div>
-            }
-        </section>
+        @{ Graphs(); }
     </div>
     @if (Model.Countries is { } countries) { <partial name="_Countries" model="countries" /> }
 }

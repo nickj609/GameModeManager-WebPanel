@@ -66,8 +66,8 @@
 	--button: #3a3a41;
 	--button-hover: #4b4b53;
 	--button-text: #fff;
-	--danger: color-mix(in srgb, var(--accent) 38%, #101012);
-	--danger-text: #ffe3df;
+	--danger: color-mix(in srgb, var(--bad) 24%, #101012);   /* Risky buttons: red, as on every common site (the accent is for main actions) */
+	--danger-text: #ffb4ad;
 	--knob: #d8d8dc;            /* A switch's knob while off (white when on, in both themes) */
 	--chip: rgb(14 14 16 / 0.78);   /* The round background button over the backdrop */
 	--chip-on: rgb(30 30 34 / 0.9);
@@ -131,8 +131,8 @@
 	--button: #dedee4;
 	--button-hover: #cfcfd7;
 	--button-text: #1e1e22;
-	--danger: color-mix(in srgb, var(--accent) 24%, #fff);
-	--danger-text: color-mix(in srgb, var(--accent) 66%, black);
+	--danger: color-mix(in srgb, var(--bad) 13%, #fff);
+	--danger-text: var(--bad-text);
 	--knob: #fff;
 	--chip: rgb(252 252 253 / 0.85);
 	--chip-on: rgb(255 255 255 / 0.95);
@@ -180,6 +180,9 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 		radial-gradient(ellipse 40% 40% at 6% 4%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 75%),
 		var(--bg-base);
 }
+/* With pictures, what's behind the picture is dark: a page's first frame can draw before the picture is decoded, and a
+   dark frame reads as the scene's edges, where the lit room would flash */
+.bg.has-scenes { background: #0b0a09; }
 :root[data-theme="light"] .bg {
 	--bg-glow: color-mix(in srgb, var(--accent) 60%, transparent);
 	--bg-base: color-mix(in srgb, var(--accent) 20%, #4f4740);
@@ -242,7 +245,8 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 .foot-brand > .ic { width: 16px; height: 16px; flex: none; color: var(--accent); }
 .foot-brand b { font-family: var(--font-title); font-size: 17px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--title); }
 .foot-brand small, .foot-brand > span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
-.foot-brand small { padding-left: 10px; border-left: 1px solid var(--line); }
+/* Down 2px so its words sit on the logo's line (a line of 13px text keeps room under it for descenders the caps logo has none of) */
+.foot-brand small { padding-left: 10px; padding-top: 4px; border-left: 1px solid var(--line); }
 .foot-icons { display: flex; align-items: center; gap: 4px; }
 .foot-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 6px; color: var(--soft); transition: background 0.15s, filter 0.15s; }
 .foot-icon .ic { width: 19px; height: 19px; }
@@ -322,7 +326,7 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 /* Wider on big screens: 1180 px up to about a 1400 px window, then it grows with the window to 1880 px */
 .frame {
 	position: relative;
-	max-width: clamp(1180px, 84vw, 1880px);
+	max-width: var(--page-w, clamp(1180px, 84vw, 1600px));
 	margin: 0 auto;
 	background: linear-gradient(180deg, var(--glass-top), var(--glass-low));
 	-webkit-backdrop-filter: blur(var(--blur)) saturate(1.1);
@@ -337,10 +341,14 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 .frame::after { right: 0; }
 .frame-body { padding: 24px 30px; }
 
-.title-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+.title-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .page-title { margin: 0 0 16px; }
 .title-row .page-title { margin: 0; }
-.page-title .eyebrow { font-size: 12px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; }
+/* Every page's label above its title, a trail (SERVERS › MANAGE GAME) or one word (RULES): capitals in the accent, as in the
+   game's menus; a trail's links in the same colour, brighter on hover */
+.eyebrow { font-size: 12px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; }
+.eyebrow a { color: inherit; text-decoration: none; }
+.eyebrow a:hover { color: var(--title); }
 .page-title h1 { margin: 2px 0 0; font-family: var(--font-title); font-size: 34px; font-weight: 700; letter-spacing: 1px; color: var(--title); }
 .page-title p { margin: 6px 0 0; color: var(--warm); }
 
@@ -371,7 +379,7 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 .found .ic { width: 18px; height: 18px; }
 .found.ok { color: var(--soft); }
 .found.ok .ic { color: var(--ok); }
-.cheats { color: var(--warn-text); }
+.row .label .cheats-flag { width: 15px; height: 15px; margin-left: 6px; vertical-align: -2px; color: var(--warn); }   /* After a setting that turns on sv_cheats */
 
 /* Status strip */
 .status {
@@ -412,7 +420,8 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 }
 .rail-item .ic { width: 22px; height: 22px; color: var(--icon); }
 .rail-item span { flex: 1; }
-.rail-item u { text-decoration: none; color: var(--muted); font-size: 22px; }
+/* Section menus switch the section in place, so no arrow (an arrow means another page; GitHub's and Discord's settings sidebars have none) */
+.rail-item u { display: none; }
 .rail-item:hover { background: var(--row); }
 .rail-item.on { background: rgb(var(--ink) / 0.071); }
 .rail-item.on::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 2px; background: var(--accent); }
@@ -431,7 +440,7 @@ code { font-family: var(--font-mono); font-size: 0.88em; color: var(--warm); }
 .pane-head .crumb { font-size: 13px; color: var(--muted); }
 .pane-head h2 { margin: 2px 0 0; font-family: var(--font-title); font-size: 26px; font-weight: 700; letter-spacing: 0.5px; color: var(--title); }
 .group-title { font-size: 12px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; font-weight: 600; margin: 16px 0 6px; }
-.danger-zone { margin-top: 18px; padding-top: 4px; border-top: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); }
+.danger-zone { margin-top: 18px; padding-top: 4px; border-top: 1px solid color-mix(in srgb, var(--bad) 30%, transparent); }
 .foot { color: var(--muted); font-size: 13px; margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 
 /* Menu rows: a slightly lighter strip, and an accent bar on the left of the row under the mouse */
@@ -482,14 +491,14 @@ button, .button {
 }
 button:hover, .button:hover { background: var(--button-hover); text-decoration: none; }
 /* A faint top highlight, so grey buttons stand off the glass without an outline */
-button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button):not(.head-link),
+button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button):not(.head-link):not(.th-sort):not(.menu-signout),
 a.button:not(.primary):not(.danger) { box-shadow: inset 0 1px 0 rgb(var(--ink) / 0.102), 0 1px 2px rgb(0 0 0 / calc(0.4 * var(--shadow))); }
 button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 button.primary { background: var(--accent); color: #fff; }
 button.primary:hover { background: var(--accent-hover); }
-/* Risky ones: dark red, brighter under the mouse; they always ask first */
+/* Risky ones: a red tint, solid red under the mouse; they always ask first */
 button.danger { background: var(--danger); color: var(--danger-text); }
-button.danger:hover { background: var(--admin); color: #fff; }
+button.danger:hover { background: var(--bad); color: #fff; }
 button.small { padding: 6px 11px; font-size: 13px; }
 button.quiet { background: transparent; color: var(--soft); padding: 8px 6px; text-transform: none; letter-spacing: 0.3px; font-size: 14px; }
 button.quiet:hover { background: transparent; color: var(--bright); }
@@ -575,6 +584,26 @@ td.time { color: var(--muted); white-space: nowrap; }
 .con-form { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); font-family: var(--font-mono); }
 .con-form input { flex: 1; font-family: var(--font-mono); font-size: 14px; background: transparent; border: 0; padding: 6px 0; }
 .con-form input:focus-visible { outline: none; }
+/* The console as a card: a header with the server and its tools, timed commands, the input as a field */
+.console { border: 1px solid rgb(255 255 255 / 0.1); }
+.con-head { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 14px; background: rgb(255 255 255 / 0.03); border-bottom: 1px solid var(--line); }
+.con-title { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--title); }
+.con-title .ic { width: 16px; height: 16px; color: var(--accent); }
+.con-server { font-size: 12px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.con-tools { margin-left: auto; display: flex; gap: 4px; flex: none; }
+.con-tool { width: 28px; height: 28px; min-height: 0; padding: 0; justify-content: center; background: none !important; box-shadow: none !important; color: var(--muted); }
+.con-tool .ic { width: 16px; height: 16px; margin: 0; }
+.con-tool:hover { color: var(--accent); }
+.con-tool.con-clear:hover { color: var(--bad); }
+.con-time { display: inline-block; width: 6ch; color: var(--off); font-size: 12px; }
+.con-out { margin-left: 6ch; }
+.con-form { border-top-color: var(--line); }
+.con-field { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; margin: 0; padding: 6px 10px; border: 1px solid rgb(255 255 255 / 0.12); border-radius: 6px; background: rgb(255 255 255 / 0.04); text-transform: none; letter-spacing: 0; }
+.con-field:focus-within { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+.con-key { flex: none; font-family: var(--font); font-size: 11px; color: var(--off); border: 1px solid rgb(255 255 255 / 0.16); border-radius: 4px; padding: 0 5px; line-height: 18px; }
+@media (max-width: 640px) { .con-key { display: none; } .con-out { margin-left: 0; } }
+.con-tool:disabled, .con-tool.con-clear:disabled:hover { opacity: 0.4; cursor: default; color: var(--muted); }
+.sr-copy { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* ---------- Choice dialog, like GameModeManager's in-game questions ---------- */
 .dlg {
@@ -763,7 +792,8 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 
 @media (prefers-reduced-motion: reduce) {
 	* { transition: none !important; }
-	.toast { animation: none; }
+	/* Toasts still leave (panel.js removes one when toast-out ends), by fading instead of sliding */
+	@keyframes toast-out { to { opacity: 0; visibility: hidden; } }
 }
 
 /* Backdrop dimming, from the Appearance page */
@@ -893,6 +923,18 @@ button.danger-solid:hover { background: color-mix(in srgb, var(--bad) 85%, #fff)
 .row input[type="text"] { flex: 1 1 220px; }
 .ver { margin-left: 6px; color: var(--muted); font-size: 13px; font-weight: 600; }
 .plugin-row { min-height: 56px; }
+/* Reload / Unload / Load as bare icons in a fixed column (every row's right edge lines up); accent, or red for Unload, on hover */
+.plugin-acts { flex: none; width: 68px; display: flex; justify-content: flex-end; gap: 4px; }
+.plugin-acts form { display: inline; }
+.plugin-act { width: 30px; height: 30px; min-height: 0; padding: 0; justify-content: center; background: none !important; box-shadow: none !important; border: 0; color: var(--muted); }
+.plugin-act .ic { width: 17px; height: 17px; margin: 0; }
+.plugin-act:hover { color: var(--accent); }
+.plugin-act.unload:hover { color: var(--bad); }
+.plugin-act:disabled { opacity: 0.4; cursor: default; color: var(--muted); }
+.plugin-site { margin-left: 6px; color: var(--muted); vertical-align: -2px; }
+.plugin-site:hover { color: var(--accent); }
+.row .label .plugin-site .ic { width: 15px; height: 15px; color: inherit; }
+.plugin-state { margin-left: 10px; font-size: 13px; vertical-align: 1px; }
 
 /* ---------- Moderation ---------- */
 .mod-tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
@@ -1273,6 +1315,8 @@ img.logo-img { max-height: 40px; max-width: 220px; object-fit: contain; display:
 .logo-svg .accent { fill: var(--accent); }
 .logo-svg .accent-stroke { stroke: var(--accent); }
 .foot-logo-svg svg { height: 20px; max-width: 160px; }
+/* The footer's logo in the bright text colour, like the footer's name (.foot-brand > span greys the small text only) */
+.foot-brand > .logo-svg { color: var(--title); }
 .favicon-now { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; display: block; }
 .site-form .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 14px; }
@@ -1483,13 +1527,15 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 	border-radius: var(--radius); background: var(--notify); border: 1px solid rgb(var(--ink) / 0.102);
 	box-shadow: 0 16px 40px rgb(0 0 0 / calc(0.784 * var(--shadow))); z-index: 9; }
 /* Notifications stand out from the themed page like the toasts: solid charcoal (the other menus follow the theme) */
-.bell-head { padding: 4px 6px 8px; font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--accent-text); font-weight: 600; }
+.bell-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 6px 8px; font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--accent-text); font-weight: 600; }
 .bell-list .notice { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
 .bell-list .notice .ic { width: 16px; height: 16px; }
 .bell-list .notice.warn { border-left-color: var(--warn); }
 .bell-list .notice.warn .ic { color: var(--warn); }
 .bell-empty { padding: 10px 8px; color: var(--muted); font-size: 13px; }
-@media (max-width: 560px) { .bell-list { position: fixed; top: var(--top-height); right: 8px; left: 8px; width: auto; } }
+.bell-clear { min-height: 0; padding: 0; background: none !important; box-shadow: none !important; border: 0; font-size: 12px; letter-spacing: 0; text-transform: none; font-weight: 500; color: var(--muted); }
+.bell-clear:hover { color: var(--accent-text); }
+@media (max-width: 560px) { .bell-list { position: fixed; right: 8px; left: 8px; width: auto; } }
 
 /* The bar's two groups: the community's links and search, then a faint divider, then you (account, bell) */
 .site-top details.account, .site-top .sign-in { position: relative; margin-left: 2px; padding-left: 14px; }   /* 20px from the bell to the divider */
@@ -1539,8 +1585,20 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 .dlg-head .ind::before { background: currentColor; box-shadow: none; }
 .ticket-dlg .comment-foot small { color: var(--muted); }
 .data td.ticket-cell { max-width: 280px; }
+/* One line per row: long text ends in "..." (the whole of it on hover, title) */
+.data td.one { max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.data td.ticket-cell.one { max-width: 360px; }
+.ticket-count { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; color: var(--muted); font-size: 12px; vertical-align: -1px; }
+.ticket-count .ic { width: 14px; height: 14px; }
+/* Statuses in a list: the dot keeps its colour, handled ones (unbanned, expired, answered) go grey */
+.data .ind { font-weight: 500; }
+.data .ind.ok, .data .ind.off { color: var(--muted); }
+/* Appeals and reports: the whole row opens it */
+.data tr.row-link { cursor: pointer; }
+.data tr.row-link:hover td { background: rgb(var(--ink) / 0.04); }
 .data td.ticket-cell a { color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none; }
 .data td.ticket-cell a:hover { color: var(--title); text-decoration: underline; }
+.data td.ticket-cell.one a { display: inline; }   /* One line now, not the two-line clamp */
 
 /* Phones: a list's row buttons stay in view at the right while the table scrolls under them */
 @media (max-width: 700px) {
@@ -1556,7 +1614,7 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 .embed-code { margin: 0; padding: 8px 10px; border-radius: 4px; background: var(--code); border: 1px solid rgb(var(--ink) / 0.071); color: var(--code-text); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
 
 /* ---------- Dashboard: staff heads-up, the player's strip, the call-to-action card ---------- */
-.attention { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin: -2px 0 14px; border-radius: var(--radius);
+.attention { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin: 0 0 16px; border-radius: var(--radius);
 	background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); color: var(--text); font-size: 14px; }
 .attention .ic { width: 18px; height: 18px; flex: 0 0 auto; color: var(--warn); }
 .attention-items { display: flex; flex-wrap: wrap; gap: 4px 18px; }
@@ -1579,7 +1637,7 @@ body.widget-body { margin: 0; padding: 8px; background: transparent; min-height:
 .c-card.cta > .ic { position: absolute; top: 12px; right: 14px; width: 26px; height: 26px; color: var(--accent-text); opacity: 0.85; }
 
 /* The dashboard's numbers: plain text (no bubble), the parts split by thin bars */
-.stats-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; margin: -2px 0 16px; color: var(--soft); font-size: 14px; }
+.stats-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; margin: 0 0 16px; color: var(--soft); font-size: 14px; }
 .stats-line .ic { width: 18px; height: 18px; flex: 0 0 auto; color: var(--icon); margin-right: 10px; }
 .stats-line > span + span::before { content: ""; display: inline-block; width: 1px; height: 13px; margin: 0 12px; vertical-align: -2px; background: var(--line); background: rgb(var(--ink) / 0.2); }
 
@@ -1663,12 +1721,22 @@ a.live-name { color: inherit; text-decoration: none; } a.live-name:hover { color
 
 /* ---------- Light mode: the parts that sit on a picture or keep their own dark face, and the coloured words ---------- */
 
-/* Over a map picture or the console: always dark, so their words stay light */
+/* Over a map picture or the dark console: always dark, so their words stay light */
 .console, .card-art { --ink: 255 255 255; --text: #ececec; --title: #f4f4f4; --muted: #9a9a9e; --soft: #c8c8cc; --line: rgb(255 255 255 / 0.08); --off: #6f6f74; }
 .console { color-scheme: dark; }
-:root[data-theme="light"] .console { background: #17171a; }
+/* The console in light mode: white, with dark words */
+:root[data-theme="light"] .console { color-scheme: light; background: #fff; border-color: rgb(0 0 0 / 0.12);
+	--ink: 0 0 0; --text: #1e1e22; --title: #111114; --muted: #5f5f67; --soft: #3d3d44; --line: rgb(0 0 0 / 0.09); --off: #8d8d94; }
+:root[data-theme="light"] .con-head { background: rgb(0 0 0 / 0.03); }
+:root[data-theme="light"] .con-cmd { color: var(--title); }
+:root[data-theme="light"] .con-out { color: #3d3d44; }
+:root[data-theme="light"] .con-err { color: var(--bad-text); }
+:root[data-theme="light"] .con-prompt { color: var(--accent-text); }
+:root[data-theme="light"] .con-field { border-color: rgb(0 0 0 / 0.14); background: rgb(0 0 0 / 0.02); }
+:root[data-theme="light"] .con-field:focus-within { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+:root[data-theme="light"] .con-key { border-color: rgb(0 0 0 / 0.16); }
 /* Grey buttons: a soft shadow instead of the dark look's top highlight */
-:root[data-theme="light"] button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button):not(.head-link),
+:root[data-theme="light"] button:not(.primary):not(.danger):not(.quiet):not(.switch):not(.rail-item):not(.dlg-choice):not(.bg-option):not(.bg-button):not(.row-button):not(.head-link):not(.th-sort):not(.menu-signout),
 :root[data-theme="light"] a.button:not(.primary):not(.danger),
 :root[data-theme="light"] button.danger { box-shadow: 0 1px 2px rgb(0 0 0 / 0.16), inset 0 0 0 1px rgb(0 0 0 / 0.08); }
 :root[data-theme="light"] .switch:not(.on)::after { box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); }
@@ -1821,19 +1889,18 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 .details-links [hidden] { display: none; }
 /* A leaderboard's place: only as wide as its numbers (1 or 1,000), so the player sits right beside it */
 .data th.place-col, .data td.place-col { width: 1%; white-space: nowrap; padding-right: 6px; text-align: right; color: var(--muted); }
-/* Big screens (1440p and up at 100% scaling): the page and its pop-ups a step larger (the header and footer half as much), so the text reads from a desk's distance. The
-   backdrop stays as it is; the panel's width is in px here (zoom scales it), so it ends where it did before */
-@media (min-width: 1800px) {
-	.shell, .dlg, #toasts { zoom: 1.1; }
-	.shell .dlg { zoom: 1; }   /* A pop-up drawn inside the page is already scaled with it */
-	.site-top, .site-foot, .drawer { zoom: 1.05; }
-	.frame:not(.narrow) { max-width: 1600px; }
+/* Big screens, as GitHub and Discord do them: no enlarging the page by itself (that made it outgrow the header and
+   squeezed big text into a narrow column). The page widens to 1600 px, and the header's and footer's contents line up
+   with its edges (their backgrounds stay full width), so all three read as one column. One gentle step for everything
+   together on very wide screens (4K at 100%), so the proportions never drift apart. */
+:root { --page-w: clamp(1180px, 84vw, 1600px); }
+.frame:not(.narrow) { max-width: var(--page-w); }
+@media (min-width: 1300px) {
+	.site-top, .site-foot { padding-left: max(28px, calc((100% - var(--page-w)) / 2)); padding-right: max(28px, calc((100% - var(--page-w)) / 2)); }
 }
-@media (min-width: 2400px) {
-	.shell, .dlg, #toasts { zoom: 1.2; }
+@media (min-width: 2200px) {
+	.shell, .site-top, .site-foot, .drawer, .dlg, #toasts { zoom: 1.06; }
 	.shell .dlg { zoom: 1; }   /* A pop-up drawn inside the page is already scaled with it */
-	.site-top, .site-foot, .drawer { zoom: 1.1; }
-	.frame:not(.narrow) { max-width: 1560px; }
 }
 /* A field the chosen action doesn't use (panel.js actLabels) */
 [data-field][hidden] { display: none !important; }
@@ -1849,6 +1916,8 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 .nav-menu-list { top: calc(100% + 7px); }
 /* The bell's list opens and looks like the other header menus (toasts keep the notification colour) */
 .bell-list { top: calc(100% + (var(--top-height) - 34px) / 2 + 6px); background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.12); box-shadow: 0 12px 32px rgb(0 0 0 / calc(0.45 * var(--shadow))); }
+/* Phones: a full-width card 8px under the header, where the toasts appear */
+@media (max-width: 560px) { .bell-list { top: calc(var(--top-height) + 8px); } }
 /* Search in the middle of the screen, over the blurred page (a "command palette", as GitHub and Discord do) */
 .search-dlg { position: fixed; inset: 14vh 0 auto; margin: 0 auto; width: min(620px, calc(100vw - 24px)); padding: 0; border-radius: var(--radius);
 	background: var(--menu-card); border: 1px solid rgb(var(--ink) / 0.14); box-shadow: 0 24px 60px rgb(0 0 0 / calc(0.6 * var(--shadow))); color: var(--text); overflow: hidden; }
@@ -1874,3 +1943,171 @@ h1 img.flag { width: 30px; height: 22px; margin-left: 12px; vertical-align: 3px;
 button.head-link { padding: 0; letter-spacing: 0; background: transparent; }   /* An icon in the header, like the bell: no button bubble */
 button.head-link:hover, button.head-link:focus-visible { background: rgb(var(--ink) / 0.063); }
 .search-open .ic { width: 20px; height: 20px; }
+
+/* "Skip to content": hidden until the first Tab, then a card at the top left */
+.skip-link { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 14px; border-radius: 4px; background: var(--menu-card); color: var(--title); border: 1px solid var(--line); font-weight: 600; }
+.skip-link:focus { top: 12px; }
+main:focus { outline: none; }
+/* Copy beside a SteamID: a bare icon, shown on the row's hover or focus (always on touch screens) */
+.copy-id { width: 24px; height: 24px; min-height: 0; padding: 0; margin-left: 4px; vertical-align: middle; justify-content: center; background: none !important; box-shadow: none !important; border: 0; color: var(--muted); opacity: 0; }
+.copy-id .ic { width: 14px; height: 14px; margin: 0; }
+.data tr:hover .copy-id, .copy-id:focus-visible { opacity: 1; }
+.copy-id:hover { color: var(--accent); }
+@media (hover: none) { .copy-id { opacity: 1; } }
+.copy-id.shown { opacity: 1; }   /* The player page: always there */
+/* A sortable header: the header's own look as a bare button; the caret shows the order (down = descending), faint on hover */
+.th-sort { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.th-sort .ic { width: 10px; height: 10px; opacity: 0; transition: opacity 0.15s; }
+.th-sort:hover .ic { opacity: 0.5; }
+.th-sort.on .ic { opacity: 1; }
+th[aria-sort="ascending"] .th-sort .ic { transform: rotate(180deg); }
+/* The sorted column keeps the headers' colour (its caret shows the order); hover brightens any header */
+.th-sort:hover { color: var(--title); background: none; }
+.th-sort.on { background: none; }
+.th-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+/* The staff player page: the SteamID on its own line under the name */
+.profile-id { display: flex; align-items: center; gap: 2px; margin: -2px 0 8px; color: var(--muted); font-size: 13px; }
+/* Manage: the offline banner sits 20px under the server card, like the other major blocks */
+.info-banner + .banner, .info-banner + .note { margin-top: 20px; }
+/* Tasks: one form, not a box per group of fields (the boxes are the settings rows' look elsewhere) */
+.task-form .site-grid { background: none; padding: 0; }
+.task-form .site-grid + .site-grid { margin-top: 16px; }
+/* File pickers: the browser's own control as a panel field (dashed: something can be dropped on it) with a panel button;
+   the accent while a file is dragged over it (panel.js) */
+input[type="file"] { display: block; width: 100%; box-sizing: border-box; padding: 6px; border: 1px dashed var(--field-line); border-radius: 4px; background: var(--field); color: var(--muted); font: 500 13px var(--font); text-transform: none; letter-spacing: 0; cursor: pointer; transition: border-color 0.15s; }
+input[type="file"]:hover, input[type="file"].drop { border-color: var(--accent); }
+input[type="file"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="file"]::file-selector-button { margin-right: 10px; padding: 6px 11px; border: 0; border-radius: 4px; background: var(--button); color: var(--button-text); font: 600 12px var(--font); letter-spacing: 1px; text-transform: uppercase; cursor: pointer; }
+input[type="file"]:hover::file-selector-button { background: var(--button-hover); }
+.player-servers { margin: 0 0 10px; }
+.player-servers .server-tag { padding: 4px 10px; font-size: 13px; }
+/* A server that hasn't reported since the panel started: only its history, the full width */
+.spot-grid.history-only { grid-template-columns: minmax(0, 1fr); }
+/* The dashboard's offline count: a status in the facts line, in its weight and colour (only the dot is red) */
+.stats-offline .ind { font-size: 14px; font-weight: 500; color: var(--soft); gap: 6px; }
+/* Spacing, measured across the pages (2026-11-21): every page card ends 24px under its last block (the frame's own
+   padding; a last block's margin added to it), the title sits 16px above what follows, and a new section on a page
+   (Tasks' Scheduled) starts 24px down */
+/* Not a pop-up (<dialog>): the browser centres those with auto margins, and a 0 bottom margin dropped them to the bottom */
+#main > :last-child:not(dialog), #main > :only-child > :last-child:not(dialog), #main > :only-child > :last-child > :last-child:not(dialog) { margin-bottom: 0; }
+.page-title + .group-title { margin-top: 0; }
+#jobs > .group-title:first-child { margin-top: 24px; }   /* Tasks: Scheduled is its own section under the form */
+.note + .spot-grid { margin-top: 16px; }
+/* Lists: placeholder rows until the first page arrives, and a dimmed list while the next one loads */
+.list-skeleton { display: grid; gap: 8px; padding: 8px 0; }
+.skel-row { height: 34px; border-radius: 4px; background: linear-gradient(90deg, rgb(var(--ink) / 0.05) 0%, rgb(var(--ink) / 0.1) 50%, rgb(var(--ink) / 0.05) 100%); background-size: 200% 100%; animation: skel 1.4s ease-in-out infinite; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-row { animation: none; } }
+[data-list].list-busy { opacity: 0.55; transition: opacity 0.15s; pointer-events: none; }
+/* A report's page: who's looking at it, their chat before it was sent, their other reports */
+.claim-row { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; }
+.chat-before { max-height: 320px; overflow-y: auto; }
+.other-reports { display: grid; gap: 6px; }
+.other-report { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 4px; background: var(--row); color: var(--text); text-decoration: none; }
+.other-report:hover { background: rgb(var(--ink) / 0.08); }
+.other-report .ind { font-size: 13px; font-weight: 500; }
+.other-report .other-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.other-report .time { color: var(--muted); font-size: 12px; }
+.ticket-repeat { display: inline-block; margin-right: 8px; padding: 0 6px; border-radius: 4px; background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--title); font-size: 12px; font-weight: 600; }
+/* Audit log: the user's name as a plain link; the result in words, red when it failed */
+.audit-user a { color: inherit; text-decoration: none; }
+.audit-user a:hover b { color: var(--title); text-decoration: underline; }
+.restore-form { margin-top: 16px; }
+.restore-form .site-grid { grid-template-columns: minmax(0, 1fr) auto; }
+.restore-form .site-grid > button { justify-self: start; }
+.audit-user { white-space: nowrap; }
+.audit-result { white-space: nowrap; color: var(--soft); }
+.audit-result.failed { color: var(--bad-text); font-weight: 600; }
+
+/* Columns that stay put: sorting or paging a list doesn't resize them (as GitHub's tables), so the short columns (times,
+   statuses, numbers, servers, the row's actions) have set widths and the text columns share the rest; a cell's long text
+   ends in "..." (its title has all of it). Phones scroll the table sideways instead of squeezing it. */
+table.fixed-cols { table-layout: fixed; width: 100%; min-width: 760px; }
+.fixed-cols th.col-time { width: 105px; }
+.fixed-cols th.col-status { width: 100px; }
+.fixed-cols th.col-number { width: 90px; }
+.fixed-cols th.col-steamid { width: 175px; }
+.fixed-cols th.col-acts { width: 100px; }
+.fixed-cols th.col-key-name { width: 18%; }
+.fixed-cols th.col-key-server, .fixed-cols th.col-key-where, .fixed-cols th.col-key-from, .fixed-cols th.col-key-admin,
+.fixed-cols th.col-key-by, .fixed-cols th.col-key-team, .fixed-cols th.col-key-length { width: 11%; }
+.fixed-cols td:not(.acts) { overflow: hidden; text-overflow: ellipsis; }
+/* The audit log: When, User, Server and Result set; Action takes the rest */
+.audit-table th.col-key-when { width: 110px; }
+.audit-table th.col-key-user { width: 160px; }
+.audit-table th.col-key-server { width: 130px; }
+.audit-table th.col-key-result { width: 100px; }
+
+/* The account menu's Sign out: a menu item like the others above it, in red */
+.menu-signout { justify-content: flex-start; width: 100%; border: 0; cursor: pointer; font-family: var(--font); text-transform: none; letter-spacing: 0; color: var(--bad-text); box-shadow: none; }
+.menu-signout .ic { color: var(--bad-text); }
+.menu-signout:hover { background: var(--row-on); color: var(--bad-text); }
+.menu-signout:hover::before { background: var(--bad); }
+
+/* Setup's steps: the current one named, the others as numbered dots (their names on hover and for screen readers) */
+.steps li:not(.on) { flex: none; padding: 8px; }
+.steps li:not(.on) .step-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.steps .step-label { font-weight: 600; white-space: nowrap; }
+.steps li.on .step-label { font-size: 13px; }
+/* A section that opens with a group heading starts 12px under its title, like the others */
+.pane-head + .group-title { margin-top: 12px; }
+/* Who's on: every heading in the same quiet style (Score's white bold is for the numbers), each over its column */
+.live-head .live-stat, .live-head .live-stat.score, .live-head .live-stat.ping { color: var(--muted); font-weight: 600; font-size: 11px; }
+.live-head .live-pic { width: 28px; flex: 0 0 auto; }
+.live-head .team, .live-row .team { width: 34px; flex: 0 0 auto; text-align: right; }
+/* A recent map without a picture: the crosshair on the accent, as the server card shows it */
+.map-log-pic.none { display: inline-flex; align-items: center; justify-content: center; }
+.map-log-pic.none .ic { width: 14px; height: 14px; color: #fff; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35)); }   /* White, as on the server card */
+.live-head .team { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: var(--muted); }
+/* The phone menu's Sign out: red like the account menu's */
+.drawer-foot button.signout { color: var(--bad-text); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.drawer-foot button.signout .ic { color: var(--bad-text); }
+.drawer-foot button.signout:hover { color: #fff; background: var(--bad); }
+.drawer-foot button.signout:hover .ic { color: #fff; }
+/* Copy address: a square button beside Connect, the same height */
+.copy-address { padding-left: 0; padding-right: 0; width: 40px; justify-content: center; }
+.copy-address .ic { margin: 0; width: 16px; height: 16px; }
+
+/* A list's export links, beside its count */
+.list-export { margin-left: 12px; color: var(--muted); font-size: 12px; }
+.list-export a { margin-left: 6px; font-weight: 600; letter-spacing: 0.5px; }
+
+/* Stats' Maps board: the picture and name side by side */
+.data td.map-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.data td.map-cell .map-log-pic { vertical-align: middle; margin-right: 10px; }
+.data td.map-cell b { vertical-align: middle; color: var(--title); }
+/* All servers: name, mode, map, players and the row's Connect; the players as a bar and a count */
+.servers-table th.col-key-name { width: 26%; }
+.servers-table th.col-key-mode { width: 16%; }
+.servers-table th.col-key-players { width: 170px; }
+.servers-table th.col-acts { width: 140px; }
+.servers-table .server-name { color: var(--title); font-weight: 600; letter-spacing: 0.5px; text-decoration: none; }
+.servers-table .server-name:hover { text-decoration: underline; }
+.servers-table td.acts { text-align: right; white-space: nowrap; }
+.servers-table td.acts .button { margin-left: 4px; }
+.players-cell { display: flex; align-items: center; gap: 8px; }
+.players-track { flex: 1; max-width: 80px; height: 4px; border-radius: 2px; background: rgb(var(--ink) / 0.12); overflow: hidden; }
+.players-fill { display: block; height: 100%; width: 0; background: var(--accent); }
+.players-cell .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The strip's All servers tab: a tab like the server tabs, its icon in the accent where they have a status dot */
+a.chip-server.chip-all { text-decoration: none; color: inherit; }
+.chip-all .chip-top .ic { width: 14px; height: 14px; flex: none; color: var(--accent); }
+/* The homepage card's quick look: Who's on across the width, and a link to the server's page for its history */
+.spot-grid.spot-glance { grid-template-columns: minmax(0, 1fr); }
+/* Pinned past the arrows, behind a divider: in view however the tabs scroll, and plainly not one of the servers */
+.carousel > .chip-all { flex: 0 0 190px; margin-left: 0; position: relative; order: 9; line-height: normal; }   /* A link, but the tabs are buttons: their line height, so it is exactly as tall and the strip still meets the card */   /* After both arrows */
+/* The divider midway between the arrows and the label (room on both sides; the strip's bottom line runs on unbroken under it), and
+   always shown: the server tabs hide their own dividers on hover, this one stays */
+.carousel > a.chip-all.chip-server::before, .carousel > a.chip-all.chip-server:hover::before { content: ""; position: absolute; left: 20px; top: 12px; bottom: 12px; width: 1px; background: var(--line); opacity: 1; }   /* Midway between the › and the label (measured) */
+.carousel > a.chip-all.chip-server { padding-left: 24px; }
+/* All servers reads as a link, not a server: one line centred in the tab's height, the name white and the icon in the
+   accent; under the mouse all of it turns to the accent (no tab background) */
+.carousel > .chip-all { justify-content: center; }
+.carousel > a.chip-all.chip-server .chip-top b { color: var(--title); transition: color 0.15s; }
+.carousel > a.chip-all.chip-server:hover { background: transparent; }
+.carousel > a.chip-all.chip-server:hover .chip-top b, .carousel > a.chip-all.chip-server:hover .ic { color: var(--accent-text); }
+/* The icon one shade in both states (only the name changes on hover); the label centred in its space */
+.carousel > a.chip-all.chip-server .ic, .carousel > a.chip-all.chip-server:hover .ic { color: var(--accent-text); }
+.carousel > a.chip-all.chip-server .chip-top { justify-content: center; }
+.carousel > a.chip-all.chip-server .chip-top b { flex: none; }
+.carousel > a.chip-all.chip-server .chip-top .ic { width: 18px; height: 18px; }   /* A touch bigger than the tabs' status dots: it labels the link */

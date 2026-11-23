@@ -11,10 +11,10 @@
     "voteInProgress": false,
     "votes": { "canStart": true, "unavailable": null },
     "modes": [
-      { "name": "Casual", "displayName": "Casual", "maps": [ "de_dust2", "de_mirage", "de_inferno" ] },
-      { "name": "Competitive", "displayName": "Competitive", "maps": [ "de_dust2", "de_mirage", "de_inferno", "de_nuke" ] },
-      { "name": "Deathmatch", "displayName": "Deathmatch", "maps": [ "de_dust2", "aim_map" ] },
-      { "name": "BattleBall", "displayName": "Battle Ball", "maps": [ "battleball" ] }
+      { "name": "Casual", "displayName": "Casual", "maps": [ "de_dust2", "de_mirage", "de_inferno" ], "defaultMap": "de_dust2" },
+      { "name": "Competitive", "displayName": "Competitive", "maps": [ "de_dust2", "de_mirage", "de_inferno", "de_nuke" ], "defaultMap": "de_mirage" },
+      { "name": "Deathmatch", "displayName": "Deathmatch", "maps": [ "de_dust2", "aim_map" ], "defaultMap": "aim_map" },
+      { "name": "BattleBall", "displayName": "Battle Ball", "maps": [ "battleball" ], "defaultMap": "battleball" }
     ],
     "maps": [
       { "name": "de_dust2", "displayName": "de_dust2" },

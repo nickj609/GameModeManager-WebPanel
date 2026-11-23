@@ -22,7 +22,7 @@
 <form class="mod-tools" hx-get="@Model.Path?handler=List" hx-target="#public-list" hx-swap="innerHTML" hx-trigger="input delay:450ms, submit">
     <input type="hidden" name="show" value="@Model.Current.Id">
     <span class="mod-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
-        <input type="search" name="q" value="@Model.Search" maxlength="64" placeholder="@T("Name or SteamID64")" aria-label="@T("Search")"></span>
+        <input type="search" name="q" value="@Model.Search" maxlength="64" placeholder="@(Model.Current.Id == "maps" ? T("Map name") : T("Name or SteamID64"))" aria-label="@T("Search")"></span>
 </form>
 <div id="public-list">
     <partial name="_PublicTable" model="Model" />
