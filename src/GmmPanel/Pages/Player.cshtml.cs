@@ -74,10 +74,16 @@ public class PlayerModel : PanelPage
         PlayedThisWeek = Record == null ? 0 : _history.WeekSeconds(Record);
         Avatar = await _steam.AvatarAsync(SteamId);
         Notes = _notes.For(SteamId);
+        // Their appeals (a ban counts on every server), and reports and chat only from servers where the viewer has that flag
         if (access.Has(PanelPermissions.Need("appeals")) || access.Has(PanelPermissions.Need("reports")))
-            About = _tickets.By(SteamId);
+        {
+            Func<string, bool>? reportsFrom = await ServersWithAsync(PanelPermissions.Need("reports"));
+            About = _tickets.By(SteamId).Where(t => t.Kind == "appeal"
+                ? access.Has(PanelPermissions.Need("appeals"))
+                : reportsFrom == null || reportsFrom(t.Server)).ToList();
+        }
         if (access.Has(PanelPermissions.Need("chat")))
-            Chat = _history.Chat(null, SteamId, "", 1, 20).Rows;
+            Chat = _history.Chat(null, SteamId, "", 1, 20, await ServersWithAsync(PanelPermissions.Need("chat"))).Rows;
         if (Online is { } on && (await AccessAsync(on.Server)).Has(PanelPermissions.Need("kick")))
             CanKick = true;
 

@@ -10,7 +10,8 @@
 <ol class="steps" aria-label="Steps">
     @for (int i = 0; i < steps.Length; i++)
     {
-        <li class="@(i < at ? "done" : i == at ? "on" : "")"><span>@(i + 1)</span>@steps[i]</li>
+        @* Only the current step's name shows (the narrow card had all five wrapping); the others are numbered dots, named on hover *@
+        <li class="@(i < at ? "done" : i == at ? "on" : "")" title="@steps[i]" aria-current="@(i == at ? "step" : null)"><span>@(i + 1)</span><b class="step-label">@steps[i]</b></li>
     }
 </ol>
 

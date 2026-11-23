@@ -113,7 +113,7 @@ public class ProfileModel : PanelPage
             Fail(refused);
         else
         {
-            Done("Appeal sent. Staff answer it here.");
+            Done("Appeal sent. You'll see staff's answer here.");
             _audit.Write(Admin.Audit, "appeal sent", null, true, "");
             _discord.Ticket("New ban appeal", Admin.Name, Admin.SteamId, text);
             TempData["Sent"] = Message;

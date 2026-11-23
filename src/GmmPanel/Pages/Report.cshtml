@@ -28,6 +28,12 @@
         }
     </select></label>
     <label>SteamID64 <small>@T("For a player not listed. It's in their Steam profile's address.")</small><input type="text" name="steamId" value="@(GmmPanel.Commands.CommandCatalog.IsSteamId(Model.Target ?? "") ? Model.Target : "")" inputmode="numeric" pattern="7656119[0-9]{10}" maxlength="17" placeholder="7656119..."></label>
+    @* What kind of report: staff sort and filter by it, and Discord shows it *@
+    <label>@T("Reason")<select name="reason" required>
+        @{ string picked = Request.HasFormContentType ? Request.Form["reason"].ToString() : ""; }
+        <option value="" disabled selected="@(picked.Length == 0)">@T("Choose a reason")</option>
+        @foreach (string reason in Tickets.Reasons) { <option value="@reason" selected="@(reason == picked)">@T(Tickets.ReasonLabel(reason))</option> }
+    </select></label>
     <label>@T("What happened?")<textarea name="text" rows="4" maxlength="@Tickets.MaxText" minlength="10" required></textarea></label>
     <button type="submit" class="primary">@T("Send report")</button>
 </form>

@@ -13,28 +13,28 @@
             <div class="eyebrow"><a href="/">@T("Servers")</a> &rsaquo; @T("Moderate")</div>
             <h1>@T("Moderate")</h1>
         </div>
-        @if (Model.View != null)
-        {
-            <span class="ind @(Model.View.Online ? "ok" : "bad")" title="Bans, mutes and warnings come from this server's CS2-SimpleAdmin database">From @Label(server)</span>
-        }
     </div>
 
     @if (Model.View == null)
     {
         <p class="note">No servers yet.</p>
     }
-    else if (!Model.View.Online || s == null)
-    {
-        <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg>
-            <span>@Label(server) isn't connected. The lists come from a connected server: pick another in the header.</span></div>
-    }
-    else if (s.Data == null)
-    {
-        <p class="note">@Label(server)'s GameModeManager is too old for this panel: update it.</p>
-    }
     else
     {
-        <p class="note">The lists come from each plugin's own database, and changes use its own commands. Every change is in the audit log.</p>
+        @* Offline, the panel's own lists (reports, appeals, chat, player history) still work; the server's wait for it *@
+        if (!Model.View.Online || s == null)
+        {
+            <div class="banner"><svg class="ic" aria-hidden="true"><use href="#i-warning"/></svg>
+                <span>@Label(server) isn't connected: bans, mutes, warnings and admins come back when it is. Reports, appeals, chat and player history still work.</span></div>
+        }
+        else if (s.Data == null)
+        {
+            <p class="note">@Label(server)'s GameModeManager is too old for this panel: update it.</p>
+        }
+        else
+        {
+            <p class="note">The lists come from each plugin's own database, and changes use its own commands. Every change is in the audit log.</p>
+        }
         <div class="manage">
             <nav class="rail" aria-label="Sections">
                 @foreach (var group in Model.Shown.GroupBy(tab => tab.Group))
@@ -52,10 +52,11 @@
                 {
                     var found = Model.Find(tab);
                     <section class="pane @(tab.Id == "bans" ? "on" : "")" data-pane="@tab.Id" data-load="@(found is { Source.Available: true, List: not null } ? "1" : null)">
-                        <div class="pane-head"><span class="crumb">@tab.Group &rsaquo; @(found?.Source.Name ?? "")</span><h2>@tab.Label</h2></div>
+                        @* The server's own lists say whose database they read (the panel's own lists cover every server) *@
+                        <div class="pane-head"><span class="crumb">@tab.Group &rsaquo; @(found?.Source.Name ?? Label(server))@(found is { } src && src.Source.Id != GmmPanel.Data.PanelLists.Id ? $" · {Label(server)}" : "")</span><h2>@tab.Label</h2></div>
                         @if (found is not { } f || f.List == null)
                         {
-                            <div class="empty">@(found is { } nf && !nf.Source.Available ? nf.Source.Reason ?? $"{nf.Source.Name}'s data can't be read." : tab.Empty)</div>
+                            <div class="empty">@(found is { } nf && !nf.Source.Available ? nf.Source.Reason ?? $"{nf.Source.Name}'s data can't be read." : !Model.View.Online ? $"{Label(server)} isn't connected: this list comes back when it is." : tab.Empty)</div>
                         }
                         else if (!f.Source.Available)
                         {
@@ -109,6 +110,23 @@
                                     <span class="mod-search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
                                         <input type="search" name="search" maxlength="64" placeholder="Name or SteamID64" aria-label="Search @tab.Label"></span>
                                 }
+                                @* The panel's lists that span every server pick one; the chat log a time range *@
+                                @if (f.Source.Id == GmmPanel.Data.PanelLists.Id && list.Id is "chat" or "seen" or "reports")
+                                {
+                                    <select name="srv" aria-label="Server" class="narrow-select">
+                                        <option value="">Every server</option>
+                                        @foreach (string pick in Model.PickableServers) { <option value="@pick">@Label(pick)</option> }
+                                    </select>
+                                }
+                                @if (f.Source.Id == GmmPanel.Data.PanelLists.Id && list.Id == "chat")
+                                {
+                                    <select name="range" aria-label="When" class="narrow-select">
+                                        <option value="">Any time</option>
+                                        <option value="hour">Last hour</option>
+                                        <option value="day">Last 24 hours</option>
+                                        <option value="week">Last 7 days</option>
+                                    </select>
+                                }
                                 @if (list.Filters.Count > 0)
                                 {
                                     <select name="filter" aria-label="Show" class="narrow-select">
@@ -120,7 +138,8 @@
                                 }
                             </form>
                             <div id="@target" data-list hx-get="@listUrl" hx-trigger="load-list" hx-include="previous .mod-tools" hx-swap="innerHTML">
-                                <div class="loading">Loading…</div>
+                                @* Placeholder rows until the list arrives (as GitHub's lists load); the words for screen readers *@
+                                <div class="list-skeleton" aria-busy="true"><span class="sr">Loading…</span>@for (int i = 0; i < 5; i++) { <div class="skel-row"></div> }</div>
                             </div>
                         }
                     </section>

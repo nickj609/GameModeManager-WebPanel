@@ -77,9 +77,11 @@
 <!doctype html>
 @{ string siteTheme = SiteLook.ThemeOf(Store.Current.Site.Theme); }
 @* appearance.js settles data-theme before the first paint: the viewer's pick on Appearance, else the site's (auto = the device) *@
-<html lang="@Lang.Current" data-site-theme="@siteTheme" data-theme="@(siteTheme == "light" ? "light" : "dark")">
+<html lang="@Lang.Current" translate="no" data-site-theme="@siteTheme" data-theme="@(siteTheme == "light" ? "light" : "dark")">
 <head>
     <meta charset="utf-8">
+    @* The panel has its own languages; short labels and map names made browsers guess French and offer to translate *@
+    <meta name="google" content="notranslate">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @* Link previews (Discord, Steam chat, socials): the page's title and a line about it, a picture, and the accent as the
        embed's colour. A page can set ViewData Description and Image (an https address); otherwise the line is who's playing *@
@@ -116,10 +118,12 @@
     <script src="/js/panel.js?v=@Build" defer></script>
 </head>
 <body>
+    @* For keyboard and screen-reader users: the first Tab jumps past the header *@
+    <a class="skip-link" href="#main">@T("Skip to content")</a>
     <partial name="_Icons" />
 
     @* The main-menu backdrop: a slowly turning panorama (or the owner's video), dust in the light, and a dark grade *@
-    <div class="bg" id="bg" aria-hidden="true" data-backgrounds="@backgroundJson" data-default="@Store.Current.Site.Background" data-fallback="@(backgrounds.FirstOrDefault(b => b.Map.Equals("de_dust2", StringComparison.OrdinalIgnoreCase))?.Id)" data-motion="@(Store.Current.Site.Motion ? "on" : "off")" data-map="@(selected == null ? null : Registry.Find(selected)?.Status?.Map.Name)">
+    <div class="bg@(backgrounds.Count > 0 ? " has-scenes" : "")" id="bg" aria-hidden="true" data-backgrounds="@backgroundJson" data-default="@Store.Current.Site.Background" data-fallback="@(backgrounds.FirstOrDefault(b => b.Map.Equals("de_dust2", StringComparison.OrdinalIgnoreCase))?.Id)" data-motion="@(Store.Current.Site.Motion ? "on" : "off")" data-map="@(selected == null ? null : Registry.Find(selected)?.Status?.Map.Name)">
         <div class="bg-still" id="bg-still" hidden></div>
         <video class="bg-video" id="bg-video" muted loop playsinline preload="auto" hidden></video>
         <canvas class="bg-dust" id="bg-dust"></canvas>
@@ -206,7 +210,8 @@
                         <a role="menuitem" class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
                     }
                     <form method="post" asp-page="/SignIn" asp-page-handler="SignOut">
-                        <button type="submit" class="primary"><svg class="ic" aria-hidden="true"><use href="#i-signout"/></svg>@T("Sign out")</button>
+                        @* A plain item in red at the end, as GitHub and Discord show it: not the orange of a page's main action *@
+                        <button type="submit" role="menuitem" class="drawer-link menu-signout"><svg class="ic" aria-hidden="true"><use href="#i-signout"/></svg>@T("Sign out")</button>
                     </form>
                 </div>
             </details>
@@ -238,16 +243,6 @@
                        hx-get="/search" hx-trigger="input changed delay:250ms, focus" hx-target="#drawer-search-results" hx-swap="innerHTML">
                 <div class="search-results" id="drawer-search-results" role="listbox"></div>
             </div>
-            @* The community's links (Panel page), as buttons *@
-            @if (links.Count > 0)
-            {
-                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
-            }
-            @if (staff && selected != null)
-            {
-                <div class="drawer-group">Server · @online of @mine.Count online</div>
-                <partial name="_ServerChoices" model="@(new ServerChoices(mine, selected, SwitchTo))" />
-            }
             <div class="drawer-group">@T("Pages")</div>
             @foreach (var link in main)
             {
@@ -275,6 +270,16 @@
             {
                 <a class="drawer-link @(link.On ? "on" : "")" href="@link.Href"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg>@T(link.Label)</a>
             }
+            @if (staff && selected != null)
+            {
+                <div class="drawer-group">Server · @online of @mine.Count online</div>
+                <partial name="_ServerChoices" model="@(new ServerChoices(mine, selected, SwitchTo))" />
+            }
+            @* The community's links (Panel page), as buttons, last: the pages come first, as in other sites' menus *@
+            @if (links.Count > 0)
+            {
+                <div class="drawer-links">@for (int i = 0; i < links.Count; i++) { var link = links[i]; <a class="head-link link-@i" href="@link.Url" target="_blank" rel="noopener noreferrer" title="@link.Label"><svg class="ic" aria-hidden="true"><use href="#i-@link.Icon"/></svg><span>@T(link.Label)</span></a> }</div>
+            }
         </div>
         @if (me != null)
         {
@@ -290,7 +295,7 @@
 
 
     <div class="shell">
-        <main class="frame @(narrow ? "narrow" : "")">
+        <main class="frame @(narrow ? "narrow" : "")" id="main" tabindex="-1">
             <div class="frame-body">
                 @RenderBody()
             </div>

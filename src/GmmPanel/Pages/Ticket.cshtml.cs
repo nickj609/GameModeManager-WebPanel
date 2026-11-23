@@ -19,9 +19,11 @@ public class TicketModel : PanelPage
     private readonly SteamProfile _steam;
     private readonly Notices _notices;
     private readonly AuditLog _audit;
+    private readonly History _history;
 
-    public TicketModel(PanelStore store, AgentRegistry registry, CommandService commands, Tickets tickets, SteamProfile steam, Notices notices, AuditLog audit)
+    public TicketModel(PanelStore store, AgentRegistry registry, CommandService commands, Tickets tickets, SteamProfile steam, Notices notices, AuditLog audit, History history)
     {
+        _history = history;
         _store = store;
         _registry = registry;
         _commands = commands;
@@ -44,16 +46,28 @@ public class TicketModel : PanelPage
     // A report's answers: CS2-SimpleAdmin's actions that take a SteamID, a length and a reason, where the flags allow
     public List<PlayerModel.Act> Acts { get; } = new();
 
+    // Context for a report: what they said on that server just before it was sent (oldest first), their other reports,
+    // and where they are now if Kick is allowed there
+    public List<History.ChatLine> ChatBefore { get; private set; } = new();
+    public List<Tickets.Ticket> Others { get; private set; } = new();
+    public string? KickOn { get; private set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!await LoadAsync())
             return LocalRedirect("/denied");
         TargetAvatar = CommandCatalog.IsSteamId(Ticket.TargetSteamId) ? await _steam.AvatarAsync(Ticket.TargetSteamId) : null;
         WriterAvatar = Report && CommandCatalog.IsSteamId(Ticket.SteamId) ? _steam.KnownAvatar(Ticket.SteamId) : null;
+        if (Report)
+        {
+            ChatBefore = _history.Chat(Ticket.Server, Ticket.TargetSteamId, "", 1, 200).Rows
+                .Where(l => l.At <= Ticket.Created.AddMinutes(1)).Take(10).Reverse().ToList();
+            Others = _tickets.ReportsAbout(Ticket.TargetSteamId, Ticket.Id);
+        }
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAnswerAsync(string? pick, int minutes, string? reason, string? comment, bool show)
+    public async Task<IActionResult> OnPostAnswerAsync(string? pick, int minutes, string? reason, string? comment, bool show, bool others)
     {
         if (!await LoadAsync())
             return Forbid();
@@ -66,7 +80,18 @@ public class TicketModel : PanelPage
         string status;
         string done;
 
-        if (Report && pick != "close")
+        if (Report && pick == "kick")
+        {
+            if (KickOn == null)
+                return Toast(false, $"{who} isn't on a server you can kick on.");
+            CommandResult kicked = await _commands.RunAsync(Admin, KickOn, "moderate", new() { ["source"] = "server", ["list"] = "players", ["action"] = "kick", ["steamid"] = Ticket.TargetSteamId });
+            if (!kicked.Ok)
+                return Partial("_Toast", kicked);
+            status = "CLOSED";
+            done = $"Kicked {who} from {ServerNames.Label(KickOn)}. The report is closed.";
+            _audit.Write(Admin.Audit, $"report {Ticket.Id} kick ({Ticket.TargetName} {Ticket.TargetSteamId})", KickOn, true, "");
+        }
+        else if (Report && pick != "close")
         {
             if (Acts.FirstOrDefault(a => $"{a.List}:{a.Id}" == pick) is not { } act || Server == null)
                 return Toast(false, "Choose what to do.");
@@ -116,6 +141,13 @@ public class TicketModel : PanelPage
             _tickets.AddComment(Ticket.Id, new Tickets.Comment(Admin.Name, Admin.SteamId, DateTimeOffset.UtcNow, comment, show));
         if (!_tickets.SetStatus(Ticket.Id, status, Admin.Name))
             return Toast(false, "Someone already answered it.");
+        // The same answer for their other open reports, when asked
+        if (Report && others)
+        {
+            int closed = _tickets.CloseOthers(Ticket.TargetSteamId, Ticket.Id, Admin.Name, $"Closed with the report from {(Ticket.Name.Length > 0 ? Ticket.Name : Ticket.SteamId)} ({Ticket.Id}).");
+            if (closed > 0)
+                done += closed == 1 ? " 1 other report on them is closed too." : $" {closed} other reports on them are closed too.";
+        }
         Response.Headers["HX-Refresh"] = "true";
         return Toast(true, done);
     }
@@ -137,6 +169,17 @@ public class TicketModel : PanelPage
         return Toast(true, "Comment saved.");
     }
 
+    // "Looking at it": claim the report, or let it go
+    public async Task<IActionResult> OnPostClaimAsync(bool claim)
+    {
+        if (!await LoadAsync())
+            return Forbid();
+        if (!_tickets.Claim(Ticket.Id, Admin.Name, Admin.SteamId, claim))
+            return Toast(false, Open ? $"{Ticket.ClaimedBy} is looking at it." : "Someone already answered it.");
+        Response.Headers["HX-Refresh"] = "true";
+        return Toast(true, claim ? "You're looking at it: other staff see that." : "Let go.");
+    }
+
     private PartialViewResult Toast(bool ok, string message) => Partial("_Toast", new CommandResult(ok, message));
 
     // The ticket and the viewer's rights: the appeals or reports flag on the server picked in the header
@@ -145,7 +188,12 @@ public class TicketModel : PanelPage
         if (_tickets.Find(Id) is not { } ticket)
             return false;
         Ticket = ticket;
-        Server = Selection.Get(HttpContext, Admin, _store);
+        // A report is about one server: the viewer's rights there decide (staff on another server don't read it). An appeal
+        // is about a ban, which counts everywhere: the server picked in the header
+        bool ownServer = Report && _store.Current.Servers.Any(s => s.Name.Equals(ticket.Server, StringComparison.OrdinalIgnoreCase));
+        Server = ownServer ? ticket.Server : Selection.Get(HttpContext, Admin, _store);
+        if (ownServer && !Admin.CanUse(ticket.Server))
+            return false;
         Access access = await AccessAsync(Server);
         if (!access.Has(PanelPermissions.Need(Report ? "reports" : "appeals")))
             return false;
@@ -153,6 +201,9 @@ public class TicketModel : PanelPage
             foreach (DataList list in simpleAdmin.Lists.Where(l => l.Id is "bans" or "mutes" or "warns"))
                 foreach (DataAction action in list.Actions.Where(a => !a.Row && a.Fields.Contains("steamid") && a.Fields.All(f => f is "steamid" or "minutes" or "reason") && access.Has(a.Flag)))
                     Acts.Add(new PlayerModel.Act(list.Id, action.Id, action.Label, action.Fields.Contains("minutes")));
+        // Kick: where they are now, if the viewer may kick there
+        if (Report && _history.OnlineNow(ticket.TargetSteamId) is { } on && Admin.CanUse(on.Server) && (await AccessAsync(on.Server)).Has(PanelPermissions.Need("kick")))
+            KickOn = on.Server;
         return true;
     }
 }

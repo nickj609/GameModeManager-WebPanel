@@ -18,9 +18,9 @@
     <div class="profile-who">
         <div class="eyebrow">@(Model.Report ? T("Player report") : T("Ban appeal"))</div>
         <h1>@target</h1>
+        <div class="profile-id"><span class="mono" title="SteamID64">@t.TargetSteamId</span><button type="button" class="copy-id shown" data-copy-text="@t.TargetSteamId" title="@T("Copy SteamID")" aria-label="@T("Copy SteamID")"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
         <div class="profile-tags">
             <span class="ind @statusClass">@statusText</span>
-            <span class="mono muted" title="SteamID64">@t.TargetSteamId</span>
         </div>
         <div class="profile-buttons">
             <a class="button small" href="/players/@t.TargetSteamId"><svg class="ic" aria-hidden="true"><use href="#i-players"/></svg>@T("Player")</a>
@@ -30,17 +30,83 @@
 </div>
 
 <div class="facts player-facts">
-    <span>@T("Sent") <b>@Format.Time(t.Created)</b></span>
+    <span>@T("Sent") <b title="@Format.Time(t.Created)">@Format.Ago(t.Created)</b></span>
     @if (Model.Report)
     {
         <span>@T("From") <a href="/players/@t.SteamId"><b>@(t.Name.Length > 0 ? t.Name : t.SteamId)</b></a></span>
-        @if (t.Server.Length > 0) { <span>@T("On") <b>@t.Server</b></span> }
+        @if (t.Server.Length > 0) { <span>@T("On") <b>@Label(t.Server)</b></span> }
+        @if (t.Reason.Length > 0) { <span>@T("Reason") <b>@T(Tickets.ReasonLabel(t.Reason))</b></span> }
+        @* Kept when it was sent: the history can't tell afterwards *@
+        @if (t.TargetWasOn is { } wasOn) { <span class="ind @(wasOn ? "ok" : "bad")">@F(wasOn ? "{0} was on when it was sent" : "{0} wasn't on when it was sent", target)</span> }
     }
     @if (t.HandledAt != null) { <span>@(t.Status == "OPEN" ? "" : statusText) @T("by") <b>@t.HandledBy</b> · @Format.Ago(t.HandledAt)</span> }
 </div>
 
+@* "Looking at it": so two staff don't answer the same one; anyone can take over a claim over 2 hours old *@
+@if (Model.Open)
+{
+    bool mine = t.ClaimedBySteamId == Model.Admin.SteamId;
+    bool taken = t.ClaimedBySteamId.Length > 0 && !mine && t.ClaimedAt > DateTimeOffset.UtcNow.AddHours(-2);
+    <form class="claim-row" hx-post="@self?handler=Claim" hx-target="#toasts" hx-swap="beforeend">
+        @if (t.ClaimedBySteamId.Length > 0)
+        {
+            <span class="ind warn">@(mine ? T("You're looking at it") : F("{0} is looking at it", t.ClaimedBy)) · @Format.Ago(t.ClaimedAt)</span>
+        }
+        @if (!taken)
+        {
+            <input type="hidden" name="claim" value="@(mine ? "false" : "true")">
+            <button type="submit" class="small">@(mine ? T("Let go") : T("Looking at it"))</button>
+        }
+    </form>
+}
+
 <div class="group-title">@(Model.Report ? T("What happened") : T("Why it should be lifted"))</div>
 <blockquote class="ticket-text">@t.Text</blockquote>
+
+@if (Model.Report)
+{
+    <div class="player-grid">
+        @* What they said on that server just before it was sent *@
+        <section>
+            <div class="group-title">@F("Their chat on {0}", Label(t.Server)) <small>@T("before it was sent")</small></div>
+            @if (Model.ChatBefore.Count == 0)
+            {
+                <div class="empty">@T("Nothing they said there before it was sent.")</div>
+            }
+            else
+            {
+                <div class="chat-before">
+                    @foreach (var line in Model.ChatBefore)
+                    {
+                        <div class="chat-line"><span class="time" title="@Format.Time(line.At)">@Format.Ago(line.At)</span>@if (line.TeamOnly) {<span class="dim">(@line.Team)</span>}@line.Text</div>
+                    }
+                </div>
+            }
+        </section>
+        @* Their other reports: repeat players stand out, and nobody answers the same thing twice *@
+        <section>
+            @{ int openOthers = Model.Others.Count(o => o.Status == "OPEN"); }
+            <div class="group-title">@F("Other reports on {0}", target) <small>@(Model.Others.Count == 0 ? T("none") : F("{0} · {1} open", Model.Others.Count, openOthers))</small></div>
+            @if (Model.Others.Count == 0)
+            {
+                <div class="empty">@T("This is the only one.")</div>
+            }
+            else
+            {
+                <div class="other-reports">
+                    @foreach (var o in Model.Others.Take(8))
+                    {
+                        <a class="other-report" href="/tickets/@o.Id">
+                            <span class="ind @(o.Status == "OPEN" ? "warn" : "off")">@T(o.Status == "OPEN" ? "Open" : "Closed")</span>
+                            <span class="other-text">@(o.Reason.Length > 0 ? T(Tickets.ReasonLabel(o.Reason)) + " · " : "")@o.Text</span>
+                            <span class="time" title="@Format.Time(o.Created)">@Format.Ago(o.Created)</span>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+}
 
 <div class="player-grid">
     @if (Model.Open)
@@ -52,6 +118,7 @@
                     <label>@T("What")<select name="pick">
                         @if (Model.Report)
                         {
+                            @if (Model.KickOn != null) { <option value="kick" data-fields="">@F("Kick from {0}", Label(Model.KickOn))</option> }
                             @foreach (var a in Model.Acts) { <option value="@a.List:@a.Id" data-fields="@(a.Minutes ? "minutes reason" : "reason")">@a.Label</option> }
                             <option value="close" data-fields="" data-calm="true" selected="@(Model.Acts.Count > 0 ? null : "selected")">@T("Close")</option>
                         }
@@ -70,6 +137,10 @@
                     }
                     <label class="wide">@T("Comment") <small>@T("optional")</small><textarea name="comment" rows="2" maxlength="@Tickets.MaxComment"></textarea></label>
                     <label class="check wide"><input type="checkbox" name="show" value="true"> @F("Show the comment to {0}", writer)</label>
+                    @if (Model.Report && Model.Others.Count(o => o.Status == "OPEN") is > 0 and int more)
+                    {
+                        <label class="check wide"><input type="checkbox" name="others" value="true" checked> @(more == 1 ? F("Also close the other open report on {0}", target) : F("Also close the other {0} open reports on {1}", more, target))</label>
+                    }
                 </div>
                 <div class="buttons"><button type="submit" class="danger" data-confirm="@target (@t.TargetSteamId)." data-confirm-title="@T("Do it?")" data-confirm-yes="@T("Do it")" data-confirm-danger="true" data-act-from="pick">@T("Do it")</button></div>
             </form>
@@ -98,7 +169,7 @@
             <textarea name="text" rows="2" maxlength="@Tickets.MaxComment" minlength="2" required placeholder="@T("Checked the demo, nothing seen")"></textarea>
             <div class="comment-foot">
                 <label class="check"><input type="checkbox" name="show" value="true"> @F("Show to {0}", writer)</label>
-                <button type="submit" class="small">@T("Add comment")</button>
+                <button type="submit">@T("Add comment")</button>
             </div>
         </form>
     </section>

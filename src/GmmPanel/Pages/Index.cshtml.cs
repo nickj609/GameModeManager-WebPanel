@@ -32,6 +32,18 @@ public class IndexModel : PanelPage
     }
 
     public List<ServerView> Servers { get; private set; } = new();
+
+    // The strip: every server while they fit (10); past that the 8 busiest and the picked one, in the strip's own steady
+    // order, with an "All servers" link to the full list (/servers)
+    public const int StripMax = 10;
+    // The All servers tab: when the strip can't show every server; always in development, to see it with a few servers
+    public bool ShowAllTab => Servers.Count > StripMax
+        || (HttpContext.RequestServices.GetService(typeof(IWebHostEnvironment)) as IWebHostEnvironment)?.EnvironmentName == "Development";
+    public int PlayingAll => Servers.Where(v => v.Online).Sum(v => v.Status?.Players ?? 0);
+    public List<ServerView> StripServers => Servers.Count <= StripMax ? Servers
+        : Servers.Where(v => v.Online).OrderByDescending(v => v.Status?.Players ?? 0).Take(8)
+            .Append(Spot).Where(v => v != null).Distinct().Cast<ServerView>()
+            .OrderBy(v => Servers.IndexOf(v)).ToList();
     public Dictionary<string, Access> Rights { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     // The lines above the cards: one for everyone, one about the person signed in, one with what staff should look at.

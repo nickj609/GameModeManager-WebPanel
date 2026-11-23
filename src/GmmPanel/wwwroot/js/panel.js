@@ -25,13 +25,20 @@
         if (meta) event.detail.headers["RequestVerificationToken"] = meta.content;
     });
 
-    function toast(text) {
+    // A toast made here (the server's come as HTML): red unless ok, with the same tick or cross as the server's
+    function toast(text, ok) {
         var toasts = document.getElementById("toasts");
         if (!toasts) return;
         var item = document.createElement("div");
-        item.className = "toast err";
-        item.setAttribute("role", "alert");
-        item.textContent = text;
+        item.className = ok ? "toast ok" : "toast err";
+        item.setAttribute("role", ok ? "status" : "alert");
+        var icon = document.createElement("span");
+        icon.className = "toast-ic";
+        icon.setAttribute("aria-hidden", "true");
+        var words = document.createElement("span");
+        words.textContent = text;
+        item.appendChild(icon);
+        item.appendChild(words);
         toasts.appendChild(item);
     }
 
@@ -201,7 +208,8 @@
         if (!form) return;
         var mode = form.elements.mode.value, withPlayers = form.elements.players.checked;
         try { sessionStorage.setItem("gmm.filter", JSON.stringify({ mode: mode, players: withPlayers })); } catch (e) { }
-        document.querySelectorAll("#servers .chip-server").forEach(function (chip) {
+        // The All servers tab isn't a server: never filtered, picked or lit
+        document.querySelectorAll("#servers .chip-server:not(.chip-all)").forEach(function (chip) {
             var count = chip.querySelector(".chip-count");
             var empty = count && /^0/.test(count.textContent.trim());
             chip.hidden = (mode && chip.dataset.mode !== mode) || (withPlayers && empty);
@@ -210,7 +218,7 @@
         // below always matches a tab in view
         var picked = document.querySelector("#servers .chip-server.on");
         if (!picked || picked.hidden) {
-            var first = document.querySelector("#servers .chip-server:not([hidden])");
+            var first = document.querySelector("#servers .chip-server:not([hidden]):not(.chip-all)");
             if (first) {
                 first.click();
                 if (typeof showChip === "function") showChip(first, false);
@@ -221,7 +229,7 @@
     // A picked chip lights up at once (the strip's next refresh agrees: the server remembers the pick)
     document.addEventListener("click", function (event) {
         var chip = event.target.closest && event.target.closest(".chip-server");
-        if (!chip) return;
+        if (!chip || chip.classList.contains("chip-all")) return;
         document.querySelectorAll(".chip-server.on").forEach(function (c) { c.classList.remove("on"); c.setAttribute("aria-selected", "false"); });
         chip.classList.add("on");
         chip.setAttribute("aria-selected", "true");
@@ -446,6 +454,104 @@
         if (log) log.scrollTop = log.scrollHeight;
     });
 
+    // Each command's time, in the viewer's own time zone (the server sends it as a moment, data-at)
+    function consoleTimes(root) {
+        Array.prototype.forEach.call((root || document).querySelectorAll(".con-time[data-at]:empty"), function (span) {
+            var at = new Date(Number(span.getAttribute("data-at")));
+            if (!isNaN(at)) span.textContent = ("0" + at.getHours()).slice(-2) + ":" + ("0" + at.getMinutes()).slice(-2);
+        });
+    }
+    consoleTimes();
+    document.addEventListener("htmx:afterSwap", function (event) { consoleTimes(event.detail.target); });
+
+    // A list being sorted, paged or searched dims until the new page arrives, so a slow answer doesn't look like nothing
+    document.addEventListener("htmx:beforeRequest", function (event) {
+        var list = event.detail.target && event.detail.target.closest && event.detail.target.closest("[data-list]");
+        if (list) list.classList.add("list-busy");
+    });
+    document.addEventListener("htmx:afterRequest", function (event) {
+        var list = event.detail.target && event.detail.target.closest && event.detail.target.closest("[data-list]");
+        if (list) list.classList.remove("list-busy");
+    });
+
+    // A player bar's fill (All servers): its share from data-fill, set through CSSOM (the CSP forbids style= attributes)
+    document.querySelectorAll("[data-fill]").forEach(function (bar) {
+        var share = Math.max(0, Math.min(100, Number(bar.getAttribute("data-fill")) || 0));
+        bar.style.width = share + "%";
+    });
+
+    // A list's appeal or report row opens its ticket; a link, button or field inside it keeps its own job
+    document.addEventListener("click", function (event) {
+        var row = event.target.closest && event.target.closest("tr.row-link[data-href]");
+        if (!row || event.target.closest("a, button, summary, input, select, label")) return;
+        if (window.getSelection && String(window.getSelection()).length > 0) return;   // Selecting text to copy it
+        window.location.href = row.getAttribute("data-href");
+    });
+
+    // The header's Copy (the whole log to the clipboard) and Clear (this screen only: the server keeps nothing to clear)
+    document.addEventListener("click", function (event) {
+        var copy = event.target.closest && event.target.closest("[data-con-copy]");
+        var clear = event.target.closest && event.target.closest("[data-con-clear]");
+        var log = document.getElementById((copy || clear || {}).getAttribute ? (copy || clear).getAttribute(copy ? "data-con-copy" : "data-con-clear") : "");
+        if (!log) return;
+        if (clear) {
+            log.textContent = "";
+            var input = log.parentNode.querySelector(".con-field input");
+            if (input && !input.disabled) input.focus();
+            toast(t("Cleared."), true);
+            return;
+        }
+        var text = (log.innerText || "").trim();
+        if (!text) { toast(t("Nothing to copy."), false); return; }
+        copyText(text);
+    });
+
+    // Text to the clipboard with a toast. Plain http (a LAN address) has no clipboard API, and some browsers refuse it:
+    // the older select-and-copy then
+    function copyText(text) {
+        function fallback() {
+            var area = document.createElement("textarea");
+            area.value = text;
+            area.setAttribute("readonly", "");
+            area.className = "sr-copy";
+            document.body.appendChild(area);
+            area.select();
+            var ok = false;
+            try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+            area.remove();
+            toast(ok ? t("Copied") : t("Couldn't copy."), ok);
+        }
+        if (!navigator.clipboard || !navigator.clipboard.writeText) { fallback(); return; }
+        navigator.clipboard.writeText(text).then(function () { toast(t("Copied"), true); }, fallback);
+    }
+
+    // A file dragged over a file picker lights it up (dropping it is the browser's own)
+    ["dragenter", "dragover"].forEach(function (type) {
+        document.addEventListener(type, function (event) { if (event.target.matches && event.target.matches('input[type="file"]')) event.target.classList.add("drop"); });
+    });
+    ["dragleave", "drop"].forEach(function (type) {
+        document.addEventListener(type, function (event) { if (event.target.matches && event.target.matches('input[type="file"]')) event.target.classList.remove("drop"); });
+    });
+
+    // A copy icon beside a value (a SteamID in a list): copies what its data-copy-text holds (data-copy, above, copies an element)
+    document.addEventListener("click", function (event) {
+        var button = event.target.closest && event.target.closest("[data-copy-text]");
+        if (button) copyText(button.getAttribute("data-copy-text"));
+    });
+
+    // Leaving a settings form with changes not saved asks first, as GitHub's settings do. Plain POST forms only (htmx ones
+    // save as they go); a form marked data-no-guard (an export) never asks
+    var unsaved = null;
+    function guarded(form) { return form && form.matches("main form[method=post]:not([hx-post]):not([data-no-guard])"); }
+    document.addEventListener("input", function (event) { var form = event.target.form; if (guarded(form)) unsaved = form; });
+    document.addEventListener("change", function (event) { var form = event.target.form; if (guarded(form)) unsaved = form; });
+    document.addEventListener("submit", function () { unsaved = null; }, true);
+    window.addEventListener("beforeunload", function (event) {
+        if (!unsaved || !document.contains(unsaved)) return;
+        event.preventDefault();
+        event.returnValue = "";
+    });
+
     // ---------- 2d. Appearance page ----------
 
     (function () {
@@ -600,7 +706,8 @@
     }
 
     // "Auto": like CS2's menu, the scene of the map being played: the background named after the map of the server on
-    // screen (Manage, the dashboard's picked server, a server's Details), else the last background picked by hand
+    // screen (Manage, the dashboard's picked server, a server's Details). A server whose map has no scene keeps the last
+    // map scene shown (gmm.bg.lastmap), else the last background picked by hand, else Dust II, else the first one
     function resolve() {
         if (choice !== "auto") return find(choice) || find(bg.dataset.default || "") || find(bg.dataset.fallback || "") || choices[0];
         var onScreen = document.querySelector("#server-body[data-map], .spot[data-map], .info-banner[data-map]");
@@ -608,11 +715,13 @@
         var map = ((onScreen && onScreen.dataset.map) || bg.dataset.map || "").toLowerCase();
         if (map) {
             for (var i = 0; i < choices.length; i++) {
-                if ((choices[i].map || "").toLowerCase() === map) return choices[i];
+                if ((choices[i].map || "").toLowerCase() === map) {
+                    save("gmm.bg.lastmap", choices[i].id);
+                    return choices[i];
+                }
             }
         }
-        // Then the last one picked by hand, then Dust II (the panel's own default), then the first one
-        return find(load("gmm.bg.fallback") || "") || find(bg.dataset.fallback || "") || choices[0];
+        return find(load("gmm.bg.lastmap") || "") || find(load("gmm.bg.fallback") || "") || find(bg.dataset.fallback || "") || choices[0];
     }
 
     function apply() {
@@ -625,6 +734,7 @@
         still.hidden = next.kind !== "still";
         video.hidden = next.kind !== "video";
         if (next.kind === "still") still.style.backgroundImage = 'url("' + next.url + '")';
+        save("gmm.bg.shown", next.kind === "still" ? next.url : "");   // appearance.js preloads it on the next page
         if (next.kind === "video") {
             video.src = next.url;
         } else {
@@ -943,6 +1053,24 @@
         if (badge) badge.remove();
         menu.querySelector("summary").classList.remove("on");
     }, true);
+    // "Clear all": their own notices go (staff's open reports and appeals stay); the menu stays open
+    document.addEventListener("click", function (event) {
+        var clear = event.target.closest && event.target.closest("[data-bell-clear]");
+        if (!clear) return;
+        var list = clear.closest(".bell-list");
+        var meta = document.querySelector('meta[name="request-token"]');
+        fetch("/bell?handler=Clear", { method: "POST", headers: { "RequestVerificationToken": meta ? meta.content : "" } }).then(function (r) {
+            if (!r.ok) { toast(t("Couldn't clear."), false); return; }
+            list.querySelectorAll("[data-mine]").forEach(function (n) { n.remove(); });
+            if (!list.querySelector(".notice")) {
+                var empty = document.createElement("div");
+                empty.className = "bell-empty";
+                empty.textContent = clear.getAttribute("data-empty");
+                list.appendChild(empty);
+            }
+            clear.remove();
+        }, function () { toast(t("Couldn't clear."), false); });
+    });
     document.addEventListener("click", function (event) {
         document.querySelectorAll("details[data-bell][open]").forEach(function (menu) {
             if (!menu.contains(event.target)) menu.open = false;
@@ -984,8 +1112,9 @@
         var box = document.querySelector("[data-carousel]"), row = strip();
         if (!box || !row) return;
         var chips = Array.prototype.filter.call(row.querySelectorAll(".chip-server"), function (c) { return !c.hidden; });
-        // Room with the arrows hidden decides whether they're needed at all
-        var room = box.clientWidth;
+        // Room with the arrows hidden decides whether they're needed at all (less the pinned All servers tab, when there)
+        var pinned = box.querySelector(":scope > .chip-all");
+        var room = box.clientWidth - (pinned ? pinned.offsetWidth + 10 : 0);
         var more = chips.length * 210 + (chips.length - 1) * CHIP_GAP > room + 1;
         box.classList.toggle("overflow", more);
         if (more) {
@@ -1021,8 +1150,9 @@
         }
         carouselState();
     });
+    // The servers the arrows step through (the All servers tab is a link, not a server: the arrows skip it)
     function visibleChips(row) {
-        return Array.prototype.filter.call(row.querySelectorAll(".chip-server"), function (c) { return !c.hidden; });
+        return Array.prototype.filter.call(row.querySelectorAll(".chip-server:not(.chip-all)"), function (c) { return !c.hidden; });
     }
     // Scroll the row to the page holding a tab (the picked one, after a resize or a switch on a phone)
     function showChip(chip, smooth) {

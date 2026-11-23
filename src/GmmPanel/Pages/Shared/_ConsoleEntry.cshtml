@@ -1,7 +1,8 @@
 @model ServerModel
 @* One console exchange: the line as typed, then the server's reply (or why it wasn't sent). Razor escapes both. *@
 <div class="con-entry">
-    <div class="con-cmd"><span class="con-prompt">&gt;</span> @Model.ConsoleLine</div>
+    @* The time it was sent: panel.js writes it in the viewer's own time zone *@
+    <div class="con-cmd"><span class="con-time" data-at="@DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()"></span><span class="con-prompt">&gt;</span> @Model.ConsoleLine</div>
     @if (Model.ConsoleResult is { } result)
     {
         if (!result.Ok)

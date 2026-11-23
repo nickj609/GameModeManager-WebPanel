@@ -28,6 +28,16 @@ So name them however reads best; the panel keeps them apart.
 </details>
 
 <details>
+<summary>I have a lot of servers. Do they all fit on the home page?</summary>
+<br>
+
+The home page's tabs show up to 10 servers. With more, they show the 8 busiest online servers plus the one you're looking at,
+and an **All servers** tab at the end opens `/servers`: every server with its mode, map and players, a search, a mode
+filter, sorting and a Connect button.
+
+</details>
+
+<details>
 <summary>I moved the panel to a new domain. Do my servers need new tokens?</summary>
 <br>
 

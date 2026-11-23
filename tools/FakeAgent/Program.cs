@@ -132,7 +132,7 @@ while (true)
         "start_vote" => Vote(Arg("kind")),
         "set_setting" => SetSetting(Arg("setting"), Arg("on") == "true", out followUp),
         "set_value" => SetValue(Arg("setting"), Arg("value"), out followUp),
-        "run_action" => (true, $"Ran {Arg("action")}.", $"Action {Arg("action")} run"),
+        "run_action" => (true, $"Ran {ActionLabel(Arg("action"))}.", $"Action {ActionLabel(Arg("action"))} run"),
         "start_warmup" => StartWarmup(Arg("mode")),
         "schedule_warmup" => Warmup(Arg("mode")),
         "end_warmup" => EndWarmup(),
@@ -253,7 +253,22 @@ object? FollowUpFor(JsonNode setting)
         "modeVote" => JsonValue.Create(value),
         _ => JsonValue.Create(value == "true")
     };
-    return (true, save ? $"Rotation: {key} is now {value}, and saved in GameModeManager.json." : $"Rotation: {key} is now {value}. It lasts until the server restarts.", $"Rotation {key} set to {value}");
+    // Worded as GameModeManager's PanelCommands words it
+    bool on = value == "true";
+    int.TryParse(value, out int number);
+    string said = key switch
+    {
+        "maps" => $"Map rotation is {(on ? "on" : "off")}",
+        "modes" => $"Mode rotation is {(on ? "on" : "off")}",
+        "countSkipped" => $"Count skipped maps is {(on ? "on" : "off")}",
+        "rtv" => $"RTV / Nominate is {(on ? "on" : "off")}",
+        "whenEmpty" => $"Rotate when empty is {(on ? "on" : "off")}",
+        "interval" => $"Change mode every {number} map{(number == 1 ? "" : "s")}",
+        "emptyMinutes" => $"Empty server wait is {number} minute{(number == 1 ? "" : "s")}",
+        "modeVote" => value == "vote" ? "Mode change is by player vote" : "Mode change is random",
+        _ => $"{key} is now {value}"
+    };
+    return (true, save ? $"{said}, and saved in GameModeManager.json." : $"{said}. It lasts until the server restarts.", $"Rotation {key} set to {value}");
 }
 
 (bool, string, string?) MatchZy(string action)
@@ -455,6 +470,8 @@ async Task<string?> Receive()
         "76561198000000001" => ("@css/ban @css/chat @css/generic @css/kick @css/unban", "#moderator"),
         "76561198000000002" => ("@css/ban @css/changemap @css/chat @css/config @css/cvar @css/generic @css/kick @css/rcon @css/unban", "#admin"),
         "76561198000000004" => ("@css/reservation @css/vip", "#vip"),
+        // Staff on one server only (Production): to try that staff don't read other servers' reports, chat or players
+        "76561198000000005" when name == "Production" => ("@css/ban @css/chat @css/generic @css/kick @css/unban", "#moderator"),
         _ => ("", "")
     };
     page = new
@@ -468,3 +485,6 @@ async Task<string?> Receive()
 
 // Each fake player's country, as the agent's DB-IP lookup would send it (a steady pick from their SteamID)
 static string FakeCountry(string steamId) => new[] { "US", "US", "US", "US", "DE", "DE", "DE", "GB", "GB", "GB", "BR", "BR", "FR", "SE", "CA", "PL" }[(int)(ulong.Parse(steamId) % 16)];
+
+// An action's name as GameModeManager shows it (its display name, not the cfg file)
+string ActionLabel(string? file) => status["actions"]?.AsArray().FirstOrDefault(a => a?["name"]?.GetValue<string>() == file)?["displayName"]?.GetValue<string>() ?? file ?? "";

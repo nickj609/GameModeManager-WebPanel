@@ -34,4 +34,17 @@ public abstract class PanelPage : PageModel
 
     protected Task<Access> AccessAsync(string? server) =>
         HttpContext.RequestServices.GetRequiredService<AccessService>().ForAsync(Viewer, server);
+
+    // The servers whose records (reports, chat, who's on, player history) the viewer may read: those where they have the
+    // flag. Null means every server (panel admins). Someone who is staff on one server doesn't read another's.
+    protected async Task<Func<string, bool>?> ServersWithAsync(string flag)
+    {
+        if (Viewer?.IsPanelAdmin == true)
+            return null;
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (ServerEntry server in HttpContext.RequestServices.GetRequiredService<PanelStore>().Current.Servers)
+            if (Viewer != null && Viewer.CanUse(server.Name) && (await AccessAsync(server.Name)).Has(flag))
+                allowed.Add(server.Name);
+        return allowed.Contains;
+    }
 }

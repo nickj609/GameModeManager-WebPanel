@@ -47,6 +47,14 @@ public class BellModel : PanelPage
         return new NoContentResult();
     }
 
+    // "Clear all": empties their own list (staff's open reports and appeals stay: they go when handled)
+    public IActionResult OnPostClear()
+    {
+        if (Viewer != null)
+            _notices.Clear(Viewer.SteamId);
+        return new NoContentResult();
+    }
+
     // Their highest role on any server (Admin, then a moderator group, then VIP, then Player), so switching servers isn't news
     public static async Task<Access> HighestAsync(PanelPage page, PanelStore store)
     {

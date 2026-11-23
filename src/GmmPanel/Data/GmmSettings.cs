@@ -24,5 +24,5 @@ public static class GmmSettings
     // GameModeManager.json's Panel block for one server
     public static string PanelBlock(string url, string server) =>
         "\"Panel\": {\n  \"Enabled\": true,\n  \"Url\": \"" + url + "\",\n  \"ServerName\": \"" + server + "\",\n  \"SecretsFile\": \"panel-secrets.json\",\n"
-        + "  \"Console\": true,\n  \"PublicAddress\": \"\",\n  \"PluginData\": true\n}";
+        + "  \"Console\": true,\n  \"PublicAddress\": \"\",\n  \"PluginData\": true,\n  \"Countries\": true\n}";
 }

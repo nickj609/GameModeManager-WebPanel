@@ -85,6 +85,9 @@ public sealed class AgentConnection
                 waiting.TrySetResult(new CommandResult(false, "The link to the server dropped. Check the status before trying again."));
     }
 
+    // Ends a link at once, without a close handshake: a stale one, replaced by the server's new link, whose other end is gone
+    public void Abort() => _socket.Abort();
+
     public async Task CloseAsync(WebSocketCloseStatus status, string reason)
     {
         try

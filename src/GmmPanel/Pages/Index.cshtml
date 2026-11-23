@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Servers";
     bool you = Model.Viewer != null && (Model.Me != null || Model.MyOpen.Count > 0);
-    bool attention = Model.OpenAppeals > 0 || Model.OpenReports > 0 || Model.Offline > 0;
+    bool attention = Model.OpenAppeals > 0 || Model.OpenReports > 0;
 }
 @* Top to bottom: what staff need to do (only when there's something), the player's own strip, the community's numbers,
    the servers, then signs of life and one card for whoever's looking. *@
@@ -14,7 +14,7 @@
     <p>@T(Model.Viewer == null ? "Join a server from here, or sign in with Steam." : "An offline server shows what it last reported.")</p>
 </div>
 
-@* Staff: a heads-up only when something waits, each part a link to where it's answered *@
+@* Staff: a heads-up only when something waits to be answered (reports, appeals), each part a link to where it's answered *@
 @if (attention)
 {
     <div class="attention" role="status">
@@ -22,7 +22,6 @@
         <span class="attention-items">
             @if (Model.OpenReports > 0) { <a href="/moderate#reports">@N(Model.OpenReports, "{0} open report", "{0} open reports")</a> }
             @if (Model.OpenAppeals > 0) { <a href="/moderate#appeals">@N(Model.OpenAppeals, "{0} open appeal", "{0} open appeals")</a> }
-            @if (Model.Offline > 0) { <span>@F("Offline: {0}", string.Join(", ", Model.OfflineNames))</span> }
         </span>
     </div>
 }
@@ -50,6 +49,8 @@
     <span>@F("{0} playing now", Model.Online)</span>
     @if (Model.Week > 0) { <span>@F("{0} different players this week", Model.Week)</span> }
     @if (Model.BusyHours != null) { <span>@F("Peak hours {0}", Model.BusyHours)</span> }
+    @* Staff: which servers aren't connected is status, not a to-do, so it sits here (red dot, names on hover), not in the strip above *@
+    @if (Model.OfflineNames.Count > 0) { <span class="stats-offline" title="@string.Join(", ", Model.OfflineNames.Select(GmmPanel.Data.ServerNames.Label))"><span class="ind bad">@F("{0} offline", Model.OfflineNames.Count)</span></span> }
 </div>
 
 @* The server tabs (one per server, by name; a mode filter once there are several modes), then the picked server *@
@@ -67,6 +68,17 @@
         <partial name="_ServerStrip" model="Model" />
     </div>
     <button type="button" class="car-btn next" data-car="1" aria-label="@T("More servers")"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5 16.5 12 9 19.5"/></svg></button>
+    @if (Model.ShowAllTab)
+    {
+        @* Every server, on the All servers page: a tab like the others, but outside the scrolling row, pinned past the arrows
+           behind a divider, so it stays in view and reads as its own thing (the arrows never reach it: it's only clicked) *@
+        <a class="chip-server chip-all" href="/servers">
+            <span class="chip-top">
+                <svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>
+                <b>@T("All servers")</b>
+            </span>
+        </a>
+    }
 </div>
 <div id="spot">
     <partial name="_Spotlight" model="Model" />

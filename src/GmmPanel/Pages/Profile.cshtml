@@ -35,7 +35,7 @@
     <div class="me-settings">
         <form method="post" asp-page-handler="Discord" class="discord-name" id="discord">
             <label>@T("Discord username")<input type="text" name="discord" value="@Model.DiscordName" maxlength="37" placeholder="username" autocomplete="off" spellcheck="false"></label>
-            <button type="submit" class="small">@T("Save")</button>
+            <button type="submit">@T("Save")</button>
             <small>@T("Shown on your profile. Empty hides it.")</small>
         </form>
         <form method="post" asp-page-handler="Public" class="public-toggle" id="public">
@@ -60,7 +60,7 @@
         <div class="stat-tile @(mutes > 0 ? "bad" : "")"><small>@T("Active mutes")</small><b>@mutes</b></div>
         <div class="stat-tile @(warns > 0 ? "warn" : "")"><small>@T("Warnings")</small><b>@warns</b></div>
     }
-    <div class="stat-tile @(waiting > 0 ? "warn" : "")"><small>@T("Waiting")</small><b>@waiting</b></div>
+    <div class="stat-tile @(waiting > 0 ? "warn" : "")"><small>@T("Awaiting answer")</small><b>@waiting</b></div>
 </div>
 
 <div class="tab-body me-body" data-tabkey="gmm.tab.me">
@@ -137,10 +137,11 @@
                         string ind = t.Status switch { "OPEN" => "warn", "ACCEPTED" => "ok", _ => "off" };
                         string state = T(t.Status switch { "OPEN" => "Waiting", "ACCEPTED" => "Accepted", "REJECTED" => "Rejected", _ => "Closed" });
                         var thread = t.Comments.Where(c => c.Public || c.SteamId == t.SteamId).ToList();
+                        @* Opens a pop-up, so no arrow (an arrow means another page) *@
                         <button type="button" class="row row-button" data-dlg="tdlg-@t.Id">
                             <span class="label">@title
-                                <small>@Format.Time(t.Created)@(t.HandledAt != null ? " · " + F("answered {0}", Format.Ago(t.HandledAt)) : "")@(thread.Count > 0 ? " · " + N(thread.Count, "{0} reply", "{0} replies") : "")</small></span>
-                            <span class="ind @ind">@state</span><u>&rsaquo;</u>
+                                <small title="@Format.Time(t.Created)">@F("Sent {0}", Format.Ago(t.Created))@(t.HandledAt != null ? " · " + F("answered {0}", Format.Ago(t.HandledAt)) : "")@(thread.Count > 0 ? " · " + N(thread.Count, "{0} reply", "{0} replies") : "")</small></span>
+                            <span class="ind @ind">@state</span>
                         </button>
                         <dialog class="dlg details-dlg ticket-dlg" id="tdlg-@t.Id" aria-labelledby="tdlg-@t.Id-title">
                             <div class="dlg-head details-head"><span id="tdlg-@t.Id-title">@title</span><span class="ind @ind">@state</span></div>

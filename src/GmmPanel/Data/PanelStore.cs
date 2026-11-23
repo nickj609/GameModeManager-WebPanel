@@ -231,8 +231,11 @@ public sealed class PanelStore
     {
         string token = NewToken();
         PanelData data = LoadForEdit();
-        data.Servers.RemoveAll(entry => entry.Name.Equals(server, StringComparison.OrdinalIgnoreCase));
-        data.Servers.Add(new ServerEntry { Name = server, TokenHash = HashToken(token) });
+        // A new token for a server keeps everything else about it (its display name); only the token's hash changes
+        if (data.Servers.FirstOrDefault(entry => entry.Name.Equals(server, StringComparison.OrdinalIgnoreCase)) is { } existing)
+            existing.TokenHash = HashToken(token);
+        else
+            data.Servers.Add(new ServerEntry { Name = server, TokenHash = HashToken(token) });
         Save(data);
         return token;
     }

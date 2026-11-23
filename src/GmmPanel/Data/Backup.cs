@@ -8,6 +8,7 @@ namespace GmmPanel.Data;
 // before-restore-<time>.zip.
 public sealed class Backup
 {
+    private const long MaxUnpackedBytes = 4L * 1024 * 1024 * 1024;   // Unpacked: far above a real backup with its pictures and videos
     private static readonly string[] Files = { "panel.json", "tickets.json", "notes.json", "users.json", "jobs.json", "audit.jsonl" };
     private static readonly string[] Media = { "branding/", "maps/", "ranks/", "backgrounds/" };
     private const string History = "history/";
@@ -60,6 +61,10 @@ public sealed class Backup
                     return $"The backup has a file the panel doesn't restore ({name}). Use a zip from \"Download a backup\".";
                 take.Add((entry, full));
             }
+            // A zip that unpacks far bigger than any real backup (a "zip bomb") would fill the disk: refused before
+            // anything is written. .NET also stops an entry that inflates past the size it declares.
+            if (take.Sum(t => t.Entry.Length) > MaxUnpackedBytes)
+                return "The backup unpacks to more than 4 GB: it isn't a panel backup.";
             if (!take.Any(t => t.Entry.FullName == "panel.json"))
                 return "The backup has no panel.json: it isn't a panel backup.";
 

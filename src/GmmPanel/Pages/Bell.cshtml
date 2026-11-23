@@ -11,14 +11,14 @@
 <details class="bell-menu" data-bell>
     <summary class="head-link bell @(count > 0 ? "on" : "")" title="@title" aria-label="@title"><svg class="ic" aria-hidden="true"><use href="#i-bell"/></svg>@if (count > 0) { <span class="bell-count">@(count > 99 ? "99+" : count)</span> }</summary>
     <div class="bell-list" role="menu">
-        <div class="bell-head">@T("Notifications")</div>
+        <div class="bell-head"><span>@T("Notifications")</span>@if (Model.Items.Count > 0) { <button type="button" class="bell-clear" data-bell-clear data-empty="@T("Nothing yet. You'll see bans, mutes, roles and answers here.")">@T("Clear all")</button> }</div>
         @if (Model.Reports > 0) { <a class="notice warn" role="menuitem" href="/moderate#reports"><svg class="ic" aria-hidden="true"><use href="#i-flag"/></svg><span class="notice-text">@T("Open reports"): @Model.Reports</span></a> }
         @if (Model.Appeals > 0) { <a class="notice warn" role="menuitem" href="/moderate#appeals"><svg class="ic" aria-hidden="true"><use href="#i-appeal"/></svg><span class="notice-text">@T("Open appeals"): @Model.Appeals</span></a> }
         @foreach (var n in Model.Items)
         {
             string icon = n.Kind switch { "ban" => "ban", "mute" => "mute", "warn" => "warning", "kick" => "no", "role" => "shield", "ticket" => "appeal", _ => "ok" };
             string tone = n.Kind is "ban" or "mute" or "warn" or "kick" ? "bad" : n.Kind is "ended" or "role" ? "ok" : "";
-            <a class="notice @(n.Read ? "" : "new") @tone" role="menuitem" href="@n.Link">
+            <a class="notice @(n.Read ? "" : "new") @tone" role="menuitem" href="@n.Link" data-mine>
                 <svg class="ic" aria-hidden="true"><use href="#i-@icon"/></svg>
                 <span class="notice-text">@GmmPanel.Data.Notices.Show(n)</span>
                 <span class="time">@Format.Ago(n.At)</span>

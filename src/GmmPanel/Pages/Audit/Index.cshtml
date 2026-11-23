@@ -25,7 +25,7 @@
     <select name="days" aria-label="How far back">
         @foreach (var (d, label) in new[] { (1, "Last day"), (7, "Last 7 days"), (30, "Last 30 days"), (90, "Last 90 days"), (0, "Everything") }) { <option value="@d" selected="@(Model.Days == d)">@label</option> }
     </select>
-    <button type="submit" class="small primary">Search</button>
+    <button type="submit" class="primary">Search</button>
     @if (Model.Q.Length > 0 || Model.Server.Length > 0 || Model.Result.Length > 0 || Model.Days != 7) { <a class="button small" href="/audit">Clear</a> }
 </form>
 
@@ -48,8 +48,17 @@
     }
     else
     {
-        <table>
-            <thead><tr><th>Time (UTC)</th><th>User</th><th>Action</th><th>Server</th><th>Result</th></tr></thead>
+        <table class="fixed-cols audit-table">
+            <thead><tr>
+                @* Every column sorts the whole log: again flips it; When starts newest first *@
+                @foreach (var (key, label) in new[] { ("when", "When"), ("user", "User"), ("action", "Action"), ("server", "Server"), ("result", "Result") })
+                {
+                    bool now = Model.Sort.TrimStart('-') == key || (Model.Sort.Length == 0 && key == "when");
+                    bool desc = now && (Model.Sort.StartsWith('-') || Model.Sort.Length == 0);
+                    string next = now ? (desc ? key : "-" + key) : (key == "when" ? "-when" : key);
+                    <th class="col-key-@key" aria-sort="@(now ? (desc ? "descending" : "ascending") : null)"><a class="th-sort @(now ? "on" : "")" href="@Model.PageUrl(1, next)">@label<svg class="ic" aria-hidden="true"><use href="#i-caret"/></svg></a></th>
+                }
+            </tr></thead>
             <tbody>
             @foreach (var entry in Model.Entries)
             {
@@ -57,11 +66,13 @@
                 var who = System.Text.RegularExpressions.Regex.Match(entry.Who, @"^(.*) \((\d{17})\)$");
                 var action = AuditText.Describe(entry.What);
                 <tr>
-                    <td class="time">@Format.TimeUtc(entry.At)</td>
-                    <td class="audit-user">@if (who.Success) { <b>@who.Groups[1].Value</b><small>@who.Groups[2].Value</small> } else { <b>@entry.Who</b> }</td>
+                    <td class="time" title="@Format.TimeUtc(entry.At) UTC">@Format.Ago(entry.At)</td>
+                    @* The name, linked to the player; the SteamID on hover *@
+                    <td class="audit-user">@if (who.Success) { <a href="/players/@who.Groups[2].Value" title="@who.Groups[2].Value"><b>@who.Groups[1].Value</b></a> } else { <b>@entry.Who</b> }</td>
                     <td class="audit-action"><b>@action.Title</b>@if (action.Code != null) { <code>@action.Code</code> }@if (entry.Detail.Length > 0) { <small>@entry.Detail</small> }</td>
                     <td>@(entry.Server ?? "–")</td>
-                    <td><span class="ind @(entry.Ok ? "ok" : "bad")">@(entry.Ok ? "Success" : "Failure")</span></td>
+                    @* Every row says how it went, in words (red when it failed) *@
+                    <td class="audit-result @(entry.Ok ? "" : "failed")">@(entry.Ok ? "Success" : "Failure")</td>
                 </tr>
             }
             </tbody>
